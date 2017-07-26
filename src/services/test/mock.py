@@ -1,3 +1,4 @@
+import logging
 import random
 import string
 from abc import ABCMeta, abstractmethod
@@ -166,10 +167,10 @@ def login_required(f):
 
 
 class UserAgent(object):
-    def __init__(self, site):
+    def __init__(self, site, session=None):
         super().__init__()
         self.site = site
-        self.session = {}
+        self.session = session or {}
         self.meta = {}
 
     def set_meta(self, key, val):
@@ -212,9 +213,12 @@ class BaseRequestFilter(metaclass=ABCMeta):
 
 
 class LogRequestFilter(BaseRequestFilter):
+    def __init__(self):
+        self.logger = logging.getLogger('request.filter.log')
+
     def do_filter(self, req, next_request):
-        print('req:', req)
+        self.logger.debug('req: %s', req)
         resp = next_request(req)
-        print('resp:', resp)
+        self.logger.debug('resp: %s', resp)
 
         return resp

@@ -6,6 +6,7 @@ from .mock import req_method, resp_method, req_resp_method, pure_method
 class TestSite(AbsSite):
     def __init__(self):
         super().__init__()
+        # db
         self.users = {
             'a': {'username': 'a', 'password': 'b', 'x': 1, 's': 'webee'},
             'c': {'username': 'c', 'password': 'd', 'x': 2, 's': 'loves'},
@@ -17,18 +18,16 @@ class TestSite(AbsSite):
         session = req.session
         hashed_vc = hash_str(vc.lower())
         if hashed_vc != session.get('vc'):
-            return False
+            raise ValueError('vc error')
         user = self.users.get(username)
         if not user:
-            return False
+            raise ValueError('user/password error')
 
         if user['password'] != password:
-            return False
+            raise ValueError('user/password error')
 
         login_user(resp, username)
         resp.del_session('vc')
-
-        return True
 
     @staticmethod
     @resp_method

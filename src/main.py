@@ -1,14 +1,17 @@
-from tasks.test.mock import UserAgent, LogRequestFilter
-from tasks.test.mock_site import TestSite
+from gevent import monkey
+from services.test import TestTasksManager
 
+monkey.patch_all()
+
+test_tasks_manager = TestTasksManager()
+
+methods = {
+    'test_fetch_start': test_tasks_manager.start,
+    'test_fetch_resume': test_tasks_manager.resume,
+}
 
 if __name__ == '__main__':
-    ua = UserAgent(TestSite())
-    ua.register_request_filter(LogRequestFilter())
-    print(ua.get_vc())
-    vc = input("vc:")
-    print(ua.login('a', 'b', vc))
-
-    print(ua.get_vc())
-    vc = input("vc:")
-    print(ua.s(vc='vc'))
+    import zerorpc
+    server = zerorpc.Server(methods, name='task-agency-service', heartbeat=30)
+    server.bind('tcp://*:12345')
+    server.run()
