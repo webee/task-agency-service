@@ -15,8 +15,9 @@ def get_test_methods() -> dict:
                                              memory_session_storage,
                                              test_task_finder)
     return {
-        'fetch_start': test_tasks_manager.start,
-        'fetch_resume': test_tasks_manager.resume,
+        'task_start': test_tasks_manager.start,
+        'task_resume': test_tasks_manager.resume,
+        'task_query': test_tasks_manager.query,
     }
 
 

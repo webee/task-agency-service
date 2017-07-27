@@ -1,65 +1,78 @@
 from services.test.mock_site import TestSite
 from services.test.mock import UserAgent, LogRequestFilter
-from services.service import AbsSessionTask
+from services.service import SessionData, AbsTaskUnitSessionTask
+from services.service import AskForParamsError, PreconditionNotSatisfiedError
 
 
 test_site = TestSite()
 
 
-class Task(AbsSessionTask):
+class Task(AbsTaskUnitSessionTask):
     X_PARAM_REQUIREMENTS = {
     }
 
-    def __init__(self, state=None, params=None, result=None):
-        # 执行状态
-        self.state = state
-        # 外部参数
-        self.params = params
-        # 中间结果
-        self.result = result
-
-        self.done = False
-
-        self.key = None
-        self.meta = None
-        self.data = None
-
-        # initialize
-        self._init_state()
-
-    def get_result(self):
-        return self.state
-
-    def is_done(self) -> bool:
-        return self.done
-
-    def get_state(self):
-        return self.state
-
-    def _init_state(self):
-        self.ua = UserAgent(test_site, self.state.get('session'))
+    # noinspection PyAttributeOutsideInit
+    def _prepare(self):
+        state: dict = self.state
+        self.ua = UserAgent(test_site, state.get('session'))
         self.ua.register_request_filter(LogRequestFilter())
 
-    @property
-    def s(self):
-        return self.state['s']
+        # result
+        result: dict = self.result
+        result.setdefault('meta', {})
+        result.setdefault('data', {})
 
-    def run(self):
-        self._fetch_x()
+    def _setup_task_units(self):
+        self._add_unit(self._login)
+        self._add_unit(self._fetch_x, self._login)
 
-    def _get_login_params(self):
-        # check params
-        username = self.params['username']
-        password = self.params['password']
-        vc = self.params['vc']
+    def _update_session_data(self):
+        super()._update_session_data()
+        self.session_data.state['session'] = self.ua.session
 
-        return username, password, vc
+    def _query(self, params: dict):
+        t = params.get('t')
+        if t == 'vc':
+            return self._new_vc()
+
+    def _login(self, params=None):
+        err_msg = None
+        if 'username' in params and 'password' in params and 'vc' in params:
+            username = params['username']
+            password = params['password']
+            vc = params['vc']
+            try:
+                self.ua.login(username, password, vc)
+                return
+            except Exception as e:
+                err_msg = str(e)
+        vc = self._new_vc()
+        raise AskForParamsError([
+            dict(key='username', name='用户名', schema=None),
+            dict(key='password', name='密码', schema=None),
+            dict(key='vc', name='验证码', data=vc, query={'t': 'vc'}, schema=None),
+        ], err_msg)
 
     def _fetch_x(self):
-        username, password, vc = self._get_login_params()
         try:
-            self.ua.login(username, password, vc)
-        except Exception as e:
-            pass
+            data = self.result['data']
+            data['x'] = self.ua.x()
+            return data
+        except PermissionError as e:
+            raise PreconditionNotSatisfiedError(e)
 
-        x = self.ua.x()
+    def _new_vc(self):
+        return self.ua.get_vc()
+
+
+if __name__ == '__main__':
+    task = Task(SessionData())
+    res = task.run()
+    while not task.done:
+        print(res)
+        username = input('username:')
+        password = input('password:')
+        vc = input('vc:')
+        res = task.run(dict(username=username, password=password, vc=vc))
+    # check result
+    print(task.result)

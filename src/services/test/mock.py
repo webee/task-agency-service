@@ -214,7 +214,7 @@ class BaseRequestFilter(metaclass=ABCMeta):
 
 class LogRequestFilter(BaseRequestFilter):
     def __init__(self):
-        self.logger = logging.getLogger('request.filter.log')
+        self.logger = logging.getLogger('mock.filter.request.log')
 
     def do_filter(self, req, next_request):
         self.logger.debug('req: %s', req)
