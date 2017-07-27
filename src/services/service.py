@@ -1,4 +1,5 @@
 import importlib
+import time
 from typing import List, Callable
 from abc import ABCMeta, abstractmethod
 import uuid
@@ -45,9 +46,10 @@ class AskForParamsError(Exception):
 
 
 class AbsSessionTask(AbsTask):
-    def __init__(self, session_data: SessionData):
+    def __init__(self, session_data: SessionData, is_start=True):
         super().__init__()
         self._session_data = session_data
+        self._is_start = is_start
         self._done = False
 
         self._prepare()
@@ -84,7 +86,7 @@ class AbsSessionTask(AbsTask):
                 data = self._query_meta(params)
             return dict(ret=True, data=data)
         except Exception as e:
-            return dict(ret=False, error=str(e))
+            return dict(ret=False, err_msg=str(e))
         finally:
             self._update_session_data()
 
@@ -129,6 +131,10 @@ class AbsSessionTask(AbsTask):
     @property
     def done(self) -> bool:
         return self._done
+
+    @property
+    def is_start(self) -> bool:
+        return self._is_start
 
     def _set_done(self):
         self._done = True
@@ -194,7 +200,7 @@ class SessionTasksManager(object):
         :return: task result
         """
         session_data = self._get_session_data(session_id)
-        return self._run(session_data, params)
+        return self._run(session_data, params, is_start=False)
 
     def query(self, session_id, params=None):
         """
@@ -212,8 +218,8 @@ class SessionTasksManager(object):
     def register_result_handler(self, handler: AbsResultHandler):
         self._result_handlers.append(handler)
 
-    def _run(self, session_data: SessionData, params: dict):
-        task = self._get_task(session_data)
+    def _run(self, session_data: SessionData, params: dict, is_start=True):
+        task = self._get_task(session_data, is_start=is_start)
         res = task.run(params)
         if task.done:
             result = task.session_data.result
@@ -230,10 +236,10 @@ class SessionTasksManager(object):
             raise ValueError('task session not exists')
         return session_data
 
-    def _get_task(self, session_data: SessionData) -> AbsSessionTask:
+    def _get_task(self, session_data: SessionData, is_start=True) -> AbsSessionTask:
         task_id = session_data.task_id
         task_cls = self._tcf.find(task_id)
-        return task_cls(session_data)
+        return task_cls(session_data, is_start=is_start)
 
 
 class UUIDSessionIDGenerator(AbsSessionIDGenerator):
@@ -243,14 +249,19 @@ class UUIDSessionIDGenerator(AbsSessionIDGenerator):
 
 class MemorySessionStorage(AbsSessionStorage):
     def __init__(self, expire=None):
-        self._expire = None
+        self._expire = expire
         self.__sessions = {}
 
     def save_session(self, session_data: SessionData):
-        self.__sessions[session_data.id] = session_data
+        self.__sessions[session_data.id] = (session_data, time.time())
 
     def get_session(self, session_id: str) -> SessionData:
-        return self.__sessions.get(session_id)
+        res = self.__sessions.get(session_id)
+        if res is not None:
+            data, t = res
+            if self._expire is None or t + self._expire > time.time():
+                return data
+            self.remove_session(session_id)
 
     def remove_session(self, session_id: str):
         if session_id in self.__sessions:
