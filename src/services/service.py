@@ -38,24 +38,29 @@ class PreconditionNotSatisfiedError(Exception):
     pass
 
 
-class AskForParamsError(Exception):
-    def __init__(self, param_requirements, err_msg=None, message='parameters required'):
-        super().__init__(message)
-        self.param_requirements = param_requirements
-        self.err_msg = err_msg
-
-
 class AbsSessionTask(AbsTask):
-    def __init__(self, session_data: SessionData, is_start=True):
+    def __init__(self, session_data: SessionData=None, is_start=True):
         super().__init__()
-        self._session_data = session_data
+        self._session_data = if_not_none_else(session_data, SessionData())
         self._is_start = is_start
         self._done = False
 
+        self._setup()
         self._prepare()
+
+    def _setup(self):
+        """
+        for extend sub class to use
+        :return:
+        """
+        pass
 
     @abstractmethod
     def _prepare(self):
+        """
+        for concrete class to use
+        :return:
+        """
         pass
 
     def run(self, params: dict = None):
@@ -284,8 +289,8 @@ TaskUnitWithPre = namedtuple('TaskUnitWithPre', ['unit', 'pre'])
 class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
     _CUR_TASK_UNIT_IDX = '_cur_task_unit_idx'
 
-    def __init__(self, session_data: SessionData):
-        super().__init__(session_data)
+    def _setup(self):
+        super()._setup()
         self._task_units: List[TaskUnitWithPre] = []
         self._task_unit_indexes = {}
         self._setup_task_units()

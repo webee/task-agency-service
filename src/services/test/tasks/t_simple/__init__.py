@@ -84,5 +84,5 @@ class Task(AbsTaskUnitSessionTask):
 if __name__ == '__main__':
     from services.client import TestClient
 
-    client = TestClient(Task(SessionData()))
+    client = TestClient(Task())
     client.run()
