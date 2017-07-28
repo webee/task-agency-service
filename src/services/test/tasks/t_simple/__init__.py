@@ -65,7 +65,7 @@ class Task(AbsTaskUnitSessionTask):
         vc = self._new_vc()
         raise AskForParamsError([
             dict(key='username', name='用户名', cls='input'),
-            dict(key='password', name='密码', cls='input'),
+            dict(key='password', name='密码', cls='input:password'),
             dict(key='vc', name='验证码', cls='data', data=vc, query={'t': 'vc'}),
         ], err_msg)
 

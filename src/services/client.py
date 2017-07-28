@@ -1,10 +1,11 @@
-from services.service import SessionTask
+from services.service import AbsStatefulTask, AbsSessionTask
 from PIL import Image
 import io
+import getpass
 
 
 class TaskTestClient(object):
-    def __init__(self, task: SessionTask):
+    def __init__(self, task: AbsStatefulTask):
         self.task = task
 
     def run(self):
@@ -20,7 +21,8 @@ class TaskTestClient(object):
             done = res['done']
             if done:
                 print('ret: ', res['data'])
-                print('result: ', self.task.result)
+                if isinstance(self.task, AbsSessionTask):
+                    print('result: ', self.task.result)
                 break
 
             # check error msg
@@ -34,6 +36,9 @@ class TaskTestClient(object):
             for pr in param_requirements:
                 # parse parameter requirements
                 if pr['cls'] == 'input':
+                    params[pr['key']] = input('%s: ' % pr['name'])
+                if pr['cls'] == 'input:password':
+                    # params[pr['key']] = getpass.getpass('%s: ' % pr['name'])
                     params[pr['key']] = input('%s: ' % pr['name'])
                 elif pr['cls'] == 'data':
                     data = pr['data']
@@ -69,7 +74,7 @@ class TaskTestClient(object):
             res = self.task.run(params)
 
 
-class ZeroRPCSessionTask(SessionTask):
+class ZeroRPCSessionTask(AbsStatefulTask):
     def __init__(self, client, service, task_id):
         super().__init__()
         self.client = client

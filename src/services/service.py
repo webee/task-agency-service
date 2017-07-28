@@ -29,44 +29,36 @@ class SessionData(object):
 
 class AskForParamsError(Exception):
     def __init__(self, param_requirements, err_msg=None, message='parameters required'):
+        """
+        请求参数异常
+        :param param_requirements: 需要的参数说明
+        :param err_msg: 参数检查错误
+        :param message: 异常信息
+        """
         super().__init__(message)
         self.param_requirements = param_requirements
         self.err_msg = err_msg
 
 
 class PreconditionNotSatisfiedError(Exception):
+    """前置条件不满足异常"""
     pass
 
 
-class SessionTask(AbsTask):
-    def __init__(self, session_data: SessionData=None):
+class AbsStatefulTask(AbsTask):
+    @abstractmethod
+    def run(self, params=None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def query(self, params=None):
+        raise NotImplementedError()
+
+
+class AbsSessionTask(AbsStatefulTask):
+    def __init__(self, session_data: SessionData=None, is_start=True):
         super().__init__()
         self._session_data = if_not_none_else(session_data, SessionData())
-
-    @abstractmethod
-    def run(self, params: dict = None):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def query(self, params: dict = None):
-        raise NotImplementedError()
-
-    @property
-    def session_data(self) -> SessionData:
-        return self._session_data
-
-    @property
-    def state(self) -> dict:
-        return self._session_data.state
-
-    @property
-    def result(self) -> dict:
-        return self._session_data.result
-
-
-class AbsSessionTask(SessionTask):
-    def __init__(self, session_data: SessionData=None, is_start=True):
-        super().__init__(session_data)
         self._is_start = is_start
         self._done = False
 
@@ -147,6 +139,18 @@ class AbsSessionTask(SessionTask):
         pass
 
     @property
+    def session_data(self) -> SessionData:
+        return self._session_data
+
+    @property
+    def state(self) -> dict:
+        return self._session_data.state
+
+    @property
+    def result(self) -> dict:
+        return self._session_data.result
+
+    @property
     def done(self) -> bool:
         return self._done
 
@@ -156,6 +160,59 @@ class AbsSessionTask(SessionTask):
 
     def _set_done(self):
         self._done = True
+
+
+TaskUnitWithPre = namedtuple('TaskUnitWithPre', ['unit', 'pre'])
+
+
+class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
+    _CUR_TASK_UNIT_IDX = '_cur_task_unit_idx'
+
+    def _setup(self):
+        super()._setup()
+        self._task_units: List[TaskUnitWithPre] = []
+        self._task_unit_indexes = {}
+        self._setup_task_units()
+
+        self._cur_task_unit_idx = self.state.get(self._CUR_TASK_UNIT_IDX, 0 if len(self._task_units) > 0 else -1)
+
+    @abstractmethod
+    def _setup_task_units(self):
+        pass
+
+    def _add_unit(self, unit: Callable, pre: Callable = None):
+        idx = len(self._task_units)
+        self._task_units.append(TaskUnitWithPre(unit, pre))
+        self._task_unit_indexes[unit] = idx
+
+    @abstractmethod
+    def _update_session_data(self):
+        self.session_data.state[self._CUR_TASK_UNIT_IDX] = self._cur_task_unit_idx
+
+    def _get_task_unit_idx(self, unit):
+        return self._task_unit_indexes.get(unit, -1)
+
+    def _get_cur_task_unit(self):
+        if 0 <= self._cur_task_unit_idx < len(self._task_units):
+            return self._task_units[self._cur_task_unit_idx]
+
+    def _run(self, params: dict):
+        task_unit = self._get_cur_task_unit()
+        if task_unit is None:
+            return
+
+        try:
+            res = task_unit.unit(params)
+            self._cur_task_unit_idx += 1
+
+            while self._cur_task_unit_idx < len(self._task_units):
+                task_unit = self._get_cur_task_unit()
+                res = task_unit.unit()
+                self._cur_task_unit_idx += 1
+            return res
+        except PreconditionNotSatisfiedError:
+            self._cur_task_unit_idx = self._get_task_unit_idx(task_unit.pre)
+            return self._run(params)
 
 
 class AbsSessionStorage(metaclass=ABCMeta):
@@ -294,56 +351,3 @@ class PathTaskClassFinder(AbsTaskClassFinder):
     def find(self, task_id: str):
         m = importlib.import_module(self._get_path_func(task_id))
         return getattr(m, self._cls_name)
-
-
-TaskUnitWithPre = namedtuple('TaskUnitWithPre', ['unit', 'pre'])
-
-
-class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
-    _CUR_TASK_UNIT_IDX = '_cur_task_unit_idx'
-
-    def _setup(self):
-        super()._setup()
-        self._task_units: List[TaskUnitWithPre] = []
-        self._task_unit_indexes = {}
-        self._setup_task_units()
-
-        self._cur_task_unit_idx = self.state.get(self._CUR_TASK_UNIT_IDX, 0 if len(self._task_units) > 0 else -1)
-
-    @abstractmethod
-    def _setup_task_units(self):
-        pass
-
-    def _add_unit(self, unit: Callable, pre: Callable = None):
-        idx = len(self._task_units)
-        self._task_units.append(TaskUnitWithPre(unit, pre))
-        self._task_unit_indexes[unit] = idx
-
-    @abstractmethod
-    def _update_session_data(self):
-        self.session_data.state[self._CUR_TASK_UNIT_IDX] = self._cur_task_unit_idx
-
-    def _get_task_unit_idx(self, unit):
-        return self._task_unit_indexes.get(unit, -1)
-
-    def _get_cur_task_unit(self):
-        if 0 <= self._cur_task_unit_idx < len(self._task_units):
-            return self._task_units[self._cur_task_unit_idx]
-
-    def _run(self, params: dict):
-        task_unit = self._get_cur_task_unit()
-        if task_unit is None:
-            return
-
-        try:
-            res = task_unit.unit(params)
-            self._cur_task_unit_idx += 1
-
-            while self._cur_task_unit_idx < len(self._task_units):
-                task_unit = self._get_cur_task_unit()
-                res = task_unit.unit()
-                self._cur_task_unit_idx += 1
-            return res
-        except PreconditionNotSatisfiedError:
-            self._cur_task_unit_idx = self._get_task_unit_idx(task_unit.pre)
-            return self._run(params)
