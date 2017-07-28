@@ -38,10 +38,35 @@ class PreconditionNotSatisfiedError(Exception):
     pass
 
 
-class AbsSessionTask(AbsTask):
-    def __init__(self, session_data: SessionData=None, is_start=True):
+class SessionTask(AbsTask):
+    def __init__(self, session_data: SessionData=None):
         super().__init__()
         self._session_data = if_not_none_else(session_data, SessionData())
+
+    @abstractmethod
+    def run(self, params: dict = None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def query(self, params: dict = None):
+        raise NotImplementedError()
+
+    @property
+    def session_data(self) -> SessionData:
+        return self._session_data
+
+    @property
+    def state(self) -> dict:
+        return self._session_data.state
+
+    @property
+    def result(self) -> dict:
+        return self._session_data.result
+
+
+class AbsSessionTask(SessionTask):
+    def __init__(self, session_data: SessionData=None, is_start=True):
+        super().__init__(session_data)
         self._is_start = is_start
         self._done = False
 
@@ -120,18 +145,6 @@ class AbsSessionTask(AbsTask):
     @abstractmethod
     def _query(self, params: dict):
         pass
-
-    @property
-    def session_data(self) -> SessionData:
-        return self._session_data
-
-    @property
-    def state(self) -> dict:
-        return self._session_data.state
-
-    @property
-    def result(self) -> dict:
-        return self._session_data.result
 
     @property
     def done(self) -> bool:
