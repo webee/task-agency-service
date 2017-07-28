@@ -3,3 +3,4 @@ beautifulsoup4==4.6.0
 zerorpc==0.6.1
 PyMongo==3.4.0
 schema==0.6.6
+Pillow==4.2.1
