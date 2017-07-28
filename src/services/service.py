@@ -301,6 +301,7 @@ class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
         self._task_units.append(TaskUnitWithPre(unit, pre))
         self._task_unit_indexes[unit] = idx
 
+    @abstractmethod
     def _update_session_data(self):
         self.session_data.state[self._CUR_TASK_UNIT_IDX] = self._cur_task_unit_idx
 

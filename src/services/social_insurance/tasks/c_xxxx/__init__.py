@@ -3,6 +3,9 @@ from services.service import SessionData
 
 
 class Task(AbsTaskUnitSessionTask):
+    def _update_session_data(self):
+        pass
+
     def _prepare(self):
         pass
 
