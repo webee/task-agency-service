@@ -73,7 +73,7 @@ class Task(AbsTaskUnitSessionTask):
         try:
             data = self.result['data']
             data['x'] = self.ua.x()
-            return self.result
+            return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 

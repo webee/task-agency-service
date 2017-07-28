@@ -49,6 +49,7 @@ class TestClient(object):
                             data = r['data']
                         else:
                             print('error:', r['err_msg'])
+                    params[pr['key']] = d
                 elif pr['cls'] == 'data:image':
                     data = pr['data']
                     while True:

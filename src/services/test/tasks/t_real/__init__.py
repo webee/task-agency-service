@@ -27,13 +27,13 @@ class Task(AbsTaskUnitSessionTask):
         result.setdefault('meta', {})
         result.setdefault('data', {})
 
-    def _setup_task_units(self):
-        self._add_unit(self._unit_login)
-        self._add_unit(self._unit_fetch_name, self._unit_login)
-
     def _update_session_data(self):
         super()._update_session_data()
         self.state['cookies'] = self.s.cookies
+
+    def _setup_task_units(self):
+        self._add_unit(self._unit_login)
+        self._add_unit(self._unit_fetch_name, self._unit_login)
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -94,7 +94,7 @@ class Task(AbsTaskUnitSessionTask):
             name = soup.select('#name')[0]['value']
             data['name'] = name
 
-            return self.result
+            return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
