@@ -4,7 +4,6 @@ from services.test.mock import UserAgent, LogRequestFilter
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 
-
 test_site = TestSite()
 
 
@@ -26,7 +25,7 @@ class Task(AbsTaskUnitSessionTask):
 
     def _update_session_data(self):
         super()._update_session_data()
-        self.session_data.state['session'] = self.ua.session
+        self.state['session'] = self.ua.session
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -36,9 +35,9 @@ class Task(AbsTaskUnitSessionTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'username' in params, '用户名不能为空'
-        assert 'password' in params, '密码不能为空'
-        assert 'vc' in params, '验证码不能为空'
+        assert 'username' in params, '缺少用户名'
+        assert 'password' in params, '缺少密码'
+        assert 'vc' in params, '缺少验证码'
         # other check
 
     def _unit_login(self, params=None):
@@ -52,7 +51,7 @@ class Task(AbsTaskUnitSessionTask):
                 vc = params['vc']
                 self.ua.login(username, password, vc)
 
-                self.result['key'] = 'simple.a'
+                self.result['key'] = '%s.%s' % ('simple', username)
                 self.result['meta'] = {
                     'task': 'simple',
                     'username': username,
@@ -84,5 +83,6 @@ class Task(AbsTaskUnitSessionTask):
 
 if __name__ == '__main__':
     from services.client import TestClient
+
     client = TestClient(Task(SessionData()))
     client.run()
