@@ -1,6 +1,4 @@
-requests==2.18.1
-beautifulsoup4==4.6.0
+-r requirments.service.txt
 zerorpc==0.6.1
 PyMongo==3.4.0
-schema==0.6.6
 Pillow==4.2.1
