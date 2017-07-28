@@ -46,6 +46,9 @@ class PreconditionNotSatisfiedError(Exception):
 
 
 class AbsStatefulTask(AbsTask):
+    # task meta data
+    META = {}
+
     @abstractmethod
     def run(self, params=None):
         raise NotImplementedError()
@@ -225,13 +228,13 @@ class AbsSessionStorage(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
-    def save_session(self, session_data: SessionData):
+    def save_session(self, session_data: SessionData, expire=None):
         raise NotImplementedError()
 
 
 class AbsSessionIDGenerator(metaclass=ABCMeta):
     @abstractmethod
-    def new(self, *args, **kwargs) -> str:
+    def new(self, task_id=None) -> str:
         raise NotImplementedError()
 
 
@@ -263,7 +266,7 @@ class SessionTasksManager(object):
         :param params: parameters
         :return: session_id, task result
         """
-        session_id = self._sig.new()
+        session_id = self._sig.new(task_id)
         session_data = SessionData(session_id, task_id, {}, {})
         return session_id, self._run(session_data, params)
 
@@ -287,7 +290,7 @@ class SessionTasksManager(object):
         session_data = self._get_session_data(session_id)
         task = self._get_task(session_data)
         res = task.query(params)
-        self._ss.save_session(task.session_data)
+        self._ss.save_session(task.session_data, task.META.get('session_expire'))
         return res
 
     def register_result_handler(self, handler: AbsResultHandler):
@@ -302,7 +305,7 @@ class SessionTasksManager(object):
                 handler.handle(result)
             self._ss.remove_session(session_data.id)
         else:
-            self._ss.save_session(task.session_data)
+            self._ss.save_session(task.session_data, task.META.get('session_expire'))
         return res
 
     def _get_session_data(self, session_id):
@@ -318,7 +321,7 @@ class SessionTasksManager(object):
 
 
 class UUIDSessionIDGenerator(AbsSessionIDGenerator):
-    def new(self) -> str:
+    def new(self, task_id=None) -> str:
         return uuid.uuid4().hex
 
 
@@ -327,14 +330,18 @@ class MemorySessionStorage(AbsSessionStorage):
         self._expire = expire
         self.__sessions = {}
 
-    def save_session(self, session_data: SessionData):
-        self.__sessions[session_data.id] = (session_data, time.time())
+    def save_session(self, session_data: SessionData, expire=None):
+        expire = expire or self._expire
+        expire_at = None
+        if expire:
+            expire_at = time.time() + expire
+        self.__sessions[session_data.id] = (session_data, expire_at)
 
     def get_session(self, session_id: str) -> SessionData:
         res = self.__sessions.get(session_id)
         if res is not None:
-            data, t = res
-            if self._expire is None or t + self._expire > time.time():
+            data, expire_at = res
+            if expire_at is None or expire_at > time.time():
                 return data
             self.remove_session(session_id)
 
