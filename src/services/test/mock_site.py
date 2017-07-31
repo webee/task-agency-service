@@ -1,3 +1,4 @@
+import random
 from .mock import AbsSite, hash_str, rand_str
 from .mock import login_user, login_required, logout_user
 from .mock import req_method, resp_method, req_resp_method, pure_method
@@ -7,10 +8,14 @@ class TestSite(AbsSite):
     def __init__(self):
         super().__init__()
         # db
+        self.users = {}
+        self._gen_users()
+
+    def _gen_users(self):
         self.users = {
-            'a': {'username': 'a', 'password': 'b', 'x': 1, 's': 'webee'},
-            'c': {'username': 'c', 'password': 'd', 'x': 2, 's': 'loves'},
-            'x': {'username': 'x', 'password': 'y', 'x': 9, 's': 'vivian'},
+            'a': {'username': 'a', 'password': 'b', 'x': random.randint(1, 3), 's': 'webee'},
+            'c': {'username': 'c', 'password': 'd', 'x': random.randint(4, 6), 's': 'loves'},
+            'x': {'username': 'x', 'password': 'y', 'x': random.randint(7, 9), 's': 'vivian'},
         }
 
     @req_resp_method
@@ -28,6 +33,10 @@ class TestSite(AbsSite):
 
         login_user(resp, username)
         resp.del_session('vc')
+
+        # regenerate users
+        self._gen_users()
+
 
     @staticmethod
     @resp_method
