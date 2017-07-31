@@ -78,11 +78,10 @@ class Task(AbsTaskUnitSessionTask):
             except Exception as e:
                 err_msg = str(e)
 
-        vc = self._new_vc()
         raise AskForParamsError([
             dict(key='id_num', name='身份证号', cls='input'),
             dict(key='account_num', name='个人编号', cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
