@@ -1,4 +1,5 @@
 import importlib
+import traceback
 import time
 from typing import List, Callable
 from abc import ABCMeta, abstractmethod
@@ -316,7 +317,11 @@ class SessionTasksManager(object):
 
     def _get_task(self, session_data: SessionData, is_start=True) -> AbsSessionTask:
         task_id = session_data.task_id
-        task_cls = self._tcf.find(task_id)
+        try:
+            task_cls = self._tcf.find(task_id)
+        except:
+            traceback.print_exc()
+            raise ValueError('can not find task: %s' % task_id)
         return task_cls(session_data, is_start=is_start)
 
 
