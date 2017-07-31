@@ -1,7 +1,7 @@
 import time
 from services.test.mock_site import TestSite
 from services.test.mock import UserAgent, LogRequestFilter
-from services.service import SessionData, AbsTaskUnitSessionTask
+from services.service import AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 
 test_site = TestSite()
@@ -51,12 +51,10 @@ class Task(AbsTaskUnitSessionTask):
                 vc = params['vc']
                 self.ua.login(username, password, vc)
 
-                self.result['key'] = '%s.%s' % ('simple', username)
+                self.result['key'] = username
                 self.result['meta'] = {
-                    'task': 'simple',
                     'username': username,
-                    'password': password,
-                    'updated': time.time()
+                    'password': password
                 }
                 return
             except Exception as e:
@@ -73,6 +71,7 @@ class Task(AbsTaskUnitSessionTask):
         try:
             data = self.result['data']
             data['x'] = self.ua.x()
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)

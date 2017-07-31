@@ -205,14 +205,14 @@ class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
             return
 
         try:
-            res = task_unit.unit(params)
+            task_unit.unit(params)
             self._cur_task_unit_idx += 1
 
             while self._cur_task_unit_idx < len(self._task_units):
                 task_unit = self._get_cur_task_unit()
-                res = task_unit.unit()
+                task_unit.unit()
                 self._cur_task_unit_idx += 1
-            return res
+            return self.result.get('key')
         except PreconditionNotSatisfiedError:
             self._cur_task_unit_idx = self._get_task_unit_idx(task_unit.pre)
             return self._run(params)

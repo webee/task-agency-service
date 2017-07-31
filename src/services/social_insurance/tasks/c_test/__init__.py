@@ -68,9 +68,8 @@ class Task(AbsTaskUnitSessionTask):
                 if errormsg:
                     raise Exception(errormsg)
 
-                self.result['key'] = '%s.%s' % ('real', id_num)
+                self.result['key'] = id_num
                 self.result['meta'] = {
-                    'task': 'real',
                     'id_num': id_num,
                     'account_num': account_num,
                     'updated': time.time()
