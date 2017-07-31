@@ -213,7 +213,7 @@ class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
                 task_unit = self._get_cur_task_unit()
                 task_unit.unit()
                 self._cur_task_unit_idx += 1
-            return self.result.get('key')
+            return dict(task_id=self.session_data.task_id, key=self.result.get('key'))
         except PreconditionNotSatisfiedError:
             self._cur_task_unit_idx = self._get_task_unit_idx(task_unit.pre)
             return self._run(params)
