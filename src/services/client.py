@@ -49,7 +49,7 @@ class TaskTestClient(object):
                             continue
                         data = r['data']
 
-                        print('data: %s' % data)
+                        print('content: %s' % data['content'])
                         d = input('%s: ' % pr['name'])
                         if d:
                             break

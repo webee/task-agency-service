@@ -98,7 +98,7 @@ class Task(AbsTaskUnitSessionTask):
     def _new_vc(self):
         vc_url = VC_URL + str(int(time.time() * 1000))
         resp = self.s.get(vc_url)
-        return dict(content=resp.content, content_type=resp.headers['Content-Type'])
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
 
 
 if __name__ == '__main__':

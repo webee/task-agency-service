@@ -76,7 +76,7 @@ class Task(AbsTaskUnitSessionTask):
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
-        return self.ua.get_vc()
+        return dict(cls="data", content=self.ua.get_vc())
 
 
 if __name__ == '__main__':
