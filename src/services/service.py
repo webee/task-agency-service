@@ -96,7 +96,7 @@ class AbsSessionTask(AbsStatefulTask):
             self._update_session_data()
             res = dict(ret=True, done=False, param_requirements=e.param_requirements)
             if e.err_msg:
-                res.update(err_msg=e.err_msg)
+                res.update(dict(err_msg=e.err_msg))
             return res
         except Exception as e:
             # NOTE: 异常
@@ -245,9 +245,9 @@ class AbsTaskClassFinder(metaclass=ABCMeta):
         raise NotImplementedError()
 
 
-class AbsResultHandler(metaclass=ABCMeta):
+class AbsTaskResultHandler(metaclass=ABCMeta):
     @abstractmethod
-    def handle(self, result: dict):
+    def handle(self, task_id: str, result: dict):
         raise NotImplementedError()
 
 
@@ -258,7 +258,7 @@ class SessionTasksManager(object):
         self._sig = session_id_generator
         self._ss = session_storage
         self._tcf = task_class_finder
-        self._result_handlers: List[AbsResultHandler] = []
+        self._result_handlers: List[AbsTaskResultHandler] = []
 
     def start(self, task_id, params=None):
         """
@@ -294,7 +294,7 @@ class SessionTasksManager(object):
         self._ss.save_session(task.session_data, task.META.get('session_expire'))
         return res
 
-    def register_result_handler(self, handler: AbsResultHandler):
+    def register_result_handler(self, handler: AbsTaskResultHandler):
         self._result_handlers.append(handler)
 
     def _run(self, session_data: SessionData, params: dict, is_start=True):
@@ -303,7 +303,7 @@ class SessionTasksManager(object):
         if task.done:
             result = task.session_data.result
             for handler in self._result_handlers:
-                handler.handle(result)
+                handler.handle(task.session_data.task_id, result)
             self._ss.remove_session(session_data.id)
         else:
             self._ss.save_session(task.session_data, task.META.get('session_expire'))
