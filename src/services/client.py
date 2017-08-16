@@ -35,6 +35,8 @@ class TaskTestClient(object):
             param_requirements = res['param_requirements']
             for pr in param_requirements:
                 # parse parameter requirements
+                if pr['cls'] == 'tab':
+                    params[pr['key']] = input('%s: ' % pr['name'])
                 if pr['cls'] == 'input':
                     params[pr['key']] = input('%s: ' % pr['name'])
                 if pr['cls'] == 'input:password':
