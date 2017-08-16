@@ -114,29 +114,24 @@ class Task(AbsTaskUnitSessionTask):
 
             # 养老（正常数据与其他补缴信息）
             data["old_age"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
 
             # 医疗（正常数据与其他补缴信息）
             data["medical_care"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 工伤（正常数据与其他补缴信息）
             data["injuries"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 生育（正常数据与其他补缴信息）
             data["maternity"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 失业（正常数据与其他补缴信息）
             data["unemployment"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
 
             return
@@ -240,9 +235,12 @@ class Task(AbsTaskUnitSessionTask):
                         continue
                 if tempNormal.__len__() > 0:
                     tempNormal.reverse()
-                    data["old_age"]["bizNormalData"][str(year)] = {}
+                    data["old_age"]["data"][str(year)] = {}
                     for month in tempNormal:
-                        data["old_age"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
+                        try:
+                            data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                        except:
+                            data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
 
             if doubt.__len__() > 0:
                 for year in years:
@@ -255,9 +253,12 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["old_age"]["bizDoubtData"][str(year)] = {}
+                        data["old_age"]["data"][str(year)] = {}
                         for month in tempDoubt:
-                            data["old_age"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                            try:
+                                data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                            except:
+                                data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
@@ -350,9 +351,12 @@ class Task(AbsTaskUnitSessionTask):
                         continue
                 if tempNormal.__len__() > 0:
                     tempNormal.reverse()
-                    data["medical_care"]["bizNormalData"][str(year)] = {}
+                    data["medical_care"]["data"][str(year)] = {}
                     for month in tempNormal:
-                        data["medical_care"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
+                        try:
+                            data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                        except:
+                            data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
 
             if doubt.__len__() > 0:
                 for year in years:
@@ -365,9 +369,12 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["medical_care"]["bizDoubtData"][str(year)] = {}
+                        data["medical_care"]["data"][str(year)] = {}
                         for month in tempNormal:
-                            data["medical_care"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                            try:
+                                data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                            except:
+                                data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
@@ -456,9 +463,12 @@ class Task(AbsTaskUnitSessionTask):
                         continue
                 if tempNormal.__len__() > 0:
                     tempNormal.reverse()
-                    data["injuries"]["bizNormalData"][str(year)] = {}
+                    data["injuries"]["data"][str(year)] = {}
                     for month in tempNormal:
-                        data["injuries"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
+                        try:
+                            data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                        except:
+                            data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
 
             if doubt.__len__() > 0:
                 for year in years:
@@ -471,9 +481,12 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["injuries"]["bizDoubtData"][str(year)] = {}
+                        data["injuries"]["data"][str(year)] = {}
                         for month in tempNormal:
-                            data["injuries"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                            try:
+                                data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                            except:
+                                data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
@@ -561,9 +574,12 @@ class Task(AbsTaskUnitSessionTask):
                         continue
                 if tempNormal.__len__() > 0:
                     tempNormal.reverse()
-                    data["injuries"]["bizNormalData"][str(year)] = {}
+                    data["injuries"]["data"][str(year)] = {}
                     for month in tempNormal:
-                        data["injuries"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
+                        try:
+                            data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                        except:
+                            data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
 
             if doubt.__len__() > 0:
                 for year in years:
@@ -576,9 +592,12 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["maternity"]["bizDoubtData"][str(year)] = {}
+                        data["maternity"]["data"][str(year)] = {}
                         for month in tempNormal:
-                            data["maternity"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                            try:
+                                data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                            except:
+                                data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
@@ -665,9 +684,12 @@ class Task(AbsTaskUnitSessionTask):
                         continue
                 if tempNormal.__len__() > 0:
                     tempNormal.reverse()
-                    data["unemployment"]["bizNormalData"][str(year)] = {}
+                    data["unemployment"]["data"][str(year)] = {}
                     for month in tempNormal:
-                        data["unemployment"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
+                        try:
+                            data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                        except:
+                            data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
 
             if doubt.__len__() > 0:
                 for year in years:
@@ -680,9 +702,12 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["unemployment"]["bizDoubtData"][str(year)] = {}
+                        data["unemployment"]["data"][str(year)] = {}
                         for month in tempNormal:
-                            data["unemployment"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                            try:
+                                data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                            except:
+                                data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 

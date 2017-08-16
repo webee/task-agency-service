@@ -1,5 +1,5 @@
+import re
 import time
-import json
 import datetime
 import requests
 from bs4 import BeautifulSoup
@@ -53,6 +53,7 @@ class Task(AbsTaskUnitSessionTask):
         assert 'safecode' in params, '缺少验证码'
         # other check
 
+    # 初始化/登录
     def _unit_login(self, params=None):
         err_msg = None
         if not self.is_start or params:
@@ -70,12 +71,12 @@ class Task(AbsTaskUnitSessionTask):
                     type=1,
                     flag=3
                 ))
-                data = resp.json()
-                errormsg = data.get('errormsg')
-                if errormsg:
+                if(resp.url != 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp'):
+                    data = BeautifulSoup(resp.content, "html.parser")
+                    errormsg = data.findAll("table")[3].findAll("font")[0].text.replace("\r", "").replace("\n", "").replace("\t", "")
                     raise Exception(errormsg)
 
-                self.result['key'] = id_num
+                self.result['key'] = j_username
                 self.result['meta'] = {
                     '身份证编号': j_username,
                     '密码': j_password
@@ -85,79 +86,130 @@ class Task(AbsTaskUnitSessionTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
+            dict(key='type', name='[{"key":"城市职工","value":"1"},{"key":"城市居民","value":"2"}]', cls='tab'),
             dict(key='j_username', name='身份证号', cls='input'),
-            dict(key='j_password', name='社保编号', cls='input'),
+            dict(key='j_password', name='密码', cls='input:password'),
             dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}),
+            dict(key='cityCode', name='城市Code', cls='input:hidden', value={'code': '北京市'}),
+            dict(key='cityName', name='城市名称', cls='input:hidden', value={'code': '110100'})
         ], err_msg)
 
+    # 获取用户基础信息
     def _unit_fetch_user_info(self):
         try:
             data = self.result['data']
             resp = self.s.post(USER_INFO_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            name = soup.select('#name')[0]['value']
-            personNum = soup.select('#personNum')[0]['value']
-            sfzNum = soup.select('#sfzNum')[0]['value']
+
+            result = soup.find('form', {'id': 'printForm'})
+            table1 = result.findAll("table")[0]
+            table2 = result.findAll("table")[1]
+
+            td0 = re.sub('\s', '', table1.text)
+            companyName = re.findall(r"单位名称：(.+?)组织机构代码：", td0)[0]
+            companyCode = re.findall(r"组织机构代码：(.+?)社会保险登记证编号：", td0)[0]
+            socialCode = re.findall(r"社会保险登记证编号：(.+?)所属区县：", td0)[0]
+            fromCity = td0[td0.find("所属区县：")+5:]
+
+            td1 = table2.findAll("td")
+            socialType = re.sub('\s', '', td1[1].text) + "end"
+            old_age_state = {
+                "养老": socialType[socialType.find('[养老缴费(')+6:socialType.find(')缴费][失业缴费(')],
+                "医疗": socialType[socialType.find('[失业缴费(')+6:socialType.find(')缴费][工伤缴费(')],
+                "失业": socialType[socialType.find('[工伤缴费(')+6:socialType.find(')缴费][生育缴费(')],
+                "工伤": socialType[socialType.find('[生育缴费(')+6:socialType.find(')缴费][医保缴费(')],
+                "生育": socialType[socialType.find('[医保缴费(')+6:socialType.find(')缴费]end')]
+            }
 
             data["baseInfo"] = {
-                "姓名": name,
-                "社保编号": personNum,
-                "身份证号": sfzNum,
+                "姓名": td1[4].text,
+                "身份证号": td1[6].text,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
-                '城市名称': '苏州市',
-                '城市编号': '320500',
+                '城市名称': '北京市',
+                '城市编号': '110100',
                 '缴费时长': '',
                 '最近缴费时间': '',
                 '开始缴费时间': '',
                 '个人养老累计缴费': '',
-                '个人医疗累计缴费': ''
+                '个人医疗累计缴费': '',
+                '五险状态': old_age_state,
+                '性别': td1[8].text,
+                '出生日期': td1[10].text,
+                '民族': td1[12].text,
+                '国家/地区': td1[14].text,
+                '个人身份': td1[16].text,
+                '参加工作日期': td1[18].text,
+                '户口所在区县街乡': td1[20].text,
+                '户口性质': td1[22].text,
+                '户口所在地地址': td1[24].text,
+                '户口所在地邮政编码': td1[26].text,
+                '居住地（联系）地址': td1[28].text,
+                '居住地（联系）邮政编码': td1[30].text,
+                '选择邮寄社会保险对账单地址': td1[32].text,
+                '对账单邮政编码': td1[34].text,
+                '获取对账单方式': td1[36].text,
+                '电子邮件地址': td1[38].text,
+                '文化程度': td1[40].text,
+                '参保人电话': td1[42].text,
+                '参保人手机': td1[44].text,
+                '申报月均工资收入（元）': td1[46].text,
+                '证件类型': td1[48].text,
+                '证件号码': td1[50].text,
+                '委托代发银行名称': td1[52].text,
+                '委托代发银行账号': td1[54].text,
+                '缴费人员类别': td1[56].text,
+                '医疗参保人员类别': td1[58].text,
+                '离退休类别': td1[60].text,
+                '离退休日期': td1[62].text,
+                '定点医疗机构1': td1[64].text,
+                '定点医疗机构2': td1[66].text,
+                '定点医疗机构3': td1[68].text,
+                '定点医疗机构4': td1[70].text,
+                '定点医疗机构5': td1[72].text,
+                '是否患有特殊病': td1[74].text,
+                '护照号码': td1[77].text,
+                '外国人居留证号码': td1[79].text,
+                '外国人证件类型': td1[81].text,
+                '外国人证件号码': td1[83].text
             }
 
             # 养老（正常数据与其他补缴信息）
             data["old_age"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
 
             # 医疗（正常数据与其他补缴信息）
             data["medical_care"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 工伤（正常数据与其他补缴信息）
             data["injuries"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 生育（正常数据与其他补缴信息）
             data["maternity"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 失业（正常数据与其他补缴信息）
             data["unemployment"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
 
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
-    def _unit_fetch_user_DETAILED(self, bizType):
+    # 获取用户明细
+    def _unit_fetch_user_DETAILED(self, page_type,  year):
         try:
-            resp = self.s.post(DETAILED_LIST_URL, data={
-                'xz': bizType,
-                'pageIndex': 1,
-                'pageCount': 99999999
-            })
-            soup = BeautifulSoup(json.loads(str(resp.content, 'utf-8'))["pagelistajax"], "html.parser")
+            resp = self.s.post(DETAILED_LIST_URL + page_type + '?searchYear=' + str(year) + '&time=' + str(int(round(time.time()*1000))))
+            soup = BeautifulSoup(str(resp.content, 'utf-8').replace('\r', '').replace('\t', '').replace('\n', '').replace('&nbsp;', '').replace('</tr>  </tr>', '</tr>'), "html.parser")
             return soup
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 养老
-    def _unit_fetch_user_old_age(self):
+    def _unit_fetch_user_old_age(self, start_job):
         data = self.result['data']
         # 统计养老实际缴费月数
         self.old_age_month = 0
@@ -165,519 +217,322 @@ class Task(AbsTaskUnitSessionTask):
         self.my_self_old_age = 0
         # 最近参保时间
         self.old_age_lately_data = '199201'
-        # 开始参保时间
-        self.old_age_lately_start_data = '199201'
 
         try:
-            # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED('qyylmx')
-            # 拿table中的tr进行循环
-            trs = soup.findAll('tr')
+            nowTime = int(time.strftime('%Y', time.localtime(time.time())))
 
-            # 从数据集获取年份集合
-            years = []
-            # 补缴费用明细数据集合
-            doubt = []
-            # 正常缴费明细数据集合
-            normal = []
+            for year in range(nowTime, int(start_job) - 1, -1):
+                data["old_age"]["data"][str(year)] = {}
+                # 根据类型获取解析后的页面
+                soup = self._unit_fetch_user_DETAILED('oldage', year)
 
-            num = 0
-            # 循环行
-            for tr in trs:
-                num = num + 1
-                if trs[0] == tr:
-                    continue
-                # 查找该行所有td
-                tds = tr.findAll('td')
-                try:
-                    # 需要爬取的数据id从1开始
-                    if int(tds[0].text.strip()) > 0:
-                        # 获取当前年份
-                        year = tds[0].text[0:4]
-                        # 获取当前月份
-                        month = tds[0].text[0:4] + "-" + tds[0].text[4:6]
-                        # 正常年份累计到年份数据源中
-                        if year not in years:
-                            years.append(year)
+                table = soup.findAll("table")[0]
+                # 数据行
+                trs = table.findAll("tr")
+                # 缴费时间
+                date = time.strftime('%Y-%m', time.localtime(time.time()))
+                for tr in trs:
+                    if tr != trs[0] and tr != trs[1]:
+                        td = tr.findAll("td")
 
-                        # 获取表单的第一个时间为最新缴费时间
-                        if num == 2:
-                            self.old_age_lately_data = tds[0].text
-                        # 获取最早参保时间
-                        if trs.__len__() == num:
-                            self.old_age_lately_start_data = tds[0].text
-                        # 个人缴费累金额
-                        self.my_self_old_age = self.my_self_old_age + float(tds[3].text.strip())
-
-                        # 定义数据结构
-                        obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": month,
-                                "缴费类型": tds[6].text.strip(),
-                                "缴费基数": tds[4].text.strip(),
-                                "公司缴费": tds[2].text.strip(),
-                                "个人缴费": tds[3].text.strip(),
-                                "缴费单位": tds[1].text.strip(),
-                            }
-                        }
-                        # 累计正常缴费的缴费月数
-                        self.old_age_month = self.old_age_month + 1
-                        # 苏州目前账号来看每个月只会生成一条数据，
-                        normal.append(obj)
-                        # # 正常应缴有与补缴进行分区存储
-                        # if tds[6].text.strip() == '正常应缴':
-                        #     normal.append(obj)
-                        # else:
-                        #     doubt.append(obj)
-                except Exception as e:
-                    raise PreconditionNotSatisfiedError(e)
-
-            for year in years:
-                # 正常费用明细数据集合(临时)
-                tempNormal = []
-                for items in normal:
-                    if items["year"] == year:
-                        tempNormal.append(items["data"])
-                    else:
-                        continue
-                if tempNormal.__len__() > 0:
-                    tempNormal.reverse()
-                    data["old_age"]["bizNormalData"][str(year)] = {}
-                    for month in tempNormal:
-                        data["old_age"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
-
-            if doubt.__len__() > 0:
-                for year in years:
-                    # 补缴费用明细数据集合(临时)
-                    tempDoubt = []
-                    for items in doubt:
-                        if items["year"] == year:
-                            tempDoubt.append(items["data"])
-                        else:
+                        if td[1].text == "-":
                             continue
-                    if tempDoubt.__len__() > 0:
-                        tempDoubt.reverse()
-                        data["old_age"]["bizDoubtData"][str(year)] = {}
-                        for month in tempDoubt:
-                            data["old_age"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                        # 最近参保时间
+                        if td[0].text[0:4] == str(nowTime):
+                            self.old_age_lately_data = td[0].text.replace("-", "")
+
+                        obj = {}
+                        if tr.findAll("td").__len__() == 6:
+                            date = td[0].text
+                            obj = {
+                                 "缴费时间": date,
+                                 "缴费类型": re.sub('\s', '', td[1].text),
+                                 "缴费基数": re.sub('\s', '', td[2].text),
+                                 "公司缴费": re.sub('\s', '', td[3].text),
+                                 "个人缴费": re.sub('\s', '', td[4].text),
+                                 "缴费单位": re.sub('\s', '', td[5].text),
+                            }
+                            self.old_age_month = self.old_age_month + 1
+                            try:
+                                self.my_self_old_age = self.my_self_old_age + float(td[4].text)
+                            except:
+                                pass
+
+                        if tr.findAll("td").__len__() == 5:
+                            obj = {
+                                "缴费时间": date,
+                                "缴费类型": re.sub('\s', '', td[0].text),
+                                "缴费基数": re.sub('\s', '', td[1].text),
+                                "公司缴费": re.sub('\s', '', td[2].text),
+                                "个人缴费": re.sub('\s', '', td[3].text),
+                                "缴费单位": re.sub('\s', '', td[4].text),
+                            }
+                            try:
+                                self.my_self_old_age = self.my_self_old_age + float(td[3].text)
+                            except:
+                                pass
+
+                        try:
+                            data["old_age"]["data"][str(year)][str(date[5:])].append(obj)
+                        except:
+                            data["old_age"]["data"][str(year)][str(date[5:])] = [obj]
+                pass
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗
-    def _unit_fetch_user_medical_care(self):
+    def _unit_fetch_user_medical_care(self, start_job):
         data = self.result['data']
-        # 统计医疗实际缴费月数
+        # 统计养老实际缴费月数
         self.medical_care_month = 0
-        # 统计个人缴费医疗金额
+        # 统计个人缴费养老金额
         self.my_self_medical_care = 0
         # 最近参保时间
         self.medical_care_lately_data = '199201'
-        # 最早参保时间
-        self.medical_care_lately_start_data = '199201'
 
         try:
-            # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED('ylbx')
-            # 拿table中的tr进行循环
-            trs = soup.findAll('tr')
+            nowTime = int(time.strftime('%Y', time.localtime(time.time())))
+            for year in range(nowTime, int(start_job) - 1, -1):
+                data["medical_care"]["data"][str(year)] = {}
+                # 根据类型获取解析后的页面
+                soup = self._unit_fetch_user_DETAILED('medicalcare', year)
 
-            # 从数据集获取年份集合
-            years = []
-            # 补缴费用明细数据集合
-            doubt = []
-            # 正常缴费明细数据集合
-            normal = []
+                table = soup.findAll("table")[0]
+                # 数据行
+                trs = table.findAll("tr")
+                # 缴费时间
+                date = time.strftime('%Y-%m', time.localtime(time.time()))
 
-            num = 0
-            # 循环行
-            for tr in trs:
-                num = num + 1
-                if trs[0] == tr:
-                    continue
-                # 查找该行所有td
-                tds = tr.findAll('td')
-                try:
-                    # 需要爬取的数据id从1开始
-                    if int(tds[0].text.strip()) > 0:
-                        # 获取当前年份
-                        year = tds[0].text[0:4]
-                        # 获取当前月份
-                        month = tds[0].text[0:4] + "-" + tds[0].text[4:6]
-                        # 正常年份累计到年份数据源中
-                        if year not in years:
-                            years.append(year)
+                for tr in trs:
+                    if tr != trs[0] and tr != trs[1]:
+                        td = tr.findAll("td")
 
-                        # 获取表单的第一个时间为最新缴费时间
-                        if num == 2:
-                            self.medical_care_lately_data = tds[0].text
-                        # 获取最早参保时间
-                        if trs.__len__() == num:
-                            self.medical_care_lately_start_data = tds[0].text
-                        # 个人缴费累金额
-                        self.my_self_medical_care = self.my_self_medical_care + float(tds[3].text.strip())
-
-                        # 定义数据结构
-                        obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": month,
-                                "缴费类型": tds[7].text.strip(),
-                                "缴费基数": tds[2].text.strip(),
-                                "公司缴费": tds[4].text.strip(),
-                                "个人缴费": tds[3].text.strip(),
-                                "缴费单位": tds[1].text.strip(),
-                            }
-                        }
-                        # 累计正常缴费的缴费月数
-                        self.medical_care_month = self.medical_care_month + 1
-
-                        # 苏州目前账号来看，每个月只能生成一条数据
-                        normal.append(obj)
-                        # # 正常应缴有与补缴进行分区存储
-                        # if tds[7].text.strip() == '已到账':
-                        #     normal.append(obj)
-                        # else:
-                        #     doubt.append(obj)
-                except Exception as e:
-                    raise PreconditionNotSatisfiedError(e)
-
-            for year in years:
-                # 正常费用明细数据集合(临时)
-                tempNormal = []
-                for items in normal:
-                    if items["year"] == year:
-                        tempNormal.append(items["data"])
-                    else:
-                        continue
-                if tempNormal.__len__() > 0:
-                    tempNormal.reverse()
-                    data["medical_care"]["bizNormalData"][str(year)] = {}
-                    for month in tempNormal:
-                        data["medical_care"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
-
-            if doubt.__len__() > 0:
-                for year in years:
-                    # 补缴费用明细数据集合(临时)
-                    tempDoubt = []
-                    for items in doubt:
-                        if items["year"] == year:
-                            tempDoubt.append(items["data"])
-                        else:
+                        if td[1].text == "-":
                             continue
-                    if tempDoubt.__len__() > 0:
-                        tempDoubt.reverse()
-                        data["medical_care"]["bizDoubtData"][str(year)] = {}
-                        for month in tempNormal:
-                            data["medical_care"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+
+                        # 最近参保时间
+                        if td[0].text[0:4] == str(nowTime):
+                            self.medical_care_lately_data = td[0].text.replace("-", "")
+
+                        obj = {}
+                        if tr.findAll("td").__len__() == 6:
+                            date = td[0].text
+                            obj = {
+                                 "缴费时间": date,
+                                 "缴费类型": re.sub('\s', '', td[1].text),
+                                 "缴费基数": re.sub('\s', '', td[2].text),
+                                 "公司缴费": re.sub('\s', '', td[3].text),
+                                 "个人缴费": re.sub('\s', '', td[4].text),
+                                 "缴费单位": re.sub('\s', '', td[5].text),
+                            }
+                            self.medical_care_month = self.medical_care_month + 1
+                            try:
+                                self.my_self_medical_care = self.my_self_medical_care + float(td[4].text)
+                            except:
+                                pass
+
+                        if tr.findAll("td").__len__() == 5:
+                            obj = {
+                                "缴费时间": date,
+                                "缴费类型": re.sub('\s', '', td[0].text),
+                                "缴费基数": re.sub('\s', '', td[1].text),
+                                "公司缴费": re.sub('\s', '', td[2].text),
+                                "个人缴费": re.sub('\s', '', td[3].text),
+                                "缴费单位": re.sub('\s', '', td[4].text),
+                            }
+                            try:
+                                self.my_self_medical_care = self.my_self_medical_care + float(td[3].text)
+                            except:
+                                pass
+
+                        try:
+                            data["medical_care"]["data"][str(year)][str(date[5:])].append(obj)
+                        except:
+                            data["medical_care"]["data"][str(year)][str(date[5:])] = [obj]
+                pass
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 工伤
-    def _unit_fetch_user_injuries(self):
+    def _unit_fetch_user_injuries(self, start_job):
         data = self.result['data']
-        # 统计医疗实际缴费月数
+        # 统计养老实际缴费月数
         self.injuries_month = 0
         # 最近参保时间
         self.injuries_lately_data = '199201'
-        # 最早参保时间
-        self.injuries_lately_start_data = '199201'
 
         try:
-            # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED('gsbx')
-            # 拿table中的tr进行循环
-            trs = soup.findAll('tr')
+            nowTime = int(time.strftime('%Y', time.localtime(time.time())))
+            for year in range(nowTime, int(start_job) - 1, -1):
+                data["injuries"]["data"][str(year)] = {}
+                # 根据类型获取解析后的页面
+                soup = self._unit_fetch_user_DETAILED('injuries', year)
 
-            # 从数据集获取年份集合
-            years = []
-            # 补缴费用明细数据集合
-            doubt = []
-            # 正常缴费明细数据集合
-            normal = []
-            # 补缴费用明细数据集合(返回值)
+                table = soup.findAll("table")[0]
+                # 数据行
+                trs = table.findAll("tr")
+                # 缴费时间
+                date = time.strftime('%Y-%m', time.localtime(time.time()))
 
-            num = 0
-            # 循环行
-            for tr in trs:
-                num = num + 1
-                if trs[0] == tr:
-                    continue
-                # 查找该行所有td
-                tds = tr.findAll('td')
-                try:
-                    # 需要爬取的数据id从1开始
-                    if int(tds[0].text.strip()) > 0:
-                        # 获取当前年份
-                        year = tds[0].text[0:4]
-                        # 获取当前月份
-                        month = tds[0].text[0:4] + "-" + tds[0].text[4:6]
-                        # 正常年份累计到年份数据源中
-                        if year not in years:
-                            years.append(year)
+                for tr in trs:
+                    if tr != trs[0] and tr != trs[1]:
 
-                        # 获取表单的第一个时间为最新缴费时间
-                        if num == 2:
-                            self.injuries_lately_data = tds[0].text
-                        # 获取最早参保时间
-                        if trs.__len__() == num:
-                            self.injuries_lately_start_data = tds[0].text
-                        # 定义数据结构
-                        obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": month,
-                                "缴费类型": tds[4].text.strip(),
-                                "缴费基数": tds[2].text.strip(),
-                                "公司缴费": '-',
-                                "个人缴费": '-',
-                                "缴费单位": tds[1].text.strip(),
-                            }
-                        }
-                        # 累计正常缴费的缴费月数
-                        self.injuries_month = self.injuries_month + 1
-                        # 目前苏州账号每个月只能有一条数据
-                        normal.append(obj)
-                        # 正常应缴有与补缴进行分区存储
-                        # if tds[4].text.strip() == '已到账':
-                        #     normal.append(obj)
-                        # else:
-                        #     doubt.append(obj)
-                except Exception as e:
-                    raise PreconditionNotSatisfiedError(e)
-
-            for year in years:
-                # 正常费用明细数据集合(临时)
-                tempNormal = []
-                for items in normal:
-                    if items["year"] == year:
-                        tempNormal.append(items["data"])
-                    else:
-                        continue
-                if tempNormal.__len__() > 0:
-                    tempNormal.reverse()
-                    data["injuries"]["bizNormalData"][str(year)] = {}
-                    for month in tempNormal:
-                        data["injuries"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
-
-            if doubt.__len__() > 0:
-                for year in years:
-                    # 补缴费用明细数据集合(临时)
-                    tempDoubt = []
-                    for items in doubt:
-                        if items["year"] == year:
-                            tempDoubt.append(items["data"])
-                        else:
+                        td = tr.findAll("td")
+                        if td[1].text == "-":
                             continue
-                    if tempDoubt.__len__() > 0:
-                        tempDoubt.reverse()
-                        data["injuries"]["bizDoubtData"][str(year)] = {}
-                        for month in tempNormal:
-                            data["injuries"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+                        # 最近参保时间
+                        if td[0].text[0:4] == str(nowTime):
+                            self.injuries_lately_data = td[0].text.replace("-", "")
+
+                        obj = {}
+                        if tr.findAll("td").__len__() == 3:
+                            date = td[0].text
+                            obj = {
+                                 "缴费时间": date,
+                                 "缴费类型": '-',
+                                 "缴费基数": re.sub('\s', '', td[1].text),
+                                 "公司缴费": re.sub('\s', '', td[2].text),
+                                 "个人缴费": '-',
+                                 "缴费单位": '-',
+                            }
+                            self.injuries_month = self.injuries_month + 1
+                        if tr.findAll("td").__len__() == 2:
+                            obj = {
+                                "缴费时间": date,
+                                "缴费类型": '-',
+                                "缴费基数": re.sub('\s', '', td[0].text),
+                                "公司缴费": re.sub('\s', '', td[1].text),
+                                "个人缴费": '-',
+                                "缴费单位": '-',
+                            }
+                        try:
+                            data["injuries"]["data"][str(year)][str(date[5:])].append(obj)
+                        except:
+                            data["injuries"]["data"][str(year)][str(date[5:])] = [obj]
+                pass
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 生育
-    def _unit_fetch_user_maternity(self):
+    def _unit_fetch_user_maternity(self, start_job):
         data = self.result['data']
-        # 统计生育实际缴费月数
+        # 统计养老实际缴费月数
         self.maternity_month = 0
         # 最近参保时间
         self.maternity_lately_data = '199201'
-        # 最早参保时间
-        self.maternity_lately_start_data = '199201'
 
         try:
-            # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED('sybx')
-            # 拿table中的tr进行循环
-            trs = soup.findAll('tr')
+            nowTime = int(time.strftime('%Y', time.localtime(time.time())))
+            for year in range(nowTime, int(start_job) - 1, -1):
+                data["maternity"]["data"][str(year)] = {}
+                # 根据类型获取解析后的页面
+                soup = self._unit_fetch_user_DETAILED('maternity', year)
 
-            # 从数据集获取年份集合
-            years = []
-            # 补缴费用明细数据集合
-            doubt = []
-            # 正常缴费明细数据集合
-            normal = []
+                table = soup.findAll("table")[0]
+                # 数据行
+                trs = table.findAll("tr")
+                # 缴费时间
+                date = time.strftime('%Y-%m', time.localtime(time.time()))
 
-            num = 0
-            # 循环行
-            for tr in trs:
-                num = num + 1
-                if trs[0] == tr:
-                    continue
-                # 查找该行所有td
-                tds = tr.findAll('td')
-                try:
-                    # 需要爬取的数据id从1开始
-                    if int(tds[0].text.strip()) > 0:
-                        # 获取当前年份
-                        year = tds[0].text[0:4]
-                        # 获取当前月份
-                        month = tds[0].text[0:4] + "-" + tds[0].text[4:6]
-                        # 正常年份累计到年份数据源中
-                        if year not in years:
-                            years.append(year)
+                for tr in trs:
+                    if tr != trs[0] and tr != trs[1]:
+                        td = tr.findAll("td")
 
-                        # 获取表单的第一个时间为最新缴费时间
-                        if num == 2:
-                            self.maternity_lately_data = tds[0].text
-                        # 获取最早参保时间
-                        if trs.__len__() == num:
-                            self.maternity_lately_start_data = tds[0].text
-                        # 定义数据结构
-                        obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": month,
-                                "缴费类型": tds[4].text.strip(),
-                                "缴费基数": tds[2].text.strip(),
-                                "公司缴费": '-',
-                                "个人缴费": '-',
-                                "缴费单位": tds[1].text.strip(),
-                            }
-                        }
-                        # 累计正常缴费的缴费月数
-                        self.maternity_month = self.maternity_month + 1
-                        # 目前苏州每个月只有一条数据
-                        normal.append(obj)
-                        # 正常应缴有与补缴进行分区存储
-                        # if tds[4].text.strip() == '已到账':
-                        #     normal.append(obj)
-                        # else:
-                        #     doubt.append(obj)
-                except Exception as e:
-                    raise PreconditionNotSatisfiedError(e)
-
-            for year in years:
-                # 正常费用明细数据集合(临时)
-                tempNormal = []
-                for items in normal:
-                    if items["year"] == year:
-                        tempNormal.append(items["data"])
-                    else:
-                        continue
-                if tempNormal.__len__() > 0:
-                    tempNormal.reverse()
-                    data["maternity"]["bizNormalData"][str(year)] = {}
-                    for month in tempNormal:
-                        data["maternity"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
-
-            if doubt.__len__() > 0:
-                for year in years:
-                    # 补缴费用明细数据集合(临时)
-                    tempDoubt = []
-                    for items in doubt:
-                        if items["year"] == year:
-                            tempDoubt.append(items["data"])
-                        else:
+                        if td[1].text == "-":
                             continue
-                    if tempDoubt.__len__() > 0:
-                        tempDoubt.reverse()
-                        data["maternity"]["bizDoubtData"][str(year)] = {}
-                        for month in tempNormal:
-                            data["maternity"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+
+                        # 最近参保时间
+                        if td[0].text[0:4] == str(nowTime):
+                            self.maternity_lately_data = td[0].text.replace("-", "")
+                        obj = {}
+                        if tr.findAll("td").__len__() == 3:
+                            date = td[0].text
+                            obj = {
+                                 "缴费时间": date,
+                                 "缴费类型": '-',
+                                 "缴费基数": re.sub('\s', '', td[1].text),
+                                 "公司缴费": re.sub('\s', '', td[2].text),
+                                 "个人缴费": '-',
+                                 "缴费单位": '-',
+                            }
+                            self.maternity_month = self.maternity_month + 1
+                        if tr.findAll("td").__len__() == 2:
+                            obj = {
+                                "缴费时间": date,
+                                "缴费类型": '-',
+                                "缴费基数": re.sub('\s', '', td[0].text),
+                                "公司缴费": re.sub('\s', '', td[1].text),
+                                "个人缴费": '-',
+                                "缴费单位": '-',
+                            }
+
+                        try:
+                            data["maternity"]["data"][str(year)][str(date[5:])].append(obj)
+                        except:
+                            data["maternity"]["data"][str(year)][str(date[5:])] = [obj]
+                pass
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 失业
-    def _unit_fetch_user_unemployment(self):
+    def _unit_fetch_user_unemployment(self, start_job):
         data = self.result['data']
-        # 统计失业实际缴费月数
+        # 统计养老实际缴费月数
         self.unemployment_month = 0
         # 最近参保时间
         self.unemployment_lately_data = '199201'
-        # 最早参保时间
-        self.unemployment_lately_start_data = '199201'
 
         try:
-            # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED('shiyebx')
-            # 拿table中的tr进行循环
-            trs = soup.findAll('tr')
+            nowTime = int(time.strftime('%Y', time.localtime(time.time())))
+            for year in range(nowTime, int(start_job) - 1, -1):
+                data["unemployment"]["data"][str(year)] = {}
+                # 根据类型获取解析后的页面
+                soup = self._unit_fetch_user_DETAILED('unemployment', year)
 
-            # 从数据集获取年份集合
-            years = []
-            # 补缴费用明细数据集合
-            doubt = []
-            # 正常缴费明细数据集合
-            normal = []
+                table = soup.findAll("table")[0]
+                # 数据行
+                trs = table.findAll("tr")
+                # 缴费时间
+                date = time.strftime('%Y-%m', time.localtime(time.time()))
 
-            num = 0
-            # 循环行
-            for tr in trs:
-                num = num + 1
-                if trs[0] == tr:
-                    continue
-                # 查找该行所有td
-                tds = tr.findAll('td')
-                try:
-                    # 需要爬取的数据id从1开始
-                    if int(tds[0].text.strip()) > 0:
-                        # 获取当前年份
-                        year = tds[0].text[0:4]
-                        # 获取当前月份
-                        month = tds[0].text[0:4] + "-" + tds[0].text[4:6]
-                        # 正常年份累计到年份数据源中
-                        if year not in years:
-                            years.append(year)
+                for tr in trs:
+                    if tr != trs[0] and tr != trs[1]:
+                        td = tr.findAll("td")
 
-                        # 获取表单的第一个时间为最新缴费时间
-                        if num == 2:
-                            self.unemployment_lately_data = tds[0].text
-                        # 获取最早参保时间
-                        if trs.__len__() == num:
-                            self.unemployment_lately_start_data = tds[0].text
-                        # 定义数据结构
-                        obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": month,
-                                "缴费类型": tds[4].text.strip(),
-                                "缴费基数": tds[2].text.strip(),
-                                "公司缴费": '-',
-                                "个人缴费": '-',
-                                "缴费单位": tds[1].text.strip(),
-                            }
-                        }
-                        # 累计正常缴费的缴费月数
-                        self.unemployment_month = self.unemployment_month + 1
-                        # 正常应缴有与补缴进行分区存储
-                        if tds[4].text.strip() == '已到账':
-                            normal.append(obj)
-                        else:
-                            doubt.append(obj)
-                except Exception as e:
-                    raise PreconditionNotSatisfiedError(e)
-
-            for year in years:
-                # 正常费用明细数据集合(临时)
-                tempNormal = []
-                for items in normal:
-                    if items["year"] == year:
-                        tempNormal.append(items["data"])
-                    else:
-                        continue
-                if tempNormal.__len__() > 0:
-                    tempNormal.reverse()
-                    data["unemployment"]["bizNormalData"][str(year)] = {}
-                    for month in tempNormal:
-                        data["unemployment"]["bizNormalData"][str(year)][str(month["缴费时间"][5:])] = month
-
-            if doubt.__len__() > 0:
-                for year in years:
-                    # 补缴费用明细数据集合(临时)
-                    tempDoubt = []
-                    for items in doubt:
-                        if items["year"] == year:
-                            tempDoubt.append(items["data"])
-                        else:
+                        if td[1].text == "-":
                             continue
-                    if tempDoubt.__len__() > 0:
-                        tempDoubt.reverse()
-                        data["unemployment"]["bizDoubtData"][str(year)] = {}
-                        for month in tempNormal:
-                            data["unemployment"]["bizDoubtData"][str(year)][str(month["缴费时间"][5:])] = month
+
+                        # 最近参保时间
+                        if td[0].text[0:4] == str(nowTime):
+                            self.unemployment_lately_data = td[0].text.replace("-", "")
+                        obj = {}
+                        if tr.findAll("td").__len__() == 4:
+                            date = td[0].text
+                            obj = {
+                                 "缴费时间": date,
+                                 "缴费类型": '-',
+                                 "缴费基数": re.sub('\s', '', td[1].text),
+                                 "公司缴费": re.sub('\s', '', td[2].text),
+                                 "个人缴费": re.sub('\s', '', td[3].text),
+                                 "缴费单位": '-',
+                            }
+                            self.unemployment_month = self.unemployment_month + 1
+
+                        if tr.findAll("td").__len__() == 3:
+                            obj = {
+                                "缴费时间": date,
+                                "缴费类型": '-',
+                                "缴费基数": re.sub('\s', '', td[0].text),
+                                "公司缴费": re.sub('\s', '', td[1].text),
+                                "个人缴费": re.sub('\s', '', td[2].text),
+                                "缴费单位": '-',
+                            }
+
+                        try:
+                            data["unemployment"]["data"][str(year)][str(date[5:])].append(obj)
+                        except:
+                            data["unemployment"]["data"][str(year)][str(date[5:])] = [obj]
+                pass
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
@@ -686,15 +541,15 @@ class Task(AbsTaskUnitSessionTask):
         try:
             data = self.result['data']
             # 养老明细
-            self._unit_fetch_user_old_age()
+            self._unit_fetch_user_old_age(data["baseInfo"]["参加工作日期"][0:4])
             # 医疗明细
-            self._unit_fetch_user_medical_care()
+            self._unit_fetch_user_medical_care(data["baseInfo"]["参加工作日期"][0:4])
             # 工伤明细
-            self._unit_fetch_user_injuries()
+            self._unit_fetch_user_injuries(data["baseInfo"]["参加工作日期"][0:4])
             # 生育明细
-            self._unit_fetch_user_maternity()
+            self._unit_fetch_user_maternity(data["baseInfo"]["参加工作日期"][0:4])
             # 失业明细
-            self._unit_fetch_user_unemployment()
+            self._unit_fetch_user_unemployment(data["baseInfo"]["参加工作日期"][0:4])
 
             # 五险所有缴费时间
             social_payment_duration = [self.old_age_month,
@@ -710,26 +565,19 @@ class Task(AbsTaskUnitSessionTask):
                            self.maternity_lately_data.strip(),
                            self.unemployment_lately_data.strip()]
 
-            # 五险开始缴费时间
-            latest_start_time = [self.old_age_lately_start_data.strip(),
-                                 self.medical_care_lately_start_data.strip(),
-                                 self.injuries_lately_start_data.strip(),
-                                 self.maternity_lately_start_data.strip(),
-                                 self.unemployment_lately_start_data.strip()]
-
             data["baseInfo"]["缴费时长"] = str(max(social_payment_duration))
             data["baseInfo"]["最近缴费时间"] = str(max(latest_time))
-            data["baseInfo"]["开始缴费时间"] = str(min(latest_start_time))
+            data["baseInfo"]["开始缴费时间"] = data["baseInfo"]["参加工作日期"][0:6]
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
+    # 验证码
     def _new_vc(self):
-        vc_url = VC_URL + str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
-        return dict(cls="data:image", content=resp.content, content_type=resp.headers['Content-Type'])
+        resp = self.s.get(VC_URL)
+        return dict(cls="data:image", content=resp.content)
 
 
 if __name__ == '__main__':

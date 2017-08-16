@@ -172,31 +172,25 @@ class Task(AbsTaskUnitSessionTask):
 
             # 养老（正常数据与其他补缴信息）
             data["old_age"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
 
             # 医疗（正常数据与其他补缴信息）
             data["medical_care"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 工伤（正常数据与其他补缴信息）
             data["injuries"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 生育（正常数据与其他补缴信息）
             data["maternity"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
             # 失业（正常数据与其他补缴信息）
             data["unemployment"] = {
-                "bizNormalData": {},
-                "bizDoubtData": {}
+                "data": {}
             }
-
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -233,7 +227,7 @@ class Task(AbsTaskUnitSessionTask):
                 # 返回结果
                 result = json.loads(str(soup))
                 if result["code"] == '1':
-                    data["old_age"]["bizNormalData"][str(year)] = {}
+                    data["old_age"]["data"][str(year)] = {}
                     # 循环行
                     for item in result["result"]:
                         # 个人缴费金额
@@ -261,7 +255,10 @@ class Task(AbsTaskUnitSessionTask):
                             self.old_age_month = self.old_age_month + 1
                             # 苏州目前账号来看每个月只会生成一条数据，
                             # normal.append(obj)
-                            data["old_age"]["bizNormalData"][str(year)][str(item["xssj"][5:])] = obj
+                            try:
+                                data["old_age"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
+                            except:
+                                data["old_age"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
                         # else:
                         #     doubt.append(obj)
                         #     data["old_age"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
@@ -288,8 +285,7 @@ class Task(AbsTaskUnitSessionTask):
                 # 返回结果
                 result = json.loads(str(soup))
                 if result["code"] == '1':
-                    data["medical_care"]["bizNormalData"][str(year)] = {}
-                    data["medical_care"]["bizDoubtData"][str(year)] = {}
+                    data["medical_care"]["data"][str(year)] = {}
 
                     isStart = True
                     # 循环行
@@ -319,9 +315,15 @@ class Task(AbsTaskUnitSessionTask):
                             self.medical_care_month = self.medical_care_month + 1
                             # 苏州目前账号来看每个月只会生成一条数据，
                             # normal.append(obj)
-                            data["medical_care"]["bizNormalData"][str(year)][str(item["xssj"][5:])] = obj
+                            try:
+                                data["medical_care"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
+                            except:
+                                data["medical_care"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
                         elif item["fkkm"] == "大额医疗保险" and item["jfbz"] == "已实缴":
-                            data["medical_care"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
+                            try:
+                                data["medical_care"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
+                            except:
+                                data["medical_care"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
 
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
@@ -343,8 +345,7 @@ class Task(AbsTaskUnitSessionTask):
                 # 返回结果
                 result = json.loads(str(soup))
                 if result["code"] == '1':
-                    data["injuries"]["bizNormalData"][str(year)] = {}
-                    data["injuries"]["bizDoubtData"][str(year)] = {}
+                    data["injuries"]["data"][str(year)] = {}
 
                     isStart = True
                     # 循环行
@@ -372,7 +373,10 @@ class Task(AbsTaskUnitSessionTask):
                             self.injuries_month = self.injuries_month + 1
                             # 苏州目前账号来看每个月只会生成一条数据，
                             # normal.append(obj)
-                            data["injuries"]["bizNormalData"][str(year)][str(item["xssj"][5:])] = obj
+                            try:
+                                data["injuries"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
+                            except:
+                                data["injuries"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
                             # else:
                             #     doubt.append(obj)
                             #     data["injuries"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
@@ -397,8 +401,7 @@ class Task(AbsTaskUnitSessionTask):
                 # 返回结果
                 result = json.loads(str(soup))
                 if result["code"] == '1':
-                    data["maternity"]["bizNormalData"][str(year)] = {}
-                    data["maternity"]["bizDoubtData"][str(year)] = {}
+                    data["maternity"]["data"][str(year)] = {}
                     isStart = True
                     # 循环行
                     for item in result["result"]:
@@ -425,7 +428,10 @@ class Task(AbsTaskUnitSessionTask):
                             self.maternity_month = self.maternity_month + 1
                             # 苏州目前账号来看每个月只会生成一条数据，
                             # normal.append(obj)
-                            data["maternity"]["bizNormalData"][str(year)][str(item["xssj"][5:])] = obj
+                            try:
+                                data["maternity"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
+                            except:
+                                data["maternity"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
                             # else:
                             #     doubt.append(obj)
                             #     data["maternity"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
@@ -450,8 +456,7 @@ class Task(AbsTaskUnitSessionTask):
                 # 返回结果
                 result = json.loads(str(soup))
                 if result["code"] == '1':
-                    data["unemployment"]["bizNormalData"][str(year)] = {}
-                    data["unemployment"]["bizDoubtData"][str(year)] = {}
+                    data["unemployment"]["data"][str(year)] = {}
                     isStart = True
                     # 循环行
                     for item in result["result"]:
@@ -478,7 +483,10 @@ class Task(AbsTaskUnitSessionTask):
                             self.unemployment_month = self.unemployment_month + 1
                             # 苏州目前账号来看每个月只会生成一条数据，
                             # normal.append(obj)
-                            data["unemployment"]["bizNormalData"][str(year)][str(item["xssj"][5:])] = obj
+                            try:
+                                data["unemployment"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
+                            except:
+                                data["unemployment"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
                             # else:
                             #     doubt.append(obj)
                             #     data["unemployment"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj

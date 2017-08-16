@@ -38,8 +38,8 @@ class Task(AbsTaskUnitSessionTask):
            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
        })
        result: dict = self.result
-       result.setdefault('meta',{})
-       result.setdefault('data',{})
+       result.setdefault('meta', {})
+       result.setdefault('data', {})
 
    def _setup_task_units(self):
        self._add_unit(self._unit_vo)
