@@ -90,8 +90,8 @@ class Task(AbsTaskUnitSessionTask):
             dict(key='j_username', name='身份证号', cls='input'),
             dict(key='j_password', name='密码', cls='input:password'),
             dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}),
-            dict(key='cityCode', name='城市Code', cls='input:hidden', value='北京市'),
-            dict(key='cityName', name='城市名称', cls='input:hidden', value='110100')
+            dict(key='cityName', name='城市Code', cls='input:hidden', value='北京市'),
+            dict(key='cityCode', name='城市名称', cls='input:hidden', value='110100')
         ], err_msg)
 
     # 获取用户基础信息

@@ -86,8 +86,8 @@ class Task(AbsTaskUnitSessionTask):
             dict(key='sfzh', name='身份证号', cls='input'),
             dict(key='password', name='密码', cls='input:password'),
             dict(key='validateCode', name='验证码', cls='data:image', query={'t': 'vc'}),
-            dict(key='cityCode', name='城市Code', cls='input:hidden', value= '重庆市'),
-            dict(key='cityName', name='城市名称', cls='input:hidden', value='500100')
+            dict(key='cityName', name='城市Code', cls='input:hidden', value= '重庆市'),
+            dict(key='cityCode', name='城市名称', cls='input:hidden', value='500100')
         ], err_msg)
 
     # 获取用户基本信息
