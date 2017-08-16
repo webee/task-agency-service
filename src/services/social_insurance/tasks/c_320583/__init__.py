@@ -83,9 +83,12 @@ class Task(AbsTaskUnitSessionTask):
 
         raise AskForParamsError([
             dict(key='txtIdCard', name='身份证号', cls='input'),
-            dict(key='txtSocial', name='社保编号', cls='input')
+            dict(key='txtSocial', name='社保编号', cls='input'),
+            dict(key='cityCode', name='城市Code', cls='input:hidden', value={'code': '昆山市'}),
+            dict(key='cityName', name='城市名称', cls='input:hidden', value={'code': '320583'})
         ], err_msg)
 
+    # 获取用户基本信息
     def _unit_fetch_user_info(self):
         try:
             data = self.result['data']

@@ -67,12 +67,10 @@ class Task(AbsTaskUnitSessionTask):
            dict(key='yzm', name='验证码', cls='data:image', data = vc, quit = {'t' : 'yzm'}),
        }, err_msg=err_msg)
 
-
    def _new_vc(self):
        vc_url = VC_URL + str(int(time.time() * 1000))
        resp = self.s.get(vc_url)
        return dict(content = resp.content, content_type = resp.headers['Content-Type'])
-
 
    def _check_login_params(self, params):
        assert params is not None,'缺少参数'

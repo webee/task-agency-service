@@ -85,8 +85,11 @@ class Task(AbsTaskUnitSessionTask):
             dict(key='id_num', name='身份证号', cls='input'),
             dict(key='account_num', name='社保编号', cls='input'),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
+            dict(key='cityCode', name='城市Code', cls='input:hidden', value={'code': '苏州市'}),
+            dict(key='cityName', name='城市名称', cls='input:hidden', value={'code': '320500'})
         ], err_msg)
 
+    # 获取用户基本信息
     def _unit_fetch_user_info(self):
         try:
             data = self.result['data']
@@ -136,6 +139,7 @@ class Task(AbsTaskUnitSessionTask):
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
+    # 获取用户明细
     def _unit_fetch_user_DETAILED(self, bizType):
         try:
             resp = self.s.post(DETAILED_LIST_URL, data={
