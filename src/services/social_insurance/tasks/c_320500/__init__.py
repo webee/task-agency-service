@@ -62,6 +62,9 @@ class Task(AbsTaskUnitSessionTask):
                 account_num = params['account_num']
                 vc = params['vc']
 
+                if account_num.__len__() != 10:
+                    raise Exception("请录入10位个人编号")
+
                 resp = self.s.post(LOGIN_URL, data=dict(
                     sfzh=id_num,
                     grbh=account_num,
