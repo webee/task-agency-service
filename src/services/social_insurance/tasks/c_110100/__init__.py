@@ -86,7 +86,7 @@ class Task(AbsTaskUnitSessionTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='other', name='[{"key":"城市职工","value":"1"},{"key":"城市居民","value":"2"}]', cls='tab'),
+            dict(key='other', name='[{"tabName":"城市职工","tabCode":"1","isEnable":"1"},{"tabName":"城市居民","tabCode":"2","isEnable":"0"}]', cls='tab'),
             dict(key='j_username', name='身份证号', cls='input'),
             dict(key='j_password', name='密码', cls='input:password'),
             dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}),
