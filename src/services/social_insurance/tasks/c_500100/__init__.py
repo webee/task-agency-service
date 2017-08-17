@@ -86,7 +86,7 @@ class Task(AbsTaskUnitSessionTask):
             dict(key='sfzh', name='身份证号', cls='input'),
             dict(key='password', name='密码', cls='input:password'),
             dict(key='validateCode', name='验证码', cls='data:image', query={'t': 'vc'}),
-            dict(key='cityName', name='城市Code', cls='input:hidden', value= '重庆市'),
+            dict(key='cityName', name='城市Code', cls='input:hidden', value='重庆市'),
             dict(key='cityCode', name='城市名称', cls='input:hidden', value='500100')
         ], err_msg)
 
@@ -240,15 +240,12 @@ class Task(AbsTaskUnitSessionTask):
                         self.my_self_old_age = self.my_self_old_age + float(grjfje)
                         # 定义数据结构
                         obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": item["xssj"],
-                                "缴费类型": item["jflx"],
-                                "缴费基数": item["jfjs"],
-                                "公司缴费": "-",
-                                "个人缴费": grjfje,
-                                "缴费单位": item["dwmc"],
-                            }
+                            "缴费时间": item["xssj"],
+                            "缴费类型": item["jflx"],
+                            "缴费基数": item["jfjs"],
+                            "公司缴费": "-",
+                            "个人缴费": grjfje,
+                            "缴费单位": item["dwmc"],
                         }
 
                         if item["jfbz"] == "已实缴":
@@ -300,15 +297,12 @@ class Task(AbsTaskUnitSessionTask):
                         self.my_self_medical_care = self.my_self_medical_care + float(grjfje)
                         # 定义数据结构
                         obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": item["xssj"],
-                                "缴费类型": item["jflx"],
-                                "缴费基数": item["jfjs"],
-                                "公司缴费": "-",
-                                "个人缴费": grjfje,
-                                "缴费单位": item["dwmc"],
-                            }
+                           "缴费时间": item["xssj"],
+                           "缴费类型": item["jflx"],
+                           "缴费基数": item["jfjs"],
+                           "公司缴费": "-",
+                           "个人缴费": grjfje,
+                           "缴费单位": item["dwmc"],
                         }
 
                         if item["fkkm"] == "基本医疗保险" and item["jfbz"] == "已实缴":
@@ -358,15 +352,12 @@ class Task(AbsTaskUnitSessionTask):
                         grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": item["xssj"],
-                                "缴费类型": item["jflx"],
-                                "缴费基数": item["jfjs"],
-                                "公司缴费": "-",
-                                "个人缴费": "-",
-                                "缴费单位": item["dwmc"],
-                            }
+                           "缴费时间": item["xssj"],
+                           "缴费类型": item["jflx"],
+                           "缴费基数": item["jfjs"],
+                           "公司缴费": "-",
+                           "个人缴费": "-",
+                           "缴费单位": item["dwmc"],
                         }
 
                         if item["jfbj"] == "足额缴费":
@@ -413,15 +404,12 @@ class Task(AbsTaskUnitSessionTask):
                         grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": item["xssj"],
-                                "缴费类型": item["jflx"],
-                                "缴费基数": item["jfjs"],
-                                "公司缴费": "-",
-                                "个人缴费": "-",
-                                "缴费单位": item["dwmc"],
-                            }
+                           "缴费时间": item["xssj"],
+                           "缴费类型": item["jflx"],
+                           "缴费基数": item["jfjs"],
+                           "公司缴费": "-",
+                           "个人缴费": "-",
+                           "缴费单位": item["dwmc"],
                         }
 
                         if item["jfbj"] == "已实缴":
@@ -468,15 +456,12 @@ class Task(AbsTaskUnitSessionTask):
                         grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                            "year": year,
-                            "data": {
-                                "缴费时间": item["xssj"],
-                                "缴费类型": item["jflx"],
-                                "缴费基数": item["jfjs"],
-                                "公司缴费": "-",
-                                "个人缴费": "-",
-                                "缴费单位": item["dwmc"],
-                            }
+                           "缴费时间": item["xssj"],
+                           "缴费类型": item["jflx"],
+                           "缴费基数": item["jfjs"],
+                           "公司缴费": "-",
+                           "个人缴费": "-",
+                           "缴费单位": item["dwmc"],
                         }
 
                         if item["jfbj"] == "足额缴费":
