@@ -577,12 +577,12 @@ class Task(AbsTaskUnitSessionTask):
                         continue
                 if tempNormal.__len__() > 0:
                     tempNormal.reverse()
-                    data["injuries"]["data"][str(year)] = {}
+                    data["maternity"]["data"][str(year)] = {}
                     for month in tempNormal:
                         try:
-                            data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
+                            data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                         except:
-                            data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
+                            data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
 
             if doubt.__len__() > 0:
                 for year in years:
