@@ -11,6 +11,7 @@ VC_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/validationCodeServlet.do'
 MAIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp'
 USER_INFO_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indNewInfoSearchAction"
 DETAILED_LIST_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indPaySearchAction!"
+MEDICAL_TREATMENT_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indMedicalSearchAction!queryMedicalInfo"
 
 
 class Task(AbsTaskUnitSessionTask):
@@ -34,6 +35,7 @@ class Task(AbsTaskUnitSessionTask):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
+        self._add_unit(self._unit_fetch_user_medical_treatment, self._unit_login)
 
 
     def _update_session_data(self):
@@ -571,6 +573,30 @@ class Task(AbsTaskUnitSessionTask):
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
+        except Exception as e:
+            raise PreconditionNotSatisfiedError(e)
+
+    # 医疗待遇
+    def _unit_fetch_user_medical_treatment(self):
+        data = self.result['data']
+        try:
+            resp = self.s.post(MEDICAL_TREATMENT_URL)
+            soup = BeautifulSoup(str(resp.content, 'utf-8'), "html.parser")
+            result = soup.find('div', {'class': 'tab'})
+            # 数据行
+            tds = result.findAll("td")
+            data["medical_treatment"] = {
+                "单位名称": tds[4].text[5:],
+                "姓名": tds[5].text[3:],
+                "单位": tds[6].text[3:],
+                re.sub('\s', '', tds[8].text): re.sub('\s', '', tds[9].text),
+                re.sub('\s', '', tds[10].text): re.sub('\s', '', tds[11].text),
+                re.sub('\s', '', tds[12].text): re.sub('\s', '', tds[13].text),
+                re.sub('\s', '', tds[14].text): re.sub('\s', '', tds[15].text),
+                re.sub('\s', '', tds[16].text): re.sub('\s', '', tds[17].text),
+                "门诊": str(float(re.sub('\s', '', tds[9].text))+float(re.sub('\s', '', tds[11].text))),
+                "住院": str(float(re.sub('\s', '', tds[15].text))+float(re.sub('\s', '', tds[17].text)))
+            }
         except Exception as e:
             raise PreconditionNotSatisfiedError(e)
 
