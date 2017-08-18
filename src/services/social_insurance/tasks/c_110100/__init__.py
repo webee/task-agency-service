@@ -114,11 +114,11 @@ class Task(AbsTaskUnitSessionTask):
             td1 = table2.findAll("td")
             socialType = re.sub('\s', '', td1[1].text) + "end"
             old_age_state = {
-                "养老": socialType[socialType.find('[养老缴费(')+6:socialType.find(')缴费][失业缴费(')],
-                "医疗": socialType[socialType.find('[失业缴费(')+6:socialType.find(')缴费][工伤缴费(')],
-                "失业": socialType[socialType.find('[工伤缴费(')+6:socialType.find(')缴费][生育缴费(')],
-                "工伤": socialType[socialType.find('[生育缴费(')+6:socialType.find(')缴费][医保缴费(')],
-                "生育": socialType[socialType.find('[医保缴费(')+6:socialType.find(')缴费]end')]
+                "养老": socialType[socialType.find('[养老缴费(')+6:socialType.find(')缴费][失业缴费(')] + "参保",
+                "医疗": socialType[socialType.find('[失业缴费(')+6:socialType.find(')缴费][工伤缴费(')] + "参保",
+                "失业": socialType[socialType.find('[工伤缴费(')+6:socialType.find(')缴费][生育缴费(')] + "参保",
+                "工伤": socialType[socialType.find('[生育缴费(')+6:socialType.find(')缴费][医保缴费(')] + "参保",
+                "生育": socialType[socialType.find('[医保缴费(')+6:socialType.find(')缴费]end')] + "参保"
             }
 
             data["baseInfo"] = {
