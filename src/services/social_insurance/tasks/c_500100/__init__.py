@@ -70,7 +70,7 @@ class Task(AbsTaskUnitSessionTask):
                 ))
                 data = resp.json()
                 errormsg = data.get('message')
-                if data.get('code') != '3':
+                if data.get('code') == '0':
                     raise Exception(errormsg)
 
                 self.result['key'] = sfzh
