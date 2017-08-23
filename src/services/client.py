@@ -63,7 +63,6 @@ class TaskTestClient(object):
                         d = input('%s: ' % pr['name'])
                         if d:
                             break
-
                         # refresh data
                         r = self.task.query(pr['query'])
                         if r['ret']:
