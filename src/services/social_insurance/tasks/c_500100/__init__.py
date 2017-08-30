@@ -29,6 +29,7 @@ class Task(AbsTaskUnitSessionTask):
         result: dict = self.result
         result.setdefault('meta', {})
         result.setdefault('data', {})
+        result.setdefault('identity', {})
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -172,6 +173,15 @@ class Task(AbsTaskUnitSessionTask):
                 "个人养老累计缴费": '',
                 "个人医疗累计缴费": ''
             }
+
+            # 设置identity
+            identity = self.result['identity']
+            identity.update({
+                'task_name': '重庆市',
+                'target_name': name,
+                'target_id': self.result['meta']["身份证编号"],
+                'status': "",
+            })
 
             # 养老（正常数据与其他补缴信息）
             data["old_age"] = {

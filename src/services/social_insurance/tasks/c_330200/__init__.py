@@ -40,6 +40,7 @@ class Task(AbsTaskUnitSessionTask):
        result: dict = self.result
        result.setdefault('meta', {})
        result.setdefault('data', {})
+       result.setdefault('identity', {})
 
    def _setup_task_units(self):
        self._add_unit(self._unit_vo)
