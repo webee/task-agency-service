@@ -28,6 +28,7 @@ class Task(AbsTaskUnitSessionTask):
         result: dict = self.result
         result.setdefault('meta', {})
         result.setdefault('data', {})
+        result.setdefault('identity', {})
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -136,6 +137,15 @@ class Task(AbsTaskUnitSessionTask):
             data["unemployment"] = {
                 "data": {}
             }
+
+            # 设置identity
+            identity = self.result['identity']
+            identity.update({
+                'task_name': '昆山市',
+                'target_name': tds[2].text,
+                'target_id': self.result['meta']["身份证编号"],
+                'status': "",
+            })
 
             return
         except PermissionError as e:

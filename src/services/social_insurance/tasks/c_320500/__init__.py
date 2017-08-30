@@ -28,6 +28,7 @@ class Task(AbsTaskUnitSessionTask):
         result: dict = self.result
         result.setdefault('meta', {})
         result.setdefault('data', {})
+        result.setdefault('identity', {})
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -98,9 +99,9 @@ class Task(AbsTaskUnitSessionTask):
             data = self.result['data']
             resp = self.s.post(USER_INFO_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            name = soup.select('#name')[0]['value']
-            personNum = soup.select('#personNum')[0]['value']
-            sfzNum = soup.select('#sfzNum')[0]['value']
+            name = self.result['meta']["社保编号"]
+            personNum = self.result['meta']["社保编号"]
+            sfzNum = self.result['meta']["身份证编号"]
 
             data["baseInfo"] = {
                 "姓名": name,
@@ -137,6 +138,15 @@ class Task(AbsTaskUnitSessionTask):
             data["unemployment"] = {
                  "data": {}
             }
+
+            # 设置identity
+            identity = self.result['identity']
+            identity.update({
+                'task_name': '苏州市',
+                'target_name': name,
+                'target_id': sfzNum,
+                'status': "",
+            })
 
             return
         except PermissionError as e:
