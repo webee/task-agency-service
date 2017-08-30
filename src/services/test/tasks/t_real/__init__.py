@@ -26,6 +26,7 @@ class Task(AbsTaskUnitSessionTask):
         result: dict = self.result
         result.setdefault('meta', {})
         result.setdefault('data', {})
+        result.setdefault('identity', {})
 
     def _update_session_data(self):
         super()._update_session_data()
@@ -85,11 +86,21 @@ class Task(AbsTaskUnitSessionTask):
 
     def _unit_fetch_name(self):
         try:
+            # 设置data
             data = self.result['data']
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             name = soup.select('#name')[0]['value']
             data['name'] = name
+
+            # 设置identity
+            identity: dict = self.result['identity']
+            identity.update({
+                'task_name': '测试real',
+                'target_name': data['name'],
+                'target_id': self.result['meta']['id_num'],
+                'status': '正常',
+            })
 
             return
         except PermissionError as e:
