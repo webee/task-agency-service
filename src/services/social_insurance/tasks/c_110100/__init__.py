@@ -58,7 +58,7 @@ class Task(AbsTaskUnitSessionTask):
     # 初始化/登录
     def _unit_login(self, params=None):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
