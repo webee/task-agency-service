@@ -18,6 +18,7 @@ class Task(AbsTaskUnitSessionTask):
         result: dict = self.result
         result.setdefault('meta', {})
         result.setdefault('data', {})
+        result.setdefault('identity', {})
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -68,8 +69,18 @@ class Task(AbsTaskUnitSessionTask):
 
     def _unit_fetch_x(self):
         try:
+            # 设置data
             data = self.result['data']
             data['x'] = self.ua.x()
+
+            # 设置identity
+            identity: dict = self.result['identity']
+            identity.update({
+                'task_name': '测试simple',
+                'target_name': self.result['meta']['username'],
+                'target_id': self.result['meta']['username'],
+                'status': '正常',
+            })
 
             return
         except PermissionError as e:
