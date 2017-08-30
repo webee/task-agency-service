@@ -72,10 +72,6 @@ class Task(AbsTaskUnitSessionTask):
         lastNum=resps['numRightBase64']
         equla=resps['equalsBase64']
 
-        # Image.open(io.BytesIO(base64.b64decode(firstNum))).show()
-        # Image.open(io.BytesIO(base64.b64decode(oprate))).show()
-        # Image.open(io.BytesIO(base64.b64decode(lastNum))).show()
-
         arr = [firstNum,oprate,lastNum,equla]
         toImage = Image.new('RGB',(110,50),(255,255,255))
         for i in range(4):
