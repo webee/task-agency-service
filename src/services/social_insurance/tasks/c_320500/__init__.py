@@ -6,10 +6,10 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 
-LOGIN_URL = 'http://www.szsbzx.net.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
-VC_URL = 'http://www.szsbzx.net.cn:9900/web/website/rand.action?r='
-USER_INFO_URL = "http://www.szsbzx.net.cn:9900/web/website/personQuery/personQueryAction.action"
-DETAILED_LIST_URL = "http://www.szsbzx.net.cn:9900/web/website/personQuery/personQueryAction?frameControlSubmitFunction=getPagesAjax"
+LOGIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
+VC_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/rand.action?r='
+USER_INFO_URL = "http://szsbzx.jsszhrss.gov.cn:9900/web/website/personQuery/personQueryAction.action"
+DETAILED_LIST_URL = "http://szsbzx.jsszhrss.gov.cn:9900/web/website/personQuery/personQueryAction?frameControlSubmitFunction=getPagesAjax"
 
 
 class Task(AbsTaskUnitSessionTask):

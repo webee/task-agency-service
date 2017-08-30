@@ -5,9 +5,9 @@ from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 
 
-MAIN_URL = 'http://www.szsbzx.net.cn:9900/web/website/personQuery/personQueryAction.action'
-LOGIN_URL = 'http://www.szsbzx.net.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
-VC_URL = 'http://www.szsbzx.net.cn:9900/web/website/rand.action?r='
+MAIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/personQuery/personQueryAction.action'
+LOGIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
+VC_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/rand.action?r='
 
 
 class Task(AbsTaskUnitSessionTask):
@@ -89,9 +89,10 @@ class Task(AbsTaskUnitSessionTask):
             # 设置data
             data = self.result['data']
             resp = self.s.get(MAIN_URL)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            name = soup.select('#name')[0]['value']
-            data['name'] = name
+            # FIXME:
+            # soup = BeautifulSoup(resp.content, 'html.parser')
+            # name = soup.select('#kind1 > table > tbody > tr:nth-child(2) > td:nth-child(2)')[0]['value']
+            data['name'] = '卜礼祥'
 
             # 设置identity
             identity: dict = self.result['identity']

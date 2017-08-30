@@ -90,18 +90,19 @@ class AbsSessionTask(AbsStatefulTask):
             res = self._run(params)
             self._set_done()
             # NOTE: 正常返回
-            return dict(ret=True, done=True, data=res)
+            return dict(ret=True, done=self.done, data=res)
         except AskForParamsError as e:
             # NOTE: 请求参数
             self._update_session_data()
-            res = dict(ret=True, done=False, param_requirements=e.param_requirements)
+            res = dict(ret=True, done=self.done, param_requirements=e.param_requirements)
             if e.err_msg:
                 res.update(dict(err_msg=e.err_msg))
             return res
         except Exception as e:
+            traceback.print_exc()
             # NOTE: 异常
             self._set_done()
-            return dict(ret=False, err_msg=str(e))
+            return dict(ret=False, done=self.done, err_msg=str(e))
 
     def query(self, params: dict = None):
         params = if_not_none_else(params, {})
@@ -112,6 +113,7 @@ class AbsSessionTask(AbsStatefulTask):
                 data = self._query_meta(params)
             return dict(ret=True, data=data)
         except Exception as e:
+            traceback.print_exc()
             return dict(ret=False, err_msg=str(e))
         finally:
             self._update_session_data()
