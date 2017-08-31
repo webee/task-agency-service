@@ -1,3 +1,4 @@
+import traceback
 import time
 import json
 import datetime
@@ -35,7 +36,6 @@ class Task(AbsTaskUnitSessionTask):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
-
 
     def _update_session_data(self):
         super()._update_session_data()
@@ -81,6 +81,7 @@ class Task(AbsTaskUnitSessionTask):
                 }
                 return
             except Exception as e:
+                traceback.print_exc()
                 err_msg = str(e)
 
         raise AskForParamsError([
@@ -120,6 +121,7 @@ class Task(AbsTaskUnitSessionTask):
             sf = None
             # 所在公司
             Company = None
+            old_age_state = None
             i = 0
             for table in tables:
                 tds = table.findAll('td')
@@ -216,9 +218,8 @@ class Task(AbsTaskUnitSessionTask):
                 'year': year,
                 'pageSize': 200
             })
-            soup = BeautifulSoup(str(resp.content, 'utf-8'), "html.parser")
-            return soup
-        except Exception as e:
+            return resp.content
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 养老
@@ -235,11 +236,11 @@ class Task(AbsTaskUnitSessionTask):
         try:
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job)-1, -1):
+                time.sleep(0.8)
                 # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED("015", year)
-                num = 0
+                content = self._unit_fetch_user_DETAILED("015", year)
                 # 返回结果
-                result = json.loads(str(soup))
+                result = json.loads(content)
                 if result["code"] == '1':
                     data["old_age"]["data"][str(year)] = {}
                     # 循环行
@@ -274,7 +275,7 @@ class Task(AbsTaskUnitSessionTask):
                         #     doubt.append(obj)
                         #     data["old_age"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗
@@ -290,11 +291,11 @@ class Task(AbsTaskUnitSessionTask):
         try:
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
+                time.sleep(0.8)
                 # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED("023", year)
-                num = 0
+                content = self._unit_fetch_user_DETAILED("023", year)
                 # 返回结果
-                result = json.loads(str(soup))
+                result = json.loads(content)
                 if result["code"] == '1':
                     data["medical_care"]["data"][str(year)] = {}
 
@@ -333,7 +334,7 @@ class Task(AbsTaskUnitSessionTask):
                             except:
                                 data["medical_care"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 工伤
@@ -347,11 +348,11 @@ class Task(AbsTaskUnitSessionTask):
         try:
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
+                time.sleep(0.8)
                 # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED("052", year)
-                num = 0
+                content = self._unit_fetch_user_DETAILED("052", year)
                 # 返回结果
-                result = json.loads(str(soup))
+                result = json.loads(content)
                 if result["code"] == '1':
                     data["injuries"]["data"][str(year)] = {}
 
@@ -386,7 +387,7 @@ class Task(AbsTaskUnitSessionTask):
                             #     doubt.append(obj)
                             #     data["injuries"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 生育
@@ -400,11 +401,11 @@ class Task(AbsTaskUnitSessionTask):
         try:
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
+                time.sleep(0.8)
                 # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED("062", year)
-                num = 0
+                content = self._unit_fetch_user_DETAILED("062", year)
                 # 返回结果
-                result = json.loads(str(soup))
+                result = json.loads(content)
                 if result["code"] == '1':
                     data["maternity"]["data"][str(year)] = {}
                     isStart = True
@@ -438,7 +439,7 @@ class Task(AbsTaskUnitSessionTask):
                             #     doubt.append(obj)
                             #     data["maternity"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 失业
@@ -452,11 +453,11 @@ class Task(AbsTaskUnitSessionTask):
         try:
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
+                time.sleep(0.8)
                 # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED("043", year)
-                num = 0
+                content = self._unit_fetch_user_DETAILED("043", year)
                 # 返回结果
-                result = json.loads(str(soup))
+                result = json.loads(content)
                 if result["code"] == '1':
                     data["unemployment"]["data"][str(year)] = {}
                     isStart = True
@@ -490,7 +491,7 @@ class Task(AbsTaskUnitSessionTask):
                             #     doubt.append(obj)
                             #     data["unemployment"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 缴费明细main方法
@@ -535,7 +536,7 @@ class Task(AbsTaskUnitSessionTask):
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 刷新验证码
