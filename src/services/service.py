@@ -41,6 +41,11 @@ class AskForParamsError(Exception):
         self.err_msg = err_msg
 
 
+class TaskAbortedError(Exception):
+    """任务中止异常"""
+    pass
+
+
 class PreconditionNotSatisfiedError(Exception):
     """前置条件不满足异常"""
     pass
@@ -64,13 +69,16 @@ class AbsSessionTask(AbsStatefulTask):
         super().__init__()
         self._session_data = if_not_none_else(session_data, SessionData())
         self._is_start = is_start
+        # 任务结束
+        self._end = False
+        # 任务完成
         self._done = False
 
         self._setup()
         self._prepare()
 
     def _setup(self):
-        """
+        """设置
         for extend sub class to use
         :return:
         """
@@ -78,7 +86,7 @@ class AbsSessionTask(AbsStatefulTask):
 
     @abstractmethod
     def _prepare(self):
-        """
+        """恢复状态，初始化结果
         for concrete class to use
         :return:
         """
@@ -88,21 +96,23 @@ class AbsSessionTask(AbsStatefulTask):
         params = if_not_none_else(params, {})
         try:
             res = self._run(params)
+            self._set_end()
             self._set_done()
             # NOTE: 正常返回
-            return dict(ret=True, done=self.done, data=res)
+            return dict(end=self.end, done=self.done, data=res)
         except AskForParamsError as e:
             # NOTE: 请求参数
             self._update_session_data()
-            res = dict(ret=True, done=self.done, param_requirements=e.param_requirements)
+            res = dict(end=self.end, done=self.done, param_requirements=e.param_requirements)
             if e.err_msg:
                 res.update(dict(err_msg=e.err_msg))
             return res
         except Exception as e:
-            traceback.print_exc()
             # NOTE: 异常
-            self._set_done()
-            return dict(ret=False, done=self.done, err_msg=str(e))
+            traceback.print_exc()
+            self._set_end()
+            is_aborted = isinstance(e, TaskAbortedError)
+            return dict(end=self.end, done=self.done, is_aborted=is_aborted, err_msg=str(e))
 
     def query(self, params: dict = None):
         params = if_not_none_else(params, {})
@@ -120,7 +130,7 @@ class AbsSessionTask(AbsStatefulTask):
 
     @abstractmethod
     def _update_session_data(self):
-        """
+        """保存状态
         update session_data
         :return:
         """
@@ -128,6 +138,7 @@ class AbsSessionTask(AbsStatefulTask):
 
     @abstractmethod
     def _run(self, params: dict):
+        """执行任务"""
         pass
 
     def _query_meta(self, params: dict):
@@ -142,6 +153,7 @@ class AbsSessionTask(AbsStatefulTask):
 
     @abstractmethod
     def _query(self, params: dict):
+        """任务状态查询"""
         pass
 
     @property
@@ -157,12 +169,19 @@ class AbsSessionTask(AbsStatefulTask):
         return self._session_data.result
 
     @property
-    def done(self) -> bool:
-        return self._done
-
-    @property
     def is_start(self) -> bool:
         return self._is_start
+
+    @property
+    def end(self) -> bool:
+        return self._end
+
+    def _set_end(self):
+        self._end = True
+
+    @property
+    def done(self) -> bool:
+        return self._done
 
     def _set_done(self):
         self._done = True
@@ -184,6 +203,7 @@ class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
 
     @abstractmethod
     def _setup_task_units(self):
+        """设置任务执行单元"""
         pass
 
     def _add_unit(self, unit: Callable, pre: Callable = None):
@@ -305,10 +325,14 @@ class SessionTasksManager(object):
     def _run(self, session_data: SessionData, params: dict, is_start=True):
         task = self._get_task(session_data, is_start=is_start)
         res = task.run(params)
-        if task.done:
-            result = task.session_data.result
-            for handler in self._result_handlers:
-                handler.handle(task.session_data.task_id, result)
+        if task.end:
+            # 任务结束
+            if task.done:
+                # 任务完成
+                result = task.session_data.result
+                for handler in self._result_handlers:
+                    handler.handle(task.session_data.task_id, result)
+            # 删除会话
             self._ss.remove_session(session_data.id)
         else:
             self._ss.save_session(task.session_data, task.META.get('session_expire'))

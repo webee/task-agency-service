@@ -1,9 +1,14 @@
-from services.service import AbsTaskUnitSessionTask
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskAbortedError
+from services.commons import AbsFetchTask
 
 
-class Task(AbsTaskUnitSessionTask):
+class Task(AbsFetchTask):
+    task_info = dict(
+        city_name="杭州",
+        help="首次申请密码或遗忘网上登陆密码，本人须携带有效身份证件至就近街道社区事务受理中心或就近社保分中心自助机具上申请办理"
+    )
+
     def _prepare(self):
         """恢复状态，初始化结果"""
         super()._prepare()
@@ -26,6 +31,9 @@ class Task(AbsTaskUnitSessionTask):
         # result: dict = self.result
         # TODO: update temp result
 
+    def _get_common_headers(self):
+        pass
+
     def _query(self, params: dict):
         """任务状态查询"""
         pass
@@ -35,24 +43,24 @@ class Task(AbsTaskUnitSessionTask):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch, self._unit_login)
 
+    def _check_login_params(self, params):
+        assert params is not None, '缺少参数'
+        assert '用户名' in params, '缺少用户名'
+        assert '密码' in params, '缺少密码'
+        # other check
+
     def _unit_login(self, params=None):
         err_msg = None
         if params:
-            # 使用提供的参数进行登录
-            # TODO: 如果登录成功，则return
-            # 否则raise AskForParamsError
-            pass
+            try:
+                self._check_login_params(params)
+                raise TaskAbortedError('查询服务维护中')
+            except Exception as e:
+                err_msg = str(e)
 
-        # key, name, cls
-        #   input:, :password
-        #       placeholder
-        #       value
-        #   data:, :image
-        #       query
         raise AskForParamsError([
-            dict(key='id_num', name='身份证号', cls='input'),
-            dict(key='account_num', name='个人编号', cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
+            dict(key='用户名', name='用户名', cls='input', placeholder='身份证号或者邮箱'),
+            dict(key='密码', name='密码', cls='input:password'),
         ], err_msg)
 
     def _unit_fetch(self):
