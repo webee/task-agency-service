@@ -3,6 +3,7 @@ from services.test.mock_site import TestSite
 from services.test.mock import UserAgent, LogRequestFilter
 from services.service import AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
+from services.errors import InvalidParamsError
 
 test_site = TestSite()
 
@@ -58,7 +59,7 @@ class Task(AbsTaskUnitSessionTask):
                     'password': password
                 }
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([

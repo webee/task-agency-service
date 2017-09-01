@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
-
+from services.errors import InvalidParamsError, InvalidConditionError
 
 MAIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/personQuery/personQueryAction.action'
 LOGIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
@@ -19,7 +19,7 @@ class Task(AbsTaskUnitSessionTask):
         if cookies:
             self.s.cookies = cookies
         self.s.headers.update({
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
         })
 
         # result
@@ -67,7 +67,7 @@ class Task(AbsTaskUnitSessionTask):
                 data = resp.json()
                 errormsg = data.get('errormsg')
                 if errormsg:
-                    raise Exception(errormsg)
+                    raise InvalidParamsError(errormsg)
 
                 self.result['key'] = id_num
                 self.result['meta'] = {
@@ -75,7 +75,7 @@ class Task(AbsTaskUnitSessionTask):
                     'account_num': account_num
                 }
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([

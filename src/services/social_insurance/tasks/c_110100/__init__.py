@@ -5,7 +5,8 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
-from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskAbortedError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskUnavailableError
+from services.errors import InvalidParamsError, InvalidConditionError
 
 LOGIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/login_check'
 VC_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/validationCodeServlet.do'
@@ -65,7 +66,7 @@ class Task(AbsTaskUnitSessionTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             if not soup.find('form'):
                 # 可能暂停维护了
-                raise TaskAbortedError(soup.find('td').text)
+                raise TaskUnavailableError(soup.find('td').text)
 
         if params:
             try:
@@ -84,7 +85,7 @@ class Task(AbsTaskUnitSessionTask):
                 if resp.url != 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp':
                     data = BeautifulSoup(resp.content, "html.parser")
                     errormsg = data.findAll("table")[3].findAll("font")[0].text.replace("\r", "").replace("\n", "").replace("\t", "")
-                    raise Exception(errormsg)
+                    raise InvalidParamsError(errormsg)
 
                 self.result['key'] = j_username
                 self.result['meta'] = {
@@ -92,9 +93,7 @@ class Task(AbsTaskUnitSessionTask):
                     '密码': j_password
                 }
                 return
-            except TaskAbortedError:
-                raise
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 traceback.print_exc()
                 err_msg = str(e)
 
@@ -230,7 +229,7 @@ class Task(AbsTaskUnitSessionTask):
             })
 
             return
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 获取用户明细
@@ -239,7 +238,7 @@ class Task(AbsTaskUnitSessionTask):
             resp = self.s.post(DETAILED_LIST_URL + page_type + '?searchYear=' + str(year) + '&time=' + str(int(round(time.time()*1000))))
             soup = BeautifulSoup(str(resp.content, 'utf-8').replace('\r', '').replace('\t', '').replace('\n', '').replace('&nbsp;', '').replace('</tr>  </tr>', '</tr>'), "html.parser")
             return soup
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 养老
@@ -311,7 +310,7 @@ class Task(AbsTaskUnitSessionTask):
                         except:
                             data["old_age"]["data"][str(year)][str(date[5:])] = [obj]
                 pass
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗
@@ -384,7 +383,7 @@ class Task(AbsTaskUnitSessionTask):
                         except:
                             data["medical_care"]["data"][str(year)][str(date[5:])] = [obj]
                 pass
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 工伤
@@ -444,7 +443,7 @@ class Task(AbsTaskUnitSessionTask):
                         except:
                             data["injuries"]["data"][str(year)][str(date[5:])] = [obj]
                 pass
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 生育
@@ -505,7 +504,7 @@ class Task(AbsTaskUnitSessionTask):
                         except:
                             data["maternity"]["data"][str(year)][str(date[5:])] = [obj]
                 pass
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 失业
@@ -567,7 +566,7 @@ class Task(AbsTaskUnitSessionTask):
                         except:
                             data["unemployment"]["data"][str(year)][str(date[5:])] = [obj]
                 pass
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 缴费明细main方法
@@ -605,7 +604,7 @@ class Task(AbsTaskUnitSessionTask):
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗待遇
@@ -629,7 +628,7 @@ class Task(AbsTaskUnitSessionTask):
                 "门诊": str(float(re.sub('\s', '', tds[9].text))+float(re.sub('\s', '', tds[11].text))),
                 "住院": str(float(re.sub('\s', '', tds[15].text))+float(re.sub('\s', '', tds[17].text)))
             }
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 验证码

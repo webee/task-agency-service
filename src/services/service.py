@@ -5,6 +5,7 @@ from typing import List, Callable
 from abc import ABCMeta, abstractmethod
 import uuid
 from collections import namedtuple
+from .errors import AskForParamsError, TaskUnavailableError, PreconditionNotSatisfiedError
 
 
 class AbsTask(metaclass=ABCMeta):
@@ -26,29 +27,6 @@ class SessionData(object):
 
     def __repr__(self):
         return repr(dict(id=self.id, task_id=self.task_id, state=self.state, result=self.result))
-
-
-class AskForParamsError(Exception):
-    def __init__(self, param_requirements, err_msg=None, message='parameters required'):
-        """
-        请求参数异常
-        :param param_requirements: 需要的参数说明
-        :param err_msg: 参数检查错误
-        :param message: 异常信息
-        """
-        super().__init__(message)
-        self.param_requirements = param_requirements
-        self.err_msg = err_msg
-
-
-class TaskAbortedError(Exception):
-    """任务中止异常"""
-    pass
-
-
-class PreconditionNotSatisfiedError(Exception):
-    """前置条件不满足异常"""
-    pass
 
 
 class AbsStatefulTask(AbsTask):
@@ -111,8 +89,8 @@ class AbsSessionTask(AbsStatefulTask):
             # NOTE: 异常
             traceback.print_exc()
             self._set_end()
-            is_aborted = isinstance(e, TaskAbortedError)
-            return dict(end=self.end, done=self.done, is_aborted=is_aborted, err_msg=str(e))
+            is_unavailable = isinstance(e, TaskUnavailableError)
+            return dict(end=self.end, done=self.done, is_unavailable=is_unavailable, err_msg=str(e))
 
     def query(self, params: dict = None):
         params = if_not_none_else(params, {})
