@@ -5,7 +5,7 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
-from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskUnavailableError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, InvalidConditionError
 
 LOGIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/login_check'
@@ -66,7 +66,7 @@ class Task(AbsTaskUnitSessionTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             if not soup.find('form'):
                 # 可能暂停维护了
-                raise TaskUnavailableError(soup.find('td').text)
+                raise TaskNotAvailableError(soup.find('td').text)
 
         if params:
             try:

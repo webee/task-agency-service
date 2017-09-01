@@ -1,5 +1,6 @@
 from services.service import SessionData
-from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskAbortedError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
+from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
 
@@ -32,7 +33,7 @@ class Task(AbsFetchTask):
         # TODO: update temp result
 
     def _get_common_headers(self):
-        pass
+        return {}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -45,22 +46,40 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '用户名' in params, '缺少用户名'
+        assert '账号' in params, '缺少账号'
         assert '密码' in params, '缺少密码'
         # other check
+        账号 = params['账号']
+        密码 = params['密码']
+        if len(密码) < 4:
+            raise InvalidParamsError('账号或密码错误')
+        if 账号.isdigit():
+            if len(账号) < 15:
+                raise InvalidParamsError('身份证错误')
+            return
+        if '@' in 账号:
+            if not 账号.endswith('@hz.cn'):
+                raise InvalidParamsError('市民邮箱错误')
+            return
+        raise InvalidParamsError('账号或密码错误')
 
-    def _unit_login(self, params=None):
+    def _unit_login(self, params: dict):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                raise TaskAbortedError('查询服务维护中')
-            except Exception as e:
+                self.result_key = params.get('账号')
+                # 保存到meta
+                self.result_meta['账号'] = params.get('账号')
+                self.result_meta['密码'] = params.get('密码')
+
+                raise TaskNotImplementedError('查询服务维护中')
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='用户名', name='用户名', cls='input', placeholder='身份证号或者邮箱'),
-            dict(key='密码', name='密码', cls='input:password'),
+            dict(key='账号', name='账号', cls='input', placeholder='身份证号或者市民邮箱(@hz.cn)', value=params.get('账号', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
     def _unit_fetch(self):

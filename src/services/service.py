@@ -1,3 +1,4 @@
+import logging
 import importlib
 import traceback
 import time
@@ -5,7 +6,10 @@ from typing import List, Callable
 from abc import ABCMeta, abstractmethod
 import uuid
 from collections import namedtuple
-from .errors import AskForParamsError, TaskUnavailableError, PreconditionNotSatisfiedError
+from .errors import AskForParamsError, TaskNotAvailableError, PreconditionNotSatisfiedError, TaskNotImplementedError
+
+
+logger = logging.getLogger(__name__)
 
 
 class AbsTask(metaclass=ABCMeta):
@@ -47,6 +51,8 @@ class AbsSessionTask(AbsStatefulTask):
         super().__init__()
         self._session_data = if_not_none_else(session_data, SessionData())
         self._is_start = is_start
+        # 任务未实现
+        self._not_implemented = False
         # 任务结束
         self._end = False
         # 任务完成
@@ -87,10 +93,12 @@ class AbsSessionTask(AbsStatefulTask):
             return res
         except Exception as e:
             # NOTE: 异常
-            traceback.print_exc()
+            logger.warning(traceback.format_exc())
             self._set_end()
-            is_unavailable = isinstance(e, TaskUnavailableError)
-            return dict(end=self.end, done=self.done, is_unavailable=is_unavailable, err_msg=str(e))
+            not_available = isinstance(e, TaskNotAvailableError)
+            if isinstance(e, TaskNotImplementedError):
+                self._set_not_implemented()
+            return dict(end=self.end, done=self.done, not_available=not_available, err_msg=str(e))
 
     def query(self, params: dict = None):
         params = if_not_none_else(params, {})
@@ -101,7 +109,7 @@ class AbsSessionTask(AbsStatefulTask):
                 data = self._query_meta(params)
             return dict(ret=True, data=data)
         except Exception as e:
-            traceback.print_exc()
+            logger.warning(traceback.format_exc())
             return dict(ret=False, err_msg=str(e))
         finally:
             self._update_session_data()
@@ -149,6 +157,13 @@ class AbsSessionTask(AbsStatefulTask):
     @property
     def is_start(self) -> bool:
         return self._is_start
+
+    @property
+    def not_implemented(self) -> bool:
+        return self._not_implemented
+
+    def _set_not_implemented(self):
+        self._not_implemented = True
 
     @property
     def end(self) -> bool:
@@ -262,6 +277,7 @@ class SessionTasksManager(object):
         self._ss = session_storage
         self._tcf = task_class_finder
         self._result_handlers: List[AbsTaskResultHandler] = []
+        self._not_implemented_result_handlers: List[AbsTaskResultHandler] = []
 
     def start(self, task_id, params=None):
         """
@@ -300,16 +316,30 @@ class SessionTasksManager(object):
     def register_result_handler(self, handler: AbsTaskResultHandler):
         self._result_handlers.append(handler)
 
+    def register_not_implemented_result_handler(self, handler: AbsTaskResultHandler):
+        self._not_implemented_result_handlers.append(handler)
+
     def _run(self, session_data: SessionData, params: dict, is_start=True):
         task = self._get_task(session_data, is_start=is_start)
         res = task.run(params)
         if task.end:
             # 任务结束
+            result = task.session_data.result
             if task.done:
-                # 任务完成
-                result = task.session_data.result
+                # 任务成功
                 for handler in self._result_handlers:
-                    handler.handle(task.session_data.task_id, result)
+                    try:
+                        handler.handle(task.session_data.task_id, result)
+                    except:
+                        logger.warning(traceback.format_exc())
+            elif task.not_implemented:
+                # 任务未实现处理
+                for handler in self._not_implemented_result_handlers:
+                    try:
+                        handler.handle(task.session_data.task_id, result)
+                    except:
+                        logger.warning(traceback.format_exc())
+
             # 删除会话
             self._ss.remove_session(session_data.id)
         else:
@@ -327,7 +357,7 @@ class SessionTasksManager(object):
         try:
             task_cls = self._tcf.find(task_id)
         except:
-            traceback.print_exc()
+            logger.warning(traceback.format_exc())
             raise ValueError('can not find task: %s' % task_id)
         return task_cls(session_data, is_start=is_start)
 

@@ -26,3 +26,23 @@ class AbsFetchTask(AbsTaskUnitSessionTask, metaclass=ABCMeta):
     def _get_common_headers(self):
         """恢复状态里设置的通用头部"""
         return {}
+
+    @property
+    def result_key(self):
+        return self.result.get('key')
+
+    @result_key.setter
+    def result_key(self, key):
+        self.result['key'] = key
+
+    @property
+    def result_meta(self):
+        return self.result.get('meta')
+
+    @property
+    def result_data(self):
+        return self.result.get('data')
+
+    @property
+    def result_identity(self):
+        return self.result.get('identity')

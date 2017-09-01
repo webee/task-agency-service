@@ -1,5 +1,7 @@
 class InvalidParamsError(Exception):
-    """参数不正常异常"""
+    """参数不正常异常
+    如果发现参数不正常，则抛此异常或者AssertionError
+    """
     pass
 
 
@@ -16,13 +18,24 @@ class AskForParamsError(Exception):
         self.err_msg = err_msg
 
 
-class TaskUnavailableError(Exception):
-    """任务不可用异常"""
+class TaskNotAvailableError(Exception):
+    """任务不可用异常
+    任务目标不可用时，抛此异常
+    """
+    pass
+
+
+class TaskNotImplementedError(TaskNotAvailableError):
+    """任务未实现异常
+    任务功能未完全实现时，抛此异常
+    """
     pass
 
 
 class InvalidConditionError(Exception):
-    """条件不正常异常"""
+    """条件不正常异常
+    检查发现执行环境不满足时，抛此异常
+    """
     pass
 
 
