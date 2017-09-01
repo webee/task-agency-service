@@ -99,9 +99,9 @@ class Task(AbsTaskUnitSessionTask):
 
         raise AskForParamsError([
             dict(key='other', name='[{"tabName":"城市职工","tabCode":"1","isEnable":"1"},{"tabName":"城市居民","tabCode":"2","isEnable":"0"}]', cls='tab'),
-            dict(key='j_username', name='身份证号', cls='input', tabCode="1"),
-            dict(key='j_password', name='密码', cls='input:password', tabCode="1"),
-            dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="1"),
+            dict(key='j_username', name='身份证号', cls='input', tabCode="1", value=params.get('j_username', '')),
+            dict(key='j_password', name='密码', cls='input:password', tabCode="1", value=params.get('j_password', '')),
+            dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="1", value=params.get('safecode', '')),
             dict(key='cityName', name='城市Code', cls='input:hidden', value='北京市'),
             dict(key='cityCode', name='城市名称', cls='input:hidden', value='110100')
         ], err_msg)
