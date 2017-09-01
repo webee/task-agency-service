@@ -6,11 +6,8 @@ from services.commons import AbsFetchTask
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="深圳",
-        help="""1.若您尚未激活或者没有在网上查询过您的社保卡，请点击激活社保账号<br/>
-        2.如果您曾经激活过社保卡，但忘记密码，请点击忘记密码<br/>
-        3.如办理社保卡时，没有登记手机号码或者更换手机号码，请本人携带身份证原件和新手机到社保分中心柜台办理注册手机变更业务。
-        """
+        city_name="上海",
+        help=""""""
     )
 
     def _get_common_headers(self):
