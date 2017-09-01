@@ -4,6 +4,12 @@ from .service import AbsTaskUnitSessionTask
 
 
 class AbsFetchTask(AbsTaskUnitSessionTask, metaclass=ABCMeta):
+    task_info = {}
+
+    @classmethod
+    def inspect(cls, params: dict):
+        return cls.task_info
+
     def _prepare(self):
         state: dict = self.state
         self.s = requests.Session()

@@ -17,6 +17,11 @@ MEDICAL_TREATMENT_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indMe
 
 
 class Task(AbsTaskUnitSessionTask):
+    task_info = dict(
+        city_name="北京",
+        help="""
+        """
+    )
     # noinspection PyAttributeOutsideInit
     def _prepare(self):
         state: dict = self.state
@@ -102,8 +107,6 @@ class Task(AbsTaskUnitSessionTask):
             dict(key='j_username', name='身份证号', cls='input', tabCode="1", value=params.get('j_username', '')),
             dict(key='j_password', name='密码', cls='input:password', tabCode="1", value=params.get('j_password', '')),
             dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="1", value=params.get('safecode', '')),
-            dict(key='cityName', name='城市Code', cls='input:hidden', value='北京市'),
-            dict(key='cityCode', name='城市名称', cls='input:hidden', value='110100')
         ], err_msg)
 
     # 获取用户基础信息

@@ -2,7 +2,7 @@ import logging
 import importlib
 import traceback
 import time
-from typing import List, Callable
+from typing import List, Callable, TypeVar
 from abc import ABCMeta, abstractmethod
 import uuid
 from collections import namedtuple
@@ -47,6 +47,10 @@ class AbsStatefulTask(AbsTask):
 
 
 class AbsSessionTask(AbsStatefulTask):
+    @classmethod
+    def inspect(cls, params: dict):
+        pass
+
     def __init__(self, session_data: SessionData=None, is_start=True):
         super().__init__()
         self._session_data = if_not_none_else(session_data, SessionData())
@@ -259,7 +263,7 @@ class AbsSessionIDGenerator(metaclass=ABCMeta):
 
 class AbsTaskClassFinder(metaclass=ABCMeta):
     @abstractmethod
-    def find(self, task_id: str):
+    def find(self, task_id: str) -> TypeVar(AbsSessionTask):
         raise NotImplementedError()
 
 
@@ -278,6 +282,17 @@ class SessionTasksManager(object):
         self._tcf = task_class_finder
         self._result_handlers: List[AbsTaskResultHandler] = []
         self._not_implemented_result_handlers: List[AbsTaskResultHandler] = []
+
+    def inspect(self, task_id, params=None):
+        """
+        inspect task info
+        :param task_id: task type id
+        :param params: parameters
+        :return:
+        """
+        task_cls: AbsSessionTask = self._tcf.find(task_id)
+        params = if_not_none_else(params, {})
+        return task_cls.inspect(params)
 
     def start(self, task_id, params=None):
         """

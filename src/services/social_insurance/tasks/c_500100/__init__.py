@@ -2,12 +2,11 @@ import traceback
 import time
 import json
 import datetime
-import requests
 import base64
 from bs4 import BeautifulSoup
-from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.errors import InvalidParamsError, InvalidConditionError
+from services.commons import AbsFetchTask
 
 LOGIN_URL = 'http://ggfw.cqhrss.gov.cn/ggfw/LoginBLH_login.do'
 VC_URL = 'http://ggfw.cqhrss.gov.cn/ggfw/validateCodeBLH_image.do'
@@ -15,23 +14,27 @@ USER_INFO_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_main.do?code=888"
 DETAILED_LIST_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_query.do"
 
 
-class Task(AbsTaskUnitSessionTask):
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
+class Task(AbsFetchTask):
+    task_info = dict(
+        city_name="重庆",
+        expect_time=30,
+        help="""1.初始查询密码为社会保障卡卡号的后6位<br/>
+        2.如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</br>
+        3.数据解析需要较长的时间，请耐心等待
+        """
+    )
 
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
-        result.setdefault('identity', {})
+    @classmethod
+    def inspect(cls, params: dict):
+        t = params.get('t')
+        if t == 'city_name':
+            return cls.task_info.get('city_name')
+        return super().inspect(params)
+
+    def _get_common_headers(self):
+        return {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
+        }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -89,8 +92,6 @@ class Task(AbsTaskUnitSessionTask):
             dict(key='sfzh', name='身份证号', cls='input', value=params.get('sfzh', '')),
             dict(key='password', name='密码', cls='input:password', value=params.get('password', '')),
             dict(key='validateCode', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('validateCode', '')),
-            dict(key='cityName', name='城市Code', cls='input:hidden', value='重庆市'),
-            dict(key='cityCode', name='城市名称', cls='input:hidden', value='500100')
         ], err_msg)
 
     # 获取用户基本信息
