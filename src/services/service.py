@@ -328,6 +328,14 @@ class SessionTasksManager(object):
         self._ss.save_session(task.session_data, task.META.get('session_expire'))
         return res
 
+    def abort(self, session_id):
+        """
+        abort task
+        :param session_id:  session id
+        :return:
+        """
+        self._ss.remove_session(session_id)
+
     def register_result_handler(self, handler: AbsTaskResultHandler):
         self._result_handlers.append(handler)
 
