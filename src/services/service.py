@@ -34,22 +34,50 @@ class SessionData(object):
 
 
 class AbsStatefulTask(AbsTask):
-    # task meta data
-    META = {}
+    task_info = {}
 
-    @abstractmethod
-    def run(self, params=None):
+    @classmethod
+    def inspect(cls, params: dict):
         raise NotImplementedError()
 
     @abstractmethod
-    def query(self, params=None):
+    def run(self, params=None, **kwargs):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def query(self, params=None, **kwargs):
         raise NotImplementedError()
 
 
 class AbsSessionTask(AbsStatefulTask):
     @classmethod
     def inspect(cls, params: dict):
-        pass
+        params = if_not_none_else(params, {})
+        # 先尝试查询元数据
+        if '_t' in params:
+            return cls._inspect_meta(params)
+        # 如没被处理，则尝试其它查询
+        try:
+            return cls._inspect(params)
+        except:
+            logger.warning(traceback.format_exc())
+
+    @classmethod
+    def _inspect_meta(cls, params: dict):
+        """
+        检查任务元数据
+        :param params: parameters
+        :return:
+        """
+        t = params.get('_t')
+        return cls.task_info.get(t)
+
+    @classmethod
+    def _inspect(cls, params: dict):
+        t = params.get('t')
+        if t is None:
+            return cls.task_info
+        return cls.task_info.get(t)
 
     def __init__(self, session_data: SessionData=None, is_start=True):
         super().__init__()
@@ -80,7 +108,7 @@ class AbsSessionTask(AbsStatefulTask):
         """
         pass
 
-    def run(self, params: dict = None):
+    def run(self, params: dict = None, **kwargs):
         params = if_not_none_else(params, {})
         try:
             res = self._run(params)
@@ -104,7 +132,7 @@ class AbsSessionTask(AbsStatefulTask):
                 self._set_not_implemented()
             return dict(end=self.end, done=self.done, not_available=not_available, err_msg=str(e))
 
-    def query(self, params: dict = None):
+    def query(self, params: dict = None, **kwargs):
         params = if_not_none_else(params, {})
         try:
             data = self._query(params)
@@ -137,7 +165,7 @@ class AbsSessionTask(AbsStatefulTask):
         :param params: parameters
         :return:
         """
-        t = params.get('t')
+        t = params.get('_t')
         if t == '_meta.session':
             return self.session_data
 
@@ -325,7 +353,7 @@ class SessionTasksManager(object):
         session_data = self._get_session_data(session_id)
         task = self._get_task(session_data)
         res = task.query(params)
-        self._ss.save_session(task.session_data, task.META.get('session_expire'))
+        self._ss.save_session(task.session_data, task.inspect({'_t': '_meta.session.expire'}))
         return res
 
     def abort(self, session_id):
@@ -366,7 +394,7 @@ class SessionTasksManager(object):
             # 删除会话
             self._ss.remove_session(session_data.id)
         else:
-            self._ss.save_session(task.session_data, task.META.get('session_expire'))
+            self._ss.save_session(task.session_data, task.inspect({'_t': '_meta.session.expire'}))
         return res
 
     def _get_session_data(self, session_id):
