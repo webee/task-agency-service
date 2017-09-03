@@ -4,7 +4,7 @@ from .service import AbsTaskUnitSessionTask
 
 
 class AbsFetchTask(AbsTaskUnitSessionTask, metaclass=ABCMeta):
-    def _prepare(self):
+    def _prepare(self, data=None):
         state: dict = self.state
         self.s = requests.Session()
         cookies = state.get('cookies')
@@ -17,6 +17,32 @@ class AbsFetchTask(AbsTaskUnitSessionTask, metaclass=ABCMeta):
         result.setdefault('meta', {})
         result.setdefault('data', {})
         result.setdefault('identity', {})
+
+        # data
+        if isinstance(data, dict):
+            self.state['meta'] = data.get('meta', {})
+
+    @property
+    def prepared_meta(self):
+        return self.state.get('meta')
+
+    def _update_run_params(self, params: dict):
+        if not self.prepared_meta:
+            return params
+        return self._params_handler(params)
+
+    def _update_param_requirements(self, param_requirements, details):
+        if not self.prepared_meta:
+            return param_requirements
+        return self._param_requirements_handler(param_requirements, details)
+
+    def _params_handler(self, params: dict):
+        # TODO: 实现类根据self.prepared_meta，去补充params没提供的参数
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        # TODO: 实现类根据self.prepared_meta和details确定需要去掉哪些参数请求
+        return param_requirements
 
     def _update_session_data(self):
         super()._update_session_data()

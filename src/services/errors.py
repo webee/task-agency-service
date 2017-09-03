@@ -6,16 +6,18 @@ class InvalidParamsError(Exception):
 
 
 class AskForParamsError(Exception):
-    def __init__(self, param_requirements, err_msg=None, message='parameters required'):
+    def __init__(self, param_requirements, err_msg=None, details=None, message='parameters required'):
         """
         请求参数异常
         :param param_requirements: 需要的参数说明
         :param err_msg: 参数检查错误
+        :param details: 可能的需求细节
         :param message: 异常信息
         """
         super().__init__(message)
         self.param_requirements = param_requirements
         self.err_msg = err_msg
+        self.details = details
 
 
 class TaskNotAvailableError(Exception):

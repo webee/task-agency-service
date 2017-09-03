@@ -4,33 +4,23 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.errors import InvalidParamsError, InvalidConditionError
+from services.commons import AbsFetchTask
 
 MAIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/personQuery/personQueryAction.action'
 LOGIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
 VC_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/rand.action?r='
 
 
-class Task(AbsTaskUnitSessionTask):
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
+class Task(AbsFetchTask):
+    task_info = {
+        'task_name': '真实抓取',
+        'help': '测试真实抓取'
+    }
+
+    def _get_common_headers(self):
+        return {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
-
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
-        result.setdefault('identity', {})
-
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
+        }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -40,6 +30,27 @@ class Task(AbsTaskUnitSessionTask):
         t = params.get('t')
         if t == 'vc':
             return self._new_vc()
+
+    def _params_handler(self, params: dict):
+        if not self.is_start:
+            meta = self.prepared_meta
+            if 'id_num' not in params:
+                params['id_num'] = meta.get('id_num')
+            if 'account_num' not in params:
+                params['account_num'] = meta.get('account_num')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == 'id_num' and 'id_num' in meta:
+                continue
+            elif pr['key'] == 'account_num' and 'account_num' in meta:
+                continue
+            res.append(pr)
+        return res
 
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):

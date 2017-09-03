@@ -41,11 +41,11 @@ class AbsStatefulTask(AbsTask):
         raise NotImplementedError()
 
     @abstractmethod
-    def run(self, params=None, **kwargs):
+    def run(self, params=None):
         raise NotImplementedError()
 
     @abstractmethod
-    def query(self, params=None, **kwargs):
+    def query(self, params=None):
         raise NotImplementedError()
 
 
@@ -79,7 +79,7 @@ class AbsSessionTask(AbsStatefulTask):
             return cls.task_info
         return cls.task_info.get(t)
 
-    def __init__(self, session_data: SessionData=None, is_start=True):
+    def __init__(self, session_data: SessionData=None, prepare_data=None, is_start=True):
         super().__init__()
         self._session_data = if_not_none_else(session_data, SessionData())
         self._is_start = is_start
@@ -91,7 +91,11 @@ class AbsSessionTask(AbsStatefulTask):
         self._done = False
 
         self._setup()
-        self._prepare()
+        if prepare_data is None:
+            # FIXME: 兼容之前无参方法, 在所有实现都修复后去掉
+            self._prepare()
+        else:
+            self._prepare(prepare_data)
 
     def _setup(self):
         """设置
@@ -101,16 +105,33 @@ class AbsSessionTask(AbsStatefulTask):
         pass
 
     @abstractmethod
-    def _prepare(self):
+    def _prepare(self, data=None):
         """恢复状态，初始化结果
         for concrete class to use
         :return:
         """
         pass
 
-    def run(self, params: dict = None, **kwargs):
+    def _update_run_params(self, params: dict):
+        """修改运行参数
+        :param params: 原运行参数
+        :return: 新运行参数
+        """
+        return params
+
+    def _update_param_requirements(self, param_requirements, details):
+        """修改参数请求
+        :param param_requirements: 原参数请求
+        :param details: 可能的请求细节
+        :return: 新参数请求
+        """
+        return param_requirements
+
+    def run(self, params: dict = None):
         params = if_not_none_else(params, {})
         try:
+            # 修改运行参数
+            params = self._update_run_params(params)
             res = self._run(params)
             self._set_end()
             self._set_done()
@@ -119,7 +140,9 @@ class AbsSessionTask(AbsStatefulTask):
         except AskForParamsError as e:
             # NOTE: 请求参数
             self._update_session_data()
-            res = dict(end=self.end, done=self.done, param_requirements=e.param_requirements)
+            # 修改参数请求
+            param_requirements = self._update_param_requirements(e.param_requirements, e.details)
+            res = dict(end=self.end, done=self.done, param_requirements=param_requirements)
             if e.err_msg:
                 res.update(dict(err_msg=e.err_msg))
             return res
@@ -132,7 +155,7 @@ class AbsSessionTask(AbsStatefulTask):
                 self._set_not_implemented()
             return dict(end=self.end, done=self.done, not_available=not_available, err_msg=str(e))
 
-    def query(self, params: dict = None, **kwargs):
+    def query(self, params: dict = None):
         params = if_not_none_else(params, {})
         try:
             data = self._query(params)
@@ -322,36 +345,39 @@ class SessionTasksManager(object):
         params = if_not_none_else(params, {})
         return task_cls.inspect(params)
 
-    def start(self, task_id, params=None):
+    def start(self, task_id, params=None, prepare_data=None):
         """
         start a task by task_id
         :param task_id: task type id
         :param params: parameters
+        :param prepare_data: prepare data
         :return: session_id, task result
         """
         session_id = self._sig.new(task_id)
         session_data = SessionData(session_id, task_id, {}, {})
-        return session_id, self._run(session_data, params)
+        return session_id, self._run(session_data, params, prepare_data, is_start=True)
 
-    def resume(self, session_id, params=None):
+    def resume(self, session_id, params=None, prepare_data=None):
         """
         resume a started task session
         :param session_id: session id
         :param params: parameters
+        :param prepare_data: prepare data
         :return: task result
         """
         session_data = self._get_session_data(session_id)
-        return self._run(session_data, params, is_start=False)
+        return self._run(session_data, params, prepare_data, is_start=False)
 
-    def query(self, session_id, params=None):
+    def query(self, session_id, params=None, prepare_data=None):
         """
         query task info from a started task session
         :param session_id: session id
         :param params: parameters
+        :param prepare_data: prepare data
         :return: result
         """
         session_data = self._get_session_data(session_id)
-        task = self._get_task(session_data)
+        task = self._get_task(session_data, prepare_data, is_start=False)
         res = task.query(params)
         self._ss.save_session(task.session_data, task.inspect({'_t': '_meta.session.expire'}))
         return res
@@ -370,8 +396,8 @@ class SessionTasksManager(object):
     def register_not_implemented_result_handler(self, handler: AbsTaskResultHandler):
         self._not_implemented_result_handlers.append(handler)
 
-    def _run(self, session_data: SessionData, params: dict, is_start=True):
-        task = self._get_task(session_data, is_start=is_start)
+    def _run(self, session_data: SessionData, params: dict, prepare_data, is_start=True):
+        task = self._get_task(session_data, prepare_data, is_start=is_start)
         res = task.run(params)
         if task.end:
             # 任务结束
@@ -403,14 +429,14 @@ class SessionTasksManager(object):
             raise ValueError('task session not exists')
         return session_data
 
-    def _get_task(self, session_data: SessionData, is_start=True) -> AbsSessionTask:
+    def _get_task(self, session_data: SessionData, prepare_data, is_start=True) -> AbsSessionTask:
         task_id = session_data.task_id
         try:
             task_cls = self._tcf.find(task_id)
         except:
             logger.warning(traceback.format_exc())
             raise ValueError('can not find task: %s' % task_id)
-        return task_cls(session_data, is_start=is_start)
+        return task_cls(session_data, prepare_data, is_start=is_start)
 
 
 class UUIDSessionIDGenerator(AbsSessionIDGenerator):
