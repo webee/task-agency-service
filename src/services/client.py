@@ -35,35 +35,41 @@ class TaskTestClient(object):
             param_requirements = res['param_requirements']
             for pr in param_requirements:
                 # parse parameter requirements
+                if pr['cls'] == 'tab':
+                    params[pr['key']] = input('%s: ' % pr['name'])
                 if pr['cls'] == 'input':
                     params[pr['key']] = input('%s: ' % pr['name'])
                 if pr['cls'] == 'input:password':
                     # params[pr['key']] = getpass.getpass('%s: ' % pr['name'])
                     params[pr['key']] = input('%s: ' % pr['name'])
                 elif pr['cls'] == 'data':
-                    data = pr['data']
                     while True:
-                        print('data: %s' % data)
+                        # query data
+                        r = self.task.query(pr['query'])
+                        if not r['ret']:
+                            print('error:', r['err_msg'])
+                            continue
+                        data = r['data']
+
+                        print('content: %s' % data['content'])
                         d = input('%s: ' % pr['name'])
                         if d:
                             break
-
-                        # refresh data
-                        r = self.task.query(pr['query'])
-                        if r['ret']:
-                            data = r['data']
-                        else:
-                            print('error:', r['err_msg'])
                     params[pr['key']] = d
                 elif pr['cls'] == 'data:image':
-                    data = pr['data']
                     while True:
+                        # query data
+                        r = self.task.query(pr['query'])
+                        if not r['ret']:
+                            print('error:', r['err_msg'])
+                            continue
+                        data = r['data']
+
                         content = data['content']
                         Image.open(io.BytesIO(content)).show()
                         d = input('%s: ' % pr['name'])
                         if d:
                             break
-
                         # refresh data
                         r = self.task.query(pr['query'])
                         if r['ret']:
