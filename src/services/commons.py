@@ -62,13 +62,13 @@ class AbsFetchTask(AbsTaskUnitSessionTask, metaclass=ABCMeta):
         self.result['key'] = key
 
     @property
-    def result_meta(self):
+    def result_meta(self) -> dict:
         return self.result.get('meta')
 
     @property
-    def result_data(self):
+    def result_data(self) -> dict:
         return self.result.get('data')
 
     @property
-    def result_identity(self):
+    def result_identity(self) -> dict:
         return self.result.get('identity')

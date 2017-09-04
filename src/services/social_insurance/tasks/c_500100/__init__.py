@@ -78,11 +78,11 @@ class Task(AbsFetchTask):
                 if data.get('code') == '0':
                     raise InvalidParamsError(errormsg)
 
-                self.result['key'] = sfzh
-                self.result['meta'] = {
+                self.result_key = sfzh
+                self.result_meta.update({
                     '身份证编号': sfzh,
                     '密码': params['password']
-                }
+                })
                 return
             except (AssertionError, InvalidParamsError) as e:
                 traceback.print_exc()
