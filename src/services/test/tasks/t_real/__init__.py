@@ -32,7 +32,7 @@ class Task(AbsFetchTask):
             return self._new_vc()
 
     def _params_handler(self, params: dict):
-        if not self.is_start:
+        if not (self.is_start and not params):
             meta = self.prepared_meta
             if 'id_num' not in params:
                 params['id_num'] = meta.get('id_num')

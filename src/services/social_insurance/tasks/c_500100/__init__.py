@@ -50,12 +50,33 @@ class Task(AbsFetchTask):
         if t == 'vc':
             return self._new_vc()
 
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if 'sfzh' not in params:
+                params['sfzh'] = meta.get('身份证编号')
+            if 'password' not in params:
+                params['password'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == 'sfzh' and '身份证编号' in meta:
+                continue
+            elif pr['key'] == 'password' and '密码' in meta:
+                continue
+            res.append(pr)
+        return res
+
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert 'sfzh' in params, '缺少身份证号'
         assert 'password' in params, '缺少密码'
-        assert 'validateCode' in params, '缺少验证码'
+        assert 'vc' in params, '缺少验证码'
         # other check
 
     def _unit_login(self, params=None):
@@ -66,12 +87,12 @@ class Task(AbsFetchTask):
                 self._check_login_params(params)
                 sfzh = params['sfzh']
                 password = base64.b64encode(params['password'].encode(encoding="utf-8"))
-                validateCode = params['validateCode']
+                vc = params['vc']
 
                 resp = self.s.post(LOGIN_URL, data=dict(
                     sfzh=sfzh,
                     password=password,
-                    validateCode=validateCode
+                    validateCode=vc
                 ))
                 data = resp.json()
                 errormsg = data.get('message')
@@ -91,7 +112,7 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='sfzh', name='身份证号', cls='input', value=params.get('sfzh', '')),
             dict(key='password', name='密码', cls='input:password', value=params.get('password', '')),
-            dict(key='validateCode', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('validateCode', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
     # 获取用户基本信息
