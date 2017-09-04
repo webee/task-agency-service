@@ -29,6 +29,7 @@ class Task(AbsTaskUnitSessionTask):
         result: dict = self.result
         result.setdefault('meta', {})
         result.setdefault('data', {})
+        result.setdefault('identity',{})
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -87,8 +88,7 @@ class Task(AbsTaskUnitSessionTask):
                 self.result['key'] = '%s.%s' % ('real', id_num)
                 self.result['meta'] = {
                     'task': 'real',
-                    'id_num': id_num,
-                    'password':password
+                    'id_num': id_num
                 }
                 return
             except Exception as e:
@@ -96,7 +96,7 @@ class Task(AbsTaskUnitSessionTask):
 
         vc = self._new_vc()
         raise AskForParamsError([
-            dict(key='id_num', name='身份证号', cls='input'),
+            dict(key='id_num', name='社保卡号/社会保障号/身份证号', cls='input'),
             #dict(key='account_num', name='职工姓名', cls='input'),
             dict(key='password',name='密码',cls='input'),
             dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
