@@ -38,6 +38,7 @@ class Task(AbsTaskUnitSessionTask):
         result.setdefault('detailII', {})    #失业缴费详细
         result.setdefault('detailCI', {})    #工伤缴费详细
         result.setdefault('detailBI', {})    #生育缴费详细
+        result.setdefault('identity', {})
 
     def _update_session_data(self):
         super()._update_session_data()
@@ -64,7 +65,7 @@ class Task(AbsTaskUnitSessionTask):
 
     def _unit_login(self, params=None):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
 
@@ -111,6 +112,15 @@ class Task(AbsTaskUnitSessionTask):
                 '参保单位': s['aab069'],
                 '参保地区': s['yab003'],
             }
+
+            # 设置identity
+            identity = self.result['identity']
+            identity.update({
+                'task_name': '成都市',
+                'target_name': s['aac003'],
+                'target_id': self.result['meta']["登录号"],
+                'status': "",
+            })
 
             #养老保险明细
             startTime=input("请输入需要查询的开始时间：")

@@ -35,6 +35,7 @@ class Task(AbsTaskUnitSessionTask):
         result.setdefault('detailEI',{})    #养老
         result.setdefault('detailHI',{})    #医疗
         result.setdefault('detailII',{})    #失业
+        result.setdefault('identity', {})
 
     def _update_session_data(self):
         super()._update_session_data()
@@ -64,7 +65,7 @@ class Task(AbsTaskUnitSessionTask):
 
     def _unit_login(self, params=None):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
 
@@ -113,6 +114,15 @@ class Task(AbsTaskUnitSessionTask):
                     '人员状态':tr3[1].find(type='text')['value'],
                     '民族':tr3[3].find(type='text')['value'],
                 }
+
+                # 设置identity
+                identity = self.result['identity']
+                identity.update({
+                    'task_name': '济南市',
+                    'target_name': tr1[3].find(type='text')['value'],
+                    'target_id': self.result['meta']["身份证号"],
+                    'status': "",
+                })
 
 
                 # 养老缴费明细

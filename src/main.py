@@ -1,4 +1,5 @@
 from gevent import monkey
+
 monkey.patch_all()
 
 
@@ -11,9 +12,9 @@ def get_test_methods() -> dict:
     uuid_session_id_generator = UUIDSessionIDGenerator()
     memory_session_storage = MemorySessionStorage()
     test_task_finder = PathTaskClassFinder(lambda task_id: 'services.test.tasks.t_%s' % task_id, 'Task')
-    test_tasks_manager = SessionTasksManager(uuid_session_id_generator,
-                                             memory_session_storage,
-                                             test_task_finder)
+    test_tasks_manager: SessionTasksManager = SessionTasksManager(uuid_session_id_generator,
+                                                                  memory_session_storage,
+                                                                  test_task_finder)
     return {
         'task_start': test_tasks_manager.start,
         'task_resume': test_tasks_manager.resume,
@@ -32,6 +33,7 @@ def get_methods():
 
 if __name__ == '__main__':
     import zerorpc
+
     server = zerorpc.Server(get_methods(), name='task-agency-service', heartbeat=30)
     server.bind('tcp://*:12345')
     server.run()

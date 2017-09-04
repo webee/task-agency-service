@@ -41,6 +41,7 @@ class Task(AbsTaskUnitSessionTask):
         result.setdefault('detailII',{})     #失业
         result.setdefault('detailCI',{})     #工伤
         result.setdefault('detailBI',{})     #生育
+        result.setdefault('identity', {})
 
     def _update_session_data(self):
         super()._update_session_data()
@@ -69,7 +70,7 @@ class Task(AbsTaskUnitSessionTask):
 
     def _unit_login(self, params=None):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
 
@@ -116,6 +117,15 @@ class Task(AbsTaskUnitSessionTask):
                 '个人身份':data[7].findAll('td')[1].text,
                 '工作状态':data[8].findAll('td')[1].text,
             }
+
+            # 设置identity
+            identity = self.result['identity']
+            identity.update({
+                'task_name': '厦门市',
+                'target_name': data[0].findAll('td')[1].text,
+                'target_id': self.result['meta']["身份证号"],
+                'status': "",
+            })
 
 
             # 社保明细-----医疗

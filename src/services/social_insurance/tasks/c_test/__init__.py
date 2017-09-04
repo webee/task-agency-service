@@ -68,9 +68,8 @@ class Task(AbsTaskUnitSessionTask):
                 if errormsg:
                     raise Exception(errormsg)
 
-                self.result['key'] = '%s.%s' % ('real', id_num)
+                self.result['key'] = id_num
                 self.result['meta'] = {
-                    'task': 'real',
                     'id_num': id_num,
                     'account_num': account_num,
                     'updated': time.time()
@@ -79,11 +78,10 @@ class Task(AbsTaskUnitSessionTask):
             except Exception as e:
                 err_msg = str(e)
 
-        vc = self._new_vc()
         raise AskForParamsError([
             dict(key='id_num', name='身份证号', cls='input'),
             dict(key='account_num', name='个人编号', cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
@@ -101,7 +99,7 @@ class Task(AbsTaskUnitSessionTask):
     def _new_vc(self):
         vc_url = VC_URL + str(int(time.time() * 1000))
         resp = self.s.get(vc_url)
-        return dict(content=resp.content, content_type=resp.headers['Content-Type'])
+        return dict(cls="data:image", content=resp.content, content_type=resp.headers['Content-Type'])
 
 
 if __name__ == '__main__':
