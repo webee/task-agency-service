@@ -12,19 +12,22 @@ class TaskTestClient(object):
         res = self.task.run()
         while True:
             # check ret
-            ret = res['ret']
-            if not ret:
-                print('err_msg: ', res['err_msg'])
-                break
-
-            # check done
+            end = res['end']
             done = res['done']
-            if done:
-                print('ret: ', res['data'])
+            if end and done:
+                # 执行成功
+                print('done: ', res['data'])
                 if isinstance(self.task, AbsSessionTask):
                     print('result: ', self.task.result)
                 break
 
+            if end:
+                # 执行失败
+                print('not_available: ', res['not_available'])
+                print('err_msg: ', res['err_msg'])
+                break
+
+            # 请求参数
             # check error msg
             err_msg = res.get('err_msg')
             if err_msg:
@@ -70,12 +73,6 @@ class TaskTestClient(object):
                         d = input('%s: ' % pr['name'])
                         if d:
                             break
-                        # refresh data
-                        r = self.task.query(pr['query'])
-                        if r['ret']:
-                            data = r['data']
-                        else:
-                            print('error:', r['err_msg'])
                     params[pr['key']] = d
             res = self.task.run(params)
 
