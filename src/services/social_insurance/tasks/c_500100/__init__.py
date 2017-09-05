@@ -563,7 +563,7 @@ class Task(AbsFetchTask):
     # 刷新验证码
     def _new_vc(self):
         resp = self.s.get(VC_URL)
-        return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
 
 if __name__ == '__main__':
