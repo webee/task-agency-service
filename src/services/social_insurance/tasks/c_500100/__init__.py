@@ -1,4 +1,3 @@
-import traceback
 import time
 import json
 import datetime
@@ -106,7 +105,6 @@ class Task(AbsFetchTask):
                 })
                 return
             except (AssertionError, InvalidParamsError) as e:
-                traceback.print_exc()
                 err_msg = str(e)
 
         raise AskForParamsError([

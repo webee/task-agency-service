@@ -1,5 +1,4 @@
 import re
-import traceback
 import time
 import datetime
 import requests
@@ -100,7 +99,6 @@ class Task(AbsTaskUnitSessionTask):
                 }
                 return
             except (AssertionError, InvalidParamsError) as e:
-                traceback.print_exc()
                 err_msg = str(e)
 
         raise AskForParamsError([
