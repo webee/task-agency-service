@@ -8,6 +8,7 @@ from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, InvalidConditionError
 
+LOGIN_PAGE_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/login.jsp'
 LOGIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/login_check'
 VC_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/validationCodeServlet.do'
 MAIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp'
@@ -65,7 +66,7 @@ class Task(AbsTaskUnitSessionTask):
     # 初始化/登录
     def _unit_login(self, params=None):
         err_msg = None
-        resp = self.s.get(LOGIN_URL)
+        resp = self.s.get(LOGIN_PAGE_URL)
         n = datetime.datetime.now() + datetime.timedelta(days=1)
         if 1 <= n.day <= 6:
             soup = BeautifulSoup(resp.content, 'html.parser')
