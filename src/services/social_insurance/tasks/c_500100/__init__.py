@@ -40,10 +40,6 @@ class Task(AbsFetchTask):
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
 
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
-
     def _query(self, params: dict):
         t = params.get('t')
         if t == 'vc':
