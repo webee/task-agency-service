@@ -1,14 +1,17 @@
+# 天津  社保信息
+from services.service import SessionData
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
+from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError, PreconditionNotSatisfiedError
+from services.commons import AbsFetchTask
+
 import time
 from bs4 import BeautifulSoup
-from services.service import AskForParamsError, PreconditionNotSatisfiedError
-from services.commons import AbsFetchTask
 import json
 
 MAIN_URL = r'http://public.tj.hrss.gov.cn/ehrss/si/person/ui/?code=gD3uyf'
 LOGIN_URL = r"http://public.tj.hrss.gov.cn/uaa/api/person/idandmobile/login"
 VC_URL = r"http://public.tj.hrss.gov.cn/uaa/captcha/img/"
 Detail_URL = r"http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/payment/emp/"
-
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -23,59 +26,66 @@ class Task(AbsFetchTask):
             'Host': 'public.tj.hrss.gov.cn',
         }
 
-    def _prepare(self):
+    def _prepare(self, data=None):
         super()._prepare()
-        # result
-        self.result_data['baseInfo'] = {}
+        self.result['data']['baseInfo']={}
 
-    def _setup_task_units(self):
-        self._add_unit(self._unit_login)
-        self._add_unit(self._unit_fetch_name, self._unit_login)
 
     def _query(self, params: dict):
+        """任务状态查询"""
         t = params.get('t')
         if t == 'vc':
             return self._new_vc()
-
-    # noinspection PyMethodMayBeStatic
-    def _check_login_params(self, params):
-        assert params is not None, '缺少参数'
-        assert 'id_num' in params, '缺少用户名'
-        assert 'account_pass' in params, '缺少密码'
-        assert 'vc' in params, '缺少验证码'
-        # other check
+        #pass
 
     def _new_vc(self):
         resps = self.s.get(VC_URL)
         soup = BeautifulSoup(resps.text, 'html.parser')
         vc_url = VC_URL + soup.text[7:].replace('"}', '')
-        # FIXME: 不能使用global
         global CaptchaIds
         CaptchaIds = soup.text[7:].replace('"}', '')
         resp = self.s.get(vc_url)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
 
-    # 转换五险状态
-    def _convert_type(self, nums):
-        res = ""
-        if nums == "1":
-            res = "参保"
-        elif nums == "2":
-            res = "暂停"
-        elif nums == "3":
-            res = "终止"
-        return res
+    def _setup_task_units(self):
+        """设置任务执行单元"""
+        self._add_unit(self._unit_login)
+        self._add_unit(self._unit_fetch, self._unit_login)
 
-    def _unit_login(self, params=None):
+
+    def _check_login_params(self, params):
+        assert params is not None, '缺少参数'
+        assert '用户名' in params, '缺少用户名'
+        assert '密码' in params, '缺少密码'
+        # other check
+        用户名 = params['用户名']
+        密码 = params['密码']
+
+        if len(用户名)==0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(用户名)<4:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码)==0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码)<6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
+
+
+    def _unit_login(self, params: dict):
         err_msg = None
         if params:
-            # 非开始或者开始就提供了参数
             try:
+                self._check_login_params(params)
+                self.result_key = params.get('用户名')
+                # 保存到meta
+                self.result_meta['用户名'] = params.get('用户名')
+                self.result_meta['密码'] = params.get('密码')
 
-                id_num = params['id_num']
-                account_pass = params['account_pass']
+                id_num = params.get("用户名")
+                account_pass = params.get("密码")
                 CaptchaId = CaptchaIds
-                vc = params['vc']
+                vc = params.get("vc")
 
                 data = {
                     'username': id_num,
@@ -85,24 +95,35 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data)
 
-                self.result['key'] = id_num
-                self.result['meta'] = {
-                    '用户名': id_num,
-                    '登录密码': account_pass
-                }
+                # 检查是否登录成功
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='id_num', name='用户名', cls='input', placeholder='身份证号', value=params.get('id_num', '')),
-            dict(key='account_pass', name='登录密码', cls='input', value=params.get('account_pass', '')),
+            dict(key='用户名', name='用户名', cls='input', placeholder='手机,社保卡或身份证号', value=params.get('用户名', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
-    def _unit_fetch_name(self):
+
+    # 转换五险状态
+    def _convert_type(self, nums):
+        res = ""
+        if nums == "1":
+            res = "正常参保"
+        elif nums == "2":
+            res = "暂停"
+        elif nums == "3":
+            res = "终止"
+        return res
+
+
+    def _unit_fetch(self):
         try:
+            # TODO: 执行任务，如果没有登录，则raise PermissionError
+
             rest = self.s.get("http://public.tj.hrss.gov.cn/api/security/user")
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
 
@@ -179,10 +200,11 @@ class Task(AbsFetchTask):
 
                 modelE = {
                     '缴费单位': detailEI[a]['payCompany'],
-                    '缴费年月': detailEI[a]['payDate'],
+                    '缴费类型':'',
+                    '缴费时间': detailEI[a]['payDate'],
                     '缴费基数': detailEI[a]['payBase'],
-                    '单位缴存额': detailEI[a]['companyOverallPay'],
-                    '个人缴存额': detailEI[a]['personPay'],
+                    '公司缴费': detailEI[a]['companyOverallPay'],
+                    '个人缴费': detailEI[a]['personPay'],
                 }
 
                 perTotalold += float(detailEI[a]['personPay'])  # 个人养老累积缴费
@@ -200,10 +222,11 @@ class Task(AbsFetchTask):
 
                 modelH = {
                     '缴费单位': detailHI[b]['payCompany'],
-                    '缴费年月': detailHI[b]['payDate'],
+                    '缴费类型': '',
+                    '缴费时间': detailHI[b]['payDate'],
                     '缴费基数': detailHI[b]['payBase'],
-                    '单位缴存额': detailHI[b]['companyOverallPay'],
-                    '个人缴存额': detailHI[b]['personPay'],
+                    '公司缴费': detailHI[b]['companyOverallPay'],
+                    '个人缴费': detailHI[b]['personPay'],
                     # '缴费合计': detailHI[b]['payCount']
                 }
 
@@ -222,10 +245,11 @@ class Task(AbsFetchTask):
 
                 modelC = {
                     '缴费单位': detailCI[c]['payCompany'],
-                    '缴费年月': detailCI[c]['payDate'],
+                    '缴费类型': '',
+                    '缴费时间': detailCI[c]['payDate'],
                     '缴费基数': detailCI[c]['payBase'],
-                    '单位缴存额': detailCI[c]['companyOverallPay'],
-                    '个人缴存额': detailCI[c]['personPay'],
+                    '公司缴费': detailCI[c]['companyOverallPay'],
+                    '个人缴费': '-',
                 }
 
                 basedataC[yearC][monthC].append(modelC)
@@ -242,10 +266,11 @@ class Task(AbsFetchTask):
 
                 modelI = {
                     '缴费单位': detailII[d]['payCompany'],
-                    '缴费年月': detailII[d]['payDate'],
+                    '缴费类型': '',
+                    '缴费时间': detailII[d]['payDate'],
                     '缴费基数': detailII[d]['payBase'],
-                    '单位缴存额': detailII[d]['companyOverallPay'],
-                    '个人缴存额': detailII[d]['personPay'],
+                    '公司缴费': detailII[d]['companyOverallPay'],
+                    '个人缴费': detailII[d]['personPay'],
                 }
 
                 basedataI[yearI][monthI].append(modelI)
@@ -262,10 +287,11 @@ class Task(AbsFetchTask):
 
                 modelB = {
                     '缴费单位': detailBI[f]['payCompany'],
-                    '缴费年月': detailBI[f]['payDate'],
+                    '缴费类型': '',
+                    '缴费时间': detailBI[f]['payDate'],
                     '缴费基数': detailBI[f]['payBase'],
-                    '单位缴存额': detailBI[f]['companyOverallPay'],
-                    '个人缴存额': detailBI[f]['personPay'],
+                    '公司缴费': detailBI[f]['companyOverallPay'],
+                    '个人缴费': '-',
                 }
 
                 basedataB[yearB][monthB].append(modelB)
@@ -309,15 +335,26 @@ class Task(AbsFetchTask):
                 # '户口所在地详址':rs['householdAddress']
             }
 
+            if(social_Type['养老']=="正常参保"):
+                statuss="正常"
+            else:
+                statuss="异常"
+
+            self.result['identity']={
+                "task_name": "天津",
+                "target_name":rs['name'],
+                "target_id": self.result_meta['用户名'],
+                "status": statuss
+            }
+
             return
-        except PermissionError as e:
+        except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-
-    client = TaskTestClient(Task())
+    client = TaskTestClient(Task(SessionData()))
     client.run()
 
     # 120103197208142619  scz518695
