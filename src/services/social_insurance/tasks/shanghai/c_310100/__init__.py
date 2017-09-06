@@ -120,7 +120,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='用户名', name='用户名', cls='input', value=params.get('用户名', '')),
+            dict(key='用户名', name='用户名', cls='input', placeholder='请输入身份证号', value=params.get('用户名', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
