@@ -39,7 +39,7 @@ class Task(AbsFetchTask):
     def _setup_task_units(self):
         """设置任务执行单元"""
         self._add_unit(self._unit_login)
-
+        self._add_unit(self._unit_fetch, self._unit_login)
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
@@ -82,10 +82,6 @@ class Task(AbsFetchTask):
                 resp = self.s.post("http://www.12333sh.gov.cn/sbsjb/wzb/dologin.jsp", data=data)
 
                 # 检查是否登录成功
-                if(resp.text.find('成功')>0):
-                    self._add_unit(self._unit_fetch, self._unit_login)
-                else:
-                    raise TaskNotAvailableError("登录失败！")
 
                 return
             except (AssertionError, InvalidParamsError) as e:
@@ -115,7 +111,7 @@ class Task(AbsFetchTask):
                 '最近缴费时间': years[len(years) - 1].find('jsjs1').text,
                 # '开始缴费时间':'',
                 '个人养老累积缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
-                # '个人医疗累积缴费':''
+                '个人医疗累积缴费':''
             }
 
             # 社保缴费明细
@@ -140,11 +136,20 @@ class Task(AbsFetchTask):
                     '缴费年月': details[a].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[a].find('jsjs1').text, dt),
                     '缴费基数': details[a].find('jsjs3').text,
-                    '应缴金额': details[a].find('jsjs4').text,
+                    '公司缴费': details[a].find('jsjs4').text,
                     '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,
                                               years[a].find('jsjs3').text)
                 }
                 dataBaseE[yearE][monthE].append(modelE)
+
+            # rescount=len(details)-1
+            # dataBaseE[details[rescount].find('jsjs1').text[0:4]][details[rescount].find('jsjs1').text[4:6]] = {
+            #     '缴费年月': details[rescount].find('jsjs1').text,
+            #     '缴费单位': self._match_commapy(details[rescount].find('jsjs1').text, dt),
+            #     '缴费基数': details[rescount].find('jsjs3').text,
+            #     '应缴金额': details[rescount].find('jsjs4').text,
+            #     '实缴金额': ''
+            # }
 
 
             # 医疗
