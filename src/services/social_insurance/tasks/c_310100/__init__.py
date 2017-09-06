@@ -110,8 +110,8 @@ class Task(AbsFetchTask):
                 '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
                 '最近缴费时间': years[len(years) - 1].find('jsjs1').text,
                 '开始缴费时间':'',
-                '个人养老累积缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
-                '个人医疗累积缴费':''
+                '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
+                '个人医疗累计缴费':''
             }
 
             # 社保缴费明细

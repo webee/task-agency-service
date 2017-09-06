@@ -323,8 +323,8 @@ class Task(AbsFetchTask):
                 '缴费时长': counts,
                 '最近缴费时间': detailEI[len(detailEI) - 1]['payDate'],
                 '开始缴费时间': rs['workDate'][0:6],
-                '个人养老累积缴费': perTotalold,
-                '个人医疗累积缴费': perTotalMedical,
+                '个人养老累计缴费': perTotalold,
+                '个人医疗累计缴费': perTotalMedical,
                 '五险状态': social_Type
                 # '性别': sexs,
                 # '民族':nations,
