@@ -109,9 +109,9 @@ class Task(AbsFetchTask):
                 '城市编号': '310100',
                 '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
                 '最近缴费时间': years[len(years) - 1].find('jsjs1').text,
-                # '开始缴费时间':'',
-                '个人养老累积缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
-                '个人医疗累积缴费':''
+                '开始缴费时间':'',
+                '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
+                '个人医疗累计缴费':''
             }
 
             # 社保缴费明细
@@ -133,23 +133,16 @@ class Task(AbsFetchTask):
                 dataBaseE[yearE].setdefault(monthE, [])
 
                 modelE = {
-                    '缴费年月': details[a].find('jsjs1').text,
+                    '缴费时间': details[a].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[a].find('jsjs1').text, dt),
                     '缴费基数': details[a].find('jsjs3').text,
-                    '公司缴费': details[a].find('jsjs4').text,
+                    '缴费类型': '-',
+                    '公司缴费':'-',
+                    '个人缴费': details[a].find('jsjs4').text,
                     '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,
                                               years[a].find('jsjs3').text)
                 }
                 dataBaseE[yearE][monthE].append(modelE)
-
-            # rescount=len(details)-1
-            # dataBaseE[details[rescount].find('jsjs1').text[0:4]][details[rescount].find('jsjs1').text[4:6]] = {
-            #     '缴费年月': details[rescount].find('jsjs1').text,
-            #     '缴费单位': self._match_commapy(details[rescount].find('jsjs1').text, dt),
-            #     '缴费基数': details[rescount].find('jsjs3').text,
-            #     '应缴金额': details[rescount].find('jsjs4').text,
-            #     '实缴金额': ''
-            # }
 
 
             # 医疗
@@ -167,11 +160,12 @@ class Task(AbsFetchTask):
                 dataBaseH[yearH].setdefault(monthH, [])
 
                 modelH = {
-                    '缴费年月': details[b].find('jsjs1').text,
+                    '缴费时间': details[b].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[b].find('jsjs1').text, dt),
                     '缴费基数': details[b].find('jsjs3').text,
-                    '应缴金额': details[b].find('jsjs6').text,
-                    '实缴金额':''
+                    '缴费类型': '-',
+                    '公司缴费': '-',
+                    '个人缴费': details[b].find('jsjs6').text,
                 }
                 dataBaseH[yearH][monthH].append(modelH)
 
@@ -191,20 +185,39 @@ class Task(AbsFetchTask):
                 dataBaseI[yearI].setdefault(monthI, [])
 
                 modelI = {
-                    '缴费年月': details[c].find('jsjs1').text,
+                    '缴费时间': details[c].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[c].find('jsjs1').text, dt),
                     '缴费基数': details[c].find('jsjs3').text,
-                    '应缴金额': details[c].find('jsjs8').text,
-                    '实缴金额': ''
+                    '缴费类型': '-',
+                    '公司缴费': '-',
+                    '个人缴费': details[c].find('jsjs8').text,
                 }
                 dataBaseI[yearI][monthI].append(modelI)
+
+            # 工伤
+            self.result['data']['injuries'] = {
+                "data": {
+                    # '缴费时间': '-',
+                    # '缴费单位': '-',
+                    # '缴费基数': '-',
+                    # '缴费类型': '-',
+                    # '公司缴费': '-',
+                    # '个人缴费': '-',
+                }
+            }
+
+
+            # 生育
+            self.result['data']['maternity'] = {
+                "data": {}
+            }
 
 
             self.result['identity']={
                 "task_name": "上海",
                 "target_name": soup.find('xm').text,
                 "target_id": self.result_meta['用户名'],
-                "status": "正常"
+                "status": ""
             }
 
             return
