@@ -1,4 +1,3 @@
-import traceback
 import time
 import json
 import datetime
@@ -40,10 +39,6 @@ class Task(AbsFetchTask):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
-
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -106,7 +101,6 @@ class Task(AbsFetchTask):
                 })
                 return
             except (AssertionError, InvalidParamsError) as e:
-                traceback.print_exc()
                 err_msg = str(e)
 
         raise AskForParamsError([
@@ -565,7 +559,7 @@ class Task(AbsFetchTask):
     # 刷新验证码
     def _new_vc(self):
         resp = self.s.get(VC_URL)
-        return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
 
 if __name__ == '__main__':

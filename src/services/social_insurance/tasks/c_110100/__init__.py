@@ -1,5 +1,4 @@
 import re
-import traceback
 import time
 import datetime
 import requests
@@ -7,7 +6,9 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, InvalidConditionError
+from services.commons import AbsFetchTask
 
+LOGIN_PAGE_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/login.jsp'
 LOGIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/login_check'
 VC_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/validationCodeServlet.do'
 MAIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp'
@@ -16,38 +17,23 @@ DETAILED_LIST_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indPaySea
 MEDICAL_TREATMENT_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indMedicalSearchAction!queryMedicalInfo"
 
 
-class Task(AbsTaskUnitSessionTask):
+class Task(AbsFetchTask):
     task_info = dict(
         city_name="北京",
         help="""
         """
     )
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
 
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
-        result.setdefault('identity', {})
+    def _get_common_headers(self):
+        return {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
+        }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
         self._add_unit(self._unit_fetch_user_medical_treatment, self._unit_login)
-
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -62,10 +48,33 @@ class Task(AbsTaskUnitSessionTask):
         assert 'safecode' in params, '缺少验证码'
         # other check
 
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if 'j_username' not in params:
+                params['j_username'] = meta.get('身份证编号')
+            if 'j_password' not in params:
+                params['j_password'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == 'j_username' and '身份证编号' in meta:
+                continue
+            elif pr['key'] == 'j_password' and '密码' in meta:
+                continue
+            elif pr['key'] == 'other':
+                continue
+            res.append(pr)
+        return res
+
     # 初始化/登录
     def _unit_login(self, params=None):
         err_msg = None
-        resp = self.s.get(LOGIN_URL)
+        resp = self.s.get(LOGIN_PAGE_URL)
         n = datetime.datetime.now() + datetime.timedelta(days=1)
         if 1 <= n.day <= 6:
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -99,7 +108,6 @@ class Task(AbsTaskUnitSessionTask):
                 }
                 return
             except (AssertionError, InvalidParamsError) as e:
-                traceback.print_exc()
                 err_msg = str(e)
 
         raise AskForParamsError([
@@ -637,7 +645,7 @@ class Task(AbsTaskUnitSessionTask):
     # 验证码
     def _new_vc(self):
         resp = self.s.get(VC_URL)
-        return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
 
 if __name__ == '__main__':
