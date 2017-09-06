@@ -1,12 +1,15 @@
+import os
 import logging
 import importlib
+import pkgutil
+import re
 import traceback
 import time
 from typing import List, Callable, TypeVar
 from abc import ABCMeta, abstractmethod
 import uuid
 from collections import namedtuple
-from .errors import AskForParamsError, TaskNotAvailableError, PreconditionNotSatisfiedError, TaskNotImplementedError
+from services.errors import AskForParamsError, TaskNotAvailableError, PreconditionNotSatisfiedError, TaskNotImplementedError
 
 
 logger = logging.getLogger(__name__)
@@ -434,9 +437,12 @@ class SessionTasksManager(object):
         task_id = session_data.task_id
         try:
             task_cls = self._tcf.find(task_id)
+            if task_cls is None:
+                raise RuntimeError()
         except:
             logger.warning(traceback.format_exc())
-            raise ValueError('can not find task: %s' % task_id)
+            raise ImportError('can not find task: %s' % task_id)
+
         return task_cls(session_data, prepare_data, is_start=is_start)
 
 
@@ -478,3 +484,42 @@ class PathTaskClassFinder(AbsTaskClassFinder):
     def find(self, task_id: str):
         m = importlib.import_module(self._get_path_func(task_id))
         return getattr(m, self._cls_name)
+
+
+class PackageTaskClassFinder(AbsTaskClassFinder):
+    def __init__(self, base_package: str, cls_name: str, task_name_pattern: str, get_task_name_func: Callable):
+        """
+        递归扫描package寻找指定的任务类
+        :param base_path: 任务父路径
+        :param cls_name: 任务类名称
+        :param task_name_pattern: 任务名模式
+        :param get_task_name_func: 通过task_id生成任务名的方法
+        """
+        self._base_path = importlib.import_module(base_package).__path__[0]
+        self._cls_name = cls_name
+        self._task_name_pattern = re.compile(task_name_pattern)
+        self._get_task_name_func = get_task_name_func
+        self._task_modules = {}
+        self._initial_scan(self._base_path)
+
+    def _initial_scan(self, base_path):
+        for importer, name, is_pkg in pkgutil.iter_modules([base_path]):
+            if name.startswith('_'):
+                continue
+
+            if self._task_name_pattern.match(name):
+                self._task_modules[name] = importer.find_module(name).load_module(name)
+                continue
+
+            if is_pkg:
+                self._initial_scan(os.path.join(base_path, name))
+
+    def find(self, task_id: str):
+        m = self._task_modules.get(self._get_task_name_func(task_id))
+        if m:
+            return getattr(m, self._cls_name)
+
+
+if __name__ == '__main__':
+    from services.social_insurance import tasks
+    ptcf = PackageTaskClassFinder(tasks.__package__, 'Task', r'^c_\d+$', lambda task_id: 'c_%s' % task_id)
