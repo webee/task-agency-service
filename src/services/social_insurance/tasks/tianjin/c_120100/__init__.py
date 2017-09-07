@@ -288,6 +288,7 @@ class Task(AbsFetchTask):
 
                 basedataC[yearC][monthC].append(modelC)
 
+
             # 社保明细-----失业
             rpII = self.s.get(Detail_URL + str(
                 s) + "?beginTime=" + beginTime + "&endTime=" + endTime + "&insureCode=210&paymentFlag=" + paymentFlag)
@@ -308,6 +309,7 @@ class Task(AbsFetchTask):
                 }
 
                 basedataI[yearI][monthI].append(modelI)
+
 
             # 社保明细-----生育
             rpBI = self.s.get(Detail_URL + str(
@@ -330,6 +332,7 @@ class Task(AbsFetchTask):
 
                 basedataB[yearB][monthB].append(modelB)
 
+
             # 五险状态
             stype = json.loads(
                 self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/insure/" + str(s) + "").text)
@@ -340,6 +343,7 @@ class Task(AbsFetchTask):
                 '工伤': self._convert_type(stype[5]['paymentState']),
                 '生育': self._convert_type(stype[6]['paymentState'])
             }
+
 
             # 个人基本详细信息
             counts = 0;
