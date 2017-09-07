@@ -40,8 +40,7 @@ class Task(AbsFetchTask):
         resps = self.s.get(VC_URL)
         soup = BeautifulSoup(resps.text, 'html.parser')
         vc_url = VC_URL + soup.text[7:].replace('"}', '')
-        global CaptchaIds
-        CaptchaIds = soup.text[7:].replace('"}', '')
+        self.state['CaptchaIds'] = soup.text[7:].replace('"}', '')
         resp = self.s.get(vc_url)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
 
@@ -98,7 +97,7 @@ class Task(AbsFetchTask):
 
                 id_num = params.get("用户名")
                 account_pass = params.get("密码")
-                CaptchaId = CaptchaIds
+                CaptchaId = self.state['CaptchaIds']
                 vc = params.get("vc")
 
                 data = {
