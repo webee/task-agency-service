@@ -5,7 +5,6 @@ from services.commons import AbsFetchTask
 
 import time
 from bs4 import BeautifulSoup
-import execjs
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -17,7 +16,7 @@ class Task(AbsFetchTask):
         return {
             'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
             'Accept-Encoding':'gzip, deflate, sdch',
-            'Host':'zlss.hrssgz.gov.cn'
+            'Host':'gzlss.hrssgz.gov.cn'
         }
 
     def _prepare(self):
@@ -64,6 +63,7 @@ class Task(AbsFetchTask):
             raise InvalidParamsError('账号或密码错误')
 
     def _loadJs(self):
+        import execjs
         jsstr = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/security.js")
         ctx = execjs.compile(jsstr.text)
         modlus="00a6adde094d3a76cd88df34026e9b034560485c1c0c90fab750c4335de9968532b3ce99503c7f856238c51c9494d069f274cacaa0c918013c08bab250602f6d71f91e60980942ed9b5e6fcc069f78a831d3dd9b3b45a10c8f19d0b29c8c26aa5aff535ecf27ef3ca0b0d0f008ce587f1c6e427e4724f8e8bf5414f286dac64957"
@@ -78,6 +78,8 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['账号'] = params.get('账号')
                 self.result_meta['密码'] = params.get('密码')
+
+                raise TaskNotImplementedError('查询服务维护中')
 
                 resp = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
                 lt=BeautifulSoup(resp.content,'html.parser').find('input',{'name':'lt'})['value']
