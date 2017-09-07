@@ -28,6 +28,10 @@ class Task(AbsFetchTask):
             'Host': 'www.12333sh.gov.cn',
         }
 
+    def _prepare(self, data=None):
+        super()._prepare()
+        self.result['data']['baseInfo']={}
+
     def _query(self, params: dict):
         """任务状态查询"""
         t = params.get('t')
