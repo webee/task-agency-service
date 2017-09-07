@@ -29,6 +29,10 @@ class Task(AbsFetchTask):
             'Host': 'public.tj.hrss.gov.cn',
         }
 
+    def _prepare(self, data=None):
+        super()._prepare()
+        self.result['data']['baseInfo']={}
+
     def _query(self, params: dict):
         """任务状态查询"""
         t = params.get('t')
@@ -148,9 +152,12 @@ class Task(AbsFetchTask):
 
             rest = self.s.get("http://public.tj.hrss.gov.cn/api/security/user")
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
+            s2=json.loads(rest.text)["associatedPersons"][0]["personNumber"]
 
             respon = self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/persons/" + str(s))
+            respon2=self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/persons/overview/" + s2)
             rs = json.loads((respon.text))
+            rs2=json.loads((respon2.text))
             # if rs['sex']=="1":            #性别
             #     sexs='男'
             # elif rs['sex']=="2":
@@ -225,8 +232,10 @@ class Task(AbsFetchTask):
                     '缴费类型': '',
                     '缴费时间': str(detailEI[a]['payDate']),
                     '缴费基数': detailEI[a]['payBase'],
-                    '公司缴费': detailEI[a]['companyOverallPay'],
+                    '公司缴费': float(detailEI[a]['companyOverallPay'])+float(detailEI[a]['companyPay']),
                     '个人缴费': detailEI[a]['personPay'],
+                    '单位划入统筹': detailEI[a]['companyOverallPay'],
+                    '单位划入个账': detailEI[a]['companyPay']
                 }
 
                 perTotalold += float(detailEI[a]['personPay'])  # 个人养老累计缴费
@@ -247,13 +256,16 @@ class Task(AbsFetchTask):
                     '缴费类型': '',
                     '缴费时间': str(detailHI[b]['payDate']),
                     '缴费基数': detailHI[b]['payBase'],
-                    '公司缴费': detailHI[b]['companyOverallPay'],
+                    '公司缴费': float(detailHI[b]['companyOverallPay'])+float(detailHI[b]['companyPay']),
                     '个人缴费': detailHI[b]['personPay'],
                     # '缴费合计': detailHI[b]['payCount']
+                    '单位划入统筹':detailHI[b]['companyOverallPay'],
+                    '单位划入个账':detailHI[b]['companyPay']
                 }
 
                 perTotalMedical += float(detailHI[b]['personPay'])  # 个人医疗累计缴费
                 basedataH[yearH][monthH].append(modelH)
+
 
             # 社保明细-----工伤
             rpCI = self.s.get(Detail_URL + str(
@@ -276,6 +288,7 @@ class Task(AbsFetchTask):
 
                 basedataC[yearC][monthC].append(modelC)
 
+
             # 社保明细-----失业
             rpII = self.s.get(Detail_URL + str(
                 s) + "?beginTime=" + beginTime + "&endTime=" + endTime + "&insureCode=210&paymentFlag=" + paymentFlag)
@@ -296,6 +309,7 @@ class Task(AbsFetchTask):
                 }
 
                 basedataI[yearI][monthI].append(modelI)
+
 
             # 社保明细-----生育
             rpBI = self.s.get(Detail_URL + str(
@@ -318,6 +332,7 @@ class Task(AbsFetchTask):
 
                 basedataB[yearB][monthB].append(modelB)
 
+
             # 五险状态
             stype = json.loads(
                 self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/insure/" + str(s) + "").text)
@@ -328,6 +343,7 @@ class Task(AbsFetchTask):
                 '工伤': self._convert_type(stype[5]['paymentState']),
                 '生育': self._convert_type(stype[6]['paymentState'])
             }
+
 
             # 个人基本详细信息
             counts = 0;
@@ -347,7 +363,7 @@ class Task(AbsFetchTask):
                 '开始缴费时间': str(detailEI[0]['payDate']),
                 '个人养老累计缴费': perTotalold,
                 '个人医疗累计缴费': perTotalMedical,
-                '五险状态': social_Type
+                '五险状态': social_Type,
                 # '性别': sexs,
                 # '民族':nations,
                 # '出生日期':rs['birthday'],
@@ -355,6 +371,9 @@ class Task(AbsFetchTask):
                 # '手机号码':mobileNumber,
                 # '户口性质':householdTypes,
                 # '户口所在地详址':rs['householdAddress']
+                '医疗账户余额':str(rs2['medicalBalance'])+"元",
+                '城职养老账户余额':str(rs2['empAccountSum'])+"元",
+                '职业年金余额':str(rs2['residentAccountSum'])+"元"
             }
 
             if (social_Type['养老'] == "正常参保"):
