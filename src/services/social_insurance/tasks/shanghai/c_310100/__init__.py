@@ -15,9 +15,9 @@ VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist.jsp"
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="上海",
-        help="""<li>用户名：输入公民身份证号码；</li>
+        help="""<li>用户名：为参保人身份证号</li>
         <li>密码：一般为6位数字；</li>
-        <li>首次申请密码或遗忘网上登录密码，本人须携带有效身份证件至就近街道社区事务受理中心中就近社保分中心自助机具上申请办理。</li>
+        <li>首次申请密码或遗忘网上登录密码，本人需携带有效身份证件至就近接到社区事务受理中心或就近社保分中心自助机申请办理。</li>
         """
     )
 
@@ -132,6 +132,7 @@ class Task(AbsFetchTask):
             resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx.jsp")
             soup = BeautifulSoup(resp.content, 'html.parser')
             years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
+            details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
 
             self.result['data']['baseInfo'] = {
                 '姓名': soup.find('xm').text,
@@ -140,8 +141,8 @@ class Task(AbsFetchTask):
                 '城市名称': '上海市',
                 '城市编号': '310100',
                 '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
-                '最近缴费时间': years[len(years) - 1].find('jsjs1').text,
-                '开始缴费时间': years[0].find('jsjs1').text,
+                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
+                '开始缴费时间': details[0].find('jsjs1').text,
                 '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
                 '个人医疗累计缴费': ''
             }
