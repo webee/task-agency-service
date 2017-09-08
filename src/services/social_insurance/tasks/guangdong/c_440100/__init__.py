@@ -14,7 +14,9 @@ VC_URL="http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="广州",
-        help=""""""
+        help="""
+        <li>个人用户第一次忘记密码，需要到各办事窗口办理；在办事窗口补充完整相关信息（如电子邮箱地址）以后，忘记密码功能才能使用。</li>
+        """
     )
 
     def _get_common_headers(self):

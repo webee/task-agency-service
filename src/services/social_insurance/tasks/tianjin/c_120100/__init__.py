@@ -19,7 +19,10 @@ Detail_URL = "http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/payment/em
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="天津",
-        help=""""""
+        help="""
+        <li>如您未在社保网站查询过您的社保信息，请到天津社保网上服务平台完成“注册”后再登录查询</li>
+        <li>如忘记密码，可在天津社保网上服务平台中的”忘记密码”中重置密码</li>
+        """
     )
 
     def _get_common_headers(self):
