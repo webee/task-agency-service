@@ -6,12 +6,9 @@ from services.commons import AbsFetchTask
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="广州",
-        help=""""""
+        city_name="杭州",
+        help="""首次申请密码或遗忘网上登陆密码，本人须携带有效身份证件至就近街道社区事务受理中心或就近社保分中心自助机具上申请办理"""
     )
-
-    def _get_common_headers(self):
-        return {}
 
     def _prepare(self):
         """恢复状态，初始化结果"""
@@ -35,6 +32,9 @@ class Task(AbsFetchTask):
         # result: dict = self.result
         # TODO: update temp result
 
+    def _get_common_headers(self):
+        return {}
+
     def _query(self, params: dict):
         """任务状态查询"""
         pass
@@ -53,8 +53,15 @@ class Task(AbsFetchTask):
         密码 = params['密码']
         if len(密码) < 4:
             raise InvalidParamsError('账号或密码错误')
-        if len(账号) < 4:
-            raise InvalidParamsError('账号或密码错误')
+        if 账号.isdigit():
+            if len(账号) < 15:
+                raise InvalidParamsError('身份证错误')
+            return
+        if '@' in 账号:
+            if not 账号.endswith('@hz.cn'):
+                raise InvalidParamsError('市民邮箱错误')
+            return
+        raise InvalidParamsError('账号或密码错误')
 
     def _unit_login(self, params: dict):
         err_msg = None
@@ -71,7 +78,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input', value=params.get('账号', '')),
+            dict(key='账号', name='账号', cls='input', placeholder='身份证号或者市民邮箱(@hz.cn)', value=params.get('账号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
