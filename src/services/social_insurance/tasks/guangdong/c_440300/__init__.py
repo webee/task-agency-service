@@ -37,7 +37,7 @@ class Task(AbsFetchTask):
         """设置任务执行单元"""
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_userinfo,self._unit_login)
-        #self._add_unit(self._unit_fetch, self._unit_login)
+        self._add_unit(self._unit_fetch, self._unit_login)
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
@@ -129,7 +129,6 @@ class Task(AbsFetchTask):
             jsonread = json.loads(soup.text)
             userinfo=jsonread['datas']
             fivedic = {}
-            monthnum = 0
             status = '不正常'
             for k,v in userinfo['ncm_gt_用户信息']['params'].items():
                 if k.find('参保状态')==-1:
@@ -138,12 +137,16 @@ class Task(AbsFetchTask):
                     fivedic.setdefault(k[:2], v)
                 else:
                     self.result_data["baseInfo"].setdefault(k, v)
-                    if k.find('累计月数') == -1 and monthnum < int(v):
-                        monthnum = int(v)
                     if k=='姓名':
                         self.result_identity['target_name'] = v
                     if k=='身份证号':
                         self.result_identity['target_id'] =v
+
+            monthnum = 0
+            for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
+                self.result_data["baseInfo"].setdefault(k, v)
+                if k.find('保险累计月数') == -1 and monthnum < int(v):
+                    monthnum = int(v)
             self.result_identity['status'] =status
             self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
             self.result_data["baseInfo"].setdefault('五险状态',fivedic)
