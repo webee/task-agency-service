@@ -15,9 +15,9 @@ USERINFO_URL='https://seyb.szsi.gov.cn/web/ajax.do'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="深圳",
-        help="""1.若您尚未激活或者没有在网上查询过您的社保卡，请点击激活社保账号<br/>
-        2.如果您曾经激活过社保卡，但忘记密码，请点击忘记密码<br/>
-        3.如办理社保卡时，没有登记手机号码或者更换手机号码，请本人携带身份证原件和新手机到社保分中心柜台办理注册手机变更业务。
+        help="""<li>1.若您尚未激活或者没有在网上查询过您的社保卡，请点击激活社保账号</li>
+        <li>2.如果您曾经激活过社保卡，但忘记密码，请点击忘记密码</li>
+        <li>3.如办理社保卡时，没有登记手机号码或者更换手机号码，请本人携带身份证原件和新手机到社保分中心柜台办理注册手机变更业务。</li>
         """
     )
 
@@ -127,28 +127,26 @@ class Task(AbsFetchTask):
             resp = self.s.post(USERINFO_URL,datas)
             soup = BeautifulSoup(resp.content, 'html.parser')
             jsonread = json.loads(soup.text)
-
-            userinfoname = soup.findAll('dt')
-            userinfovalues = soup.findAll('dd')
-            fivedic={}
+            userinfo=jsonread['datas']
+            fivedic = {}
             monthnum = 0
-            status='不正常'
-            for i in range(0,len(userinfoname)):
-                if userinfoname[i].find('参保状态')==-1:
-                    if userinfovalues[i]=='参加':
-                       status = '正常'
-                    fivedic.setdefault(userinfoname[:2],userinfovalues)
+            status = '不正常'
+            for k,v in userinfo['ncm_gt_用户信息']['params'].items():
+                if k.find('参保状态')==-1:
+                    if v == '参加':
+                        status = '正常'
+                    fivedic.setdefault(k[:2], v)
                 else:
-                    self.result_data["baseInfo"].setdefault(userinfoname[i],userinfovalues[i])
-                    if userinfoname[i].find('累计月数')==-1 and monthnum < int(userinfovalues[i]):
-                        monthnum = int(userinfovalues[i])
-
+                    self.result_data["baseInfo"].setdefault(k, v)
+                    if k.find('累计月数') == -1 and monthnum < int(v):
+                        monthnum = int(v)
+                    if k=='姓名':
+                        self.result_identity['target_name'] = v
+                    if k=='身份证号':
+                        self.result_identity['target_id'] =v
             self.result_identity['status'] =status
             self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
             self.result_data["baseInfo"].setdefault('五险状态',fivedic)
-            self.result_identity['target_name']=''
-            self.result_identity['target_id']=''
-
             #TODO: 执行任务，如果没有登录，则raise PermissionError
             return
         except PermissionError as e:
