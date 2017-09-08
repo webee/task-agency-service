@@ -6,6 +6,10 @@ from services.commons import AbsFetchTask
 import time
 from bs4 import BeautifulSoup
 import execjs
+import re
+
+LOGIN_URL="http://gzlss.hrssgz.gov.cn/cas/cmslogin"
+VC_URL="http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -18,6 +22,7 @@ class Task(AbsFetchTask):
             'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
             'Accept-Encoding':'gzip, deflate, sdch',
             'Host':'zlss.hrssgz.gov.cn'
+
         }
 
     def _prepare(self):
@@ -31,20 +36,16 @@ class Task(AbsFetchTask):
         # result: dict = self.result
         # TODO: restore from result
 
-    def _update_session_data(self):
-        """保存任务状态"""
-        super()._update_session_data()
-        # state
-        # state: dict = self.state
-        # TODO: update state
-
-        # result
-        # result: dict = self.result
-        # TODO: update temp result
-
     def _query(self, params: dict):
         """任务状态查询"""
-        pass
+        t = params.get('t')
+        if t == 'vc':
+            return self._new_vc()
+            # pass
+
+    def _new_vc(self):
+        resp = self.s.get(VC_URL)
+        return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -64,10 +65,12 @@ class Task(AbsFetchTask):
             raise InvalidParamsError('账号或密码错误')
 
     def _loadJs(self):
+        resps = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
+        modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"','')
+        #jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
         jsstr = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/security.js")
         ctx = execjs.compile(jsstr.text)
-        modlus="00a6adde094d3a76cd88df34026e9b034560485c1c0c90fab750c4335de9968532b3ce99503c7f856238c51c9494d069f274cacaa0c918013c08bab250602f6d71f91e60980942ed9b5e6fcc069f78a831d3dd9b3b45a10c8f19d0b29c8c26aa5aff535ecf27ef3ca0b0d0f008ce587f1c6e427e4724f8e8bf5414f286dac64957"
-        print(ctx.call('getKeyPair', '010001','',modlus))
+        key=ctx.call("RSAUtils.getKeyPair ", '010001','',modlus)
 
     def _unit_login(self, params: dict):
         err_msg = None
@@ -79,6 +82,8 @@ class Task(AbsFetchTask):
                 self.result_meta['账号'] = params.get('账号')
                 self.result_meta['密码'] = params.get('密码')
 
+                self._loadJs()
+
                 resp = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
                 lt=BeautifulSoup(resp.content,'html.parser').find('input',{'name':'lt'})['value']
                 data={
@@ -89,13 +94,16 @@ class Task(AbsFetchTask):
                     '_eventId':'submit'
                 }
 
-                resps=self.s.post("http://gzlss.hrssgz.gov.cn/cas/login",data)
+                resps=self.s.post("http://gzlss.hrssgz.gov.cn/cas/login?service=http://gzlss.hrssgz.gov.cn:80/gzlss_web/business/tomain/main.xhtml",data)
+                raise  InvalidParamsError(resps.text)
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
             dict(key='账号', name='账号', cls='input', value=params.get('账号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch(self):

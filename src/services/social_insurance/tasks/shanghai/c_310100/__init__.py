@@ -136,6 +136,7 @@ class Task(AbsFetchTask):
             resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx.jsp")
             soup = BeautifulSoup(resp.content, 'html.parser')
             years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
+            details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
 
             self.result['data']['baseInfo'] = {
                 '姓名': soup.find('xm').text,
@@ -144,8 +145,8 @@ class Task(AbsFetchTask):
                 '城市名称': '上海市',
                 '城市编号': '310100',
                 '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
-                '最近缴费时间': years[len(years) - 1].find('jsjs1').text,
-                '开始缴费时间': years[0].find('jsjs1').text,
+                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
+                '开始缴费时间': details[0].find('jsjs1').text,
                 '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
                 '个人医疗累计缴费': ''
             }
