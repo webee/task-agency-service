@@ -1,5 +1,4 @@
 import base64
-import urllib3
 import time
 import random
 import json
@@ -10,8 +9,8 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-LOGIN_URL = 'http://app.sz12333.gov.cn/weixin/login.do?method=login'
-VC_URL = 'http://app.sz12333.gov.cn/weixin/getKaptchaImage.do?method=getKaptchaImage'
+LOGIN_URL = 'https://seyb.szsi.gov.cn/web/ajaxlogin.do'
+VC_URL = 'https://seyb.szsi.gov.cn/web/ImageCheck.jpg'
 USERINFO_URL='https://shebao.szsi.gov.cn:4482/socialsecurity/goInsured.do?method=listInsured'
 class Task(AbsFetchTask):
     task_info = dict(
@@ -23,32 +22,7 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36',
-                 'X-Requested-With':'XMLHttpRequest',
-                 'Content-Type':'text/xml;charset=utf-8'}
-
-    def _prepare(self):
-        """恢复状态，初始化结果"""
-        super()._prepare()
-        # state
-        # state: dict = self.state
-        # TODO: restore from state
-
-        # result
-        # result: dict = self.result
-        # TODO: restore from result
-
-    def _update_session_data(self):
-        """保存任务状态"""
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
-        # state
-        # state: dict = self.state
-        # TODO: update state
-
-        # result
-        # result: dict = self.result
-        # TODO: update temp result
+        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -75,6 +49,26 @@ class Task(AbsFetchTask):
         if len(用户名) < 4:
             raise InvalidParamsError('用户名或密码错误')
 
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '用户名' not in params:
+                params['用户名'] = meta.get('用户名')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '用户名' and '用户名' in meta:
+                continue
+            elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            res.append(pr)
+        return res
     def _unit_login(self, params:dict):
         err_msg = None
         if params:
@@ -82,22 +76,20 @@ class Task(AbsFetchTask):
                 self._check_login_params(params)
                 username=params['用户名']
                 password =params['密码']
-                resp = self.s.post(VC_URL)
-                soup = BeautifulSoup(resp.content, 'html.parser')
-                jsons = soup.text
-                jsonread = json.loads(jsons)
-                yzm = jsonread['information']
-                #vc = params['vc']
+                vc = params['vc']
                 resp = self.s.post(LOGIN_URL, data=dict(
-                    userId=username,
-                    password=password,
-                    writeRand=yzm,
-                    state=1
+                    r=random.random(),
+                    LOGINID=username,
+                    PASSWORD=password,
+                    IMAGCHECK=vc,
+                    OPERTYPE2=3,
+                    ISBIND='false',
+                    now=time.strftime('%a %b %d %Y %H:%M:%S', time.localtime()),
+                    callback=''
                 ))
                 soup = BeautifulSoup(resp.content, 'html.parser')
-                jsons = soup.text
-                jsonread = json.loads(jsons)
-                errormsg = jsonread['information']
+                jsonread = json.loads(soup.text)
+                errormsg = jsonread['message']
                 if errormsg:
                     raise InvalidParamsError(errormsg)
                 self.result_key = params.get('username')
@@ -106,7 +98,7 @@ class Task(AbsFetchTask):
                 self.result_meta['用户名'] = params.get('用户名')
                 self.result_meta['密码'] = params.get('密码')
 
-                self.result_identity['task_name']='深圳市'
+                self.result_identity['task_name']='深圳'
 
                 return
             except (AssertionError, InvalidParamsError) as e:
@@ -234,5 +226,6 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    client = TaskTestClient(Task(SessionData()))
+    meta = {'用户名': 'keguangping', '密码': 'Kegp850907'}
+    client = TaskTestClient(Task(SessionData(), prepare_data=dict(meta=meta), is_start=False))
     client.run()
