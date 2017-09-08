@@ -1,9 +1,18 @@
+import base64
+import urllib3
+import time
+import random
+import json
+import datetime
+from bs4 import BeautifulSoup
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-
+LOGIN_URL = 'http://app.sz12333.gov.cn/weixin/login.do?method=login'
+VC_URL = 'http://app.sz12333.gov.cn/weixin/getKaptchaImage.do?method=getKaptchaImage'
+USERINFO_URL='https://shebao.szsi.gov.cn:4482/socialsecurity/goInsured.do?method=listInsured'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="深圳",
@@ -14,7 +23,9 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return {}
+        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36',
+                 'X-Requested-With':'XMLHttpRequest',
+                 'Content-Type':'text/xml;charset=utf-8'}
 
     def _prepare(self):
         """恢复状态，初始化结果"""
@@ -30,6 +41,7 @@ class Task(AbsFetchTask):
     def _update_session_data(self):
         """保存任务状态"""
         super()._update_session_data()
+        self.state['cookies'] = self.s.cookies
         # state
         # state: dict = self.state
         # TODO: update state
@@ -40,12 +52,16 @@ class Task(AbsFetchTask):
 
     def _query(self, params: dict):
         """任务状态查询"""
+        t = params.get('t')
+        if t == 'vc':
+            return self._new_vc()
         pass
 
     def _setup_task_units(self):
         """设置任务执行单元"""
         self._add_unit(self._unit_login)
-        self._add_unit(self._unit_fetch, self._unit_login)
+        self._add_unit(self._unit_fetch_userinfo,self._unit_login)
+        #self._add_unit(self._unit_fetch, self._unit_login)
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
@@ -59,32 +75,162 @@ class Task(AbsFetchTask):
         if len(用户名) < 4:
             raise InvalidParamsError('用户名或密码错误')
 
-    def _unit_login(self, params: dict):
+    def _unit_login(self, params:dict):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('用户名')
+                username=params['用户名']
+                password =params['密码']
+                resp = self.s.post(VC_URL)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                jsons = soup.text
+                jsonread = json.loads(jsons)
+                yzm = jsonread['information']
+                #vc = params['vc']
+                resp = self.s.post(LOGIN_URL, data=dict(
+                    userId=username,
+                    password=password,
+                    writeRand=yzm,
+                    state=1
+                ))
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                jsons = soup.text
+                jsonread = json.loads(jsons)
+                errormsg = jsonread['information']
+                if errormsg:
+                    raise InvalidParamsError(errormsg)
+                self.result_key = params.get('username')
+
                 # 保存到meta
                 self.result_meta['用户名'] = params.get('用户名')
                 self.result_meta['密码'] = params.get('密码')
 
-                raise TaskNotImplementedError('查询服务维护中')
+                self.result_identity['task_name']='深圳市'
+
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
             dict(key='用户名', name='用户名', cls='input', value=params.get('用户名', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
-    def _unit_fetch(self):
+    def _unit_fetch_userinfo(self):
+        """用户信息"""
         try:
+            self.result_data["baseInfo"]={
+                '城市名称':'深圳市',
+                '城市编号': '440300',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+            }
+            resp = self.s.get(USERINFO_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            userinfoname = soup.findAll('dt')
+            userinfovalues = soup.findAll('dd')
+            fivedic={}
+            monthnum = 0
+            status='不正常'
+            for i in range(0,len(userinfoname)):
+                if userinfoname[i].find('参保状态')==-1:
+                    if userinfovalues[i]=='参加':
+                       status = '正常'
+                    fivedic.setdefault(userinfoname[:2],userinfovalues)
+                else:
+                    self.result_data["baseInfo"].setdefault(userinfoname[i],userinfovalues[i])
+                    if userinfoname[i].find('累计月数')==-1 and monthnum < int(userinfovalues[i]):
+                        monthnum = int(userinfovalues[i])
+
+            self.result_identity['status'] =status
+            self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
+            self.result_data["baseInfo"].setdefault('五险状态',fivedic)
+            self.result_identity['target_name']=''
+            self.result_identity['target_id']=''
+
+            #TODO: 执行任务，如果没有登录，则raise PermissionError
+            return
+        except PermissionError as e:
+            raise PreconditionNotSatisfiedError(e)
+
+    def _unit_fetch(self):
+        """五险"""
+        try:
+            # 明细(险种比较多)arrtype={'01':'基本养老保险','02':'失业保险','03':'基本医疗保险','04':'工伤保险','05':'生育保险'}
+            arrtype = {'Yl': 'old_age', 'Shiye': 'unemployment', 'Yil': 'medical_care', 'Gs': 'injuries', 'Sy': 'maternity'}
+            statetime=''
+            endtime=''
+            for k, v in arrtype.items():
+                self.result_data[v]['data']={}
+                years=''
+                months=''
+                personjfsum=0.00
+                datas=dict(
+                    _isModel= 'true',
+                    params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"ncm_glt_医疗缴费明细": {"params": {"pageSize": 10, "curPageNum": 1}, "dataset": [], "heads": [],"heads_change": []}}}'
+                )
+                resp = self.s.post(USERINFO_URL,datas)
+                pagearr=json.loads(resp.text)
+                """获取分页"""
+                pagesize=pagearr["datas"]['params']['pagesize']
+                rowsCount=pagearr["datas"]['params']['rowsCount']
+                pagenum=rowsCount/pagesize
+                pagenums=rowsCount//pagesize
+                if pagenum>pagenums:
+                    pagenums=pagenums+1
+                for i in round(1,pagenums+1):
+                    datas = dict(
+                        _isModel='true',
+                        params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"ncm_glt_医疗缴费明细": {"params": {"pageSize": 10, "curPageNum": '+i+',"maxPageSize":50,"rowsCount":'+rowsCount+',"Total_showMsg":null,"Total_showMsgCell":null,"Total_Cols":[]},"heads":[],"heads_change":[],"dataset":[]}}}'
+                    )
+                    resp = self.s.post(USERINFO_URL, datas)
+                    mx=json.loads(resp.text)["datas"]
+                    for i in round(0,len(mx['dataset'])):
+                        if v=='old_age'or v=='medical_care':
+                            personjfsum=personjfsum+float(mx['dataset'][i]['个人缴'])
+                            #enterjfsum=enterjfsum+float(mx['dataset'][i]['单位缴'])
+                        yearmonth=mx['dataset'][i]['缴费年月'].replace('年','').replace('月','')
+                        if statetime==''or int(statetime)>int(yearmonth):
+                            statetime=yearmonth
+                        if endtime=='' or int(endtime)<int(yearmonth):
+                            endtime=yearmonth
+                        if years=='' or years!=yearmonth[:4]:
+                            years=yearmonth[:4]
+                            self.result_data[v]['data'][years]={}
+                            if months == yearmonth[-2:]:
+                                self.result_data[v]['data'][years][months] = {}
+                        if months == '' or months != yearmonth[-2:]:
+                            months=yearmonth[-2:]
+                            self.result_data[v]['data'][years][months]={}
+                        mxdic={
+                            '缴费时间':yearmonth,
+                            '缴费类型':'-',
+                            '缴费基数':mx['dataset'][i]['缴费工资'],
+                            '公司缴费':mx['dataset'][i]['单位缴'],
+                            '个人缴费': mx['dataset'][i]['个人缴'],
+                            '缴费单位': mx['dataset'][i]['单位名称'],
+                            '单位编号': mx['dataset'][i]['单位编号'],
+                            '缴费合计': mx['dataset'][i]['缴费合计'],
+                            '备注': mx['dataset'][i]['备注']
+                        }
+                        self.result_data[v]['data'][years][months]=mxdic
+
+                if v == 'old_age':
+                    self.result_data["baseInfo"].setdefault('个人养老累计缴费', personjfsum)
+                if v == 'medical_care':
+                    self.result_data["baseInfo"].setdefault('个人医疗累计缴费', personjfsum)
+            self.result_data["baseInfo"].setdefault('最近缴费时间', endtime)
+            self.result_data["baseInfo"].setdefault('开始缴费时间', statetime)
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
+    # 刷新验证码
+    def _new_vc(self):
+        resp = self.s.get(VC_URL)
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
