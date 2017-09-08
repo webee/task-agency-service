@@ -17,9 +17,9 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="重庆",
         expect_time=30,
-        help="""1.初始查询密码为社会保障卡卡号的后6位<br/>
-        2.如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</br>
-        3.数据解析需要较长的时间，请耐心等待
+        help="""<li>初始查询密码为社会保障卡卡号的后6位</li>
+        <li>如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</li>
+        <li>数据解析需要较长的时间，请耐心等待</li>
         """
     )
 
@@ -384,7 +384,7 @@ class Task(AbsFetchTask):
                            "缴费类型": item["jflx"],
                            "缴费基数": item["jfjs"],
                            "公司缴费": "-",
-                           "个人缴费": "-",
+                           "个人缴费": grjfje,
                            "缴费单位": item["dwmc"],
                         }
 
@@ -436,7 +436,7 @@ class Task(AbsFetchTask):
                            "缴费类型": item["jflx"],
                            "缴费基数": item["jfjs"],
                            "公司缴费": "-",
-                           "个人缴费": "-",
+                           "个人缴费": grjfje,
                            "缴费单位": item["dwmc"],
                         }
 
@@ -488,7 +488,7 @@ class Task(AbsFetchTask):
                            "缴费类型": item["jflx"],
                            "缴费基数": item["jfjs"],
                            "公司缴费": "-",
-                           "个人缴费": "-",
+                           "个人缴费": grjfje,
                            "缴费单位": item["dwmc"],
                         }
 

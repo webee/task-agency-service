@@ -20,7 +20,7 @@ MEDICAL_TREATMENT_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indMe
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="北京",
-        help="""
+        help="""<li>如您未在社保网站查询过您的社保信息，请到北京社保网上服务平台完成“注册账号”，激活身份证及获取密码。</li><li>如您忘记密码，请拨打12333。</li>
         """
     )
 
