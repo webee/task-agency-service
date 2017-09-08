@@ -157,7 +157,7 @@ class Task(AbsFetchTask):
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
             dt = soup.findAll("jfdwinfo")
 
-            for a in range(len(years)):
+            for a in range(len(details)):
                 yearE = details[a].find('jsjs1').text[0:4]
                 monthE = details[a].find('jsjs1').text[4:6]
 
@@ -171,9 +171,9 @@ class Task(AbsFetchTask):
                     '缴费类型': '-',
                     '公司缴费': '-',
                     '个人缴费': details[a].find('jsjs4').text,
-                    '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,
-                                              years[a].find('jsjs3').text)
+                    # '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
                 }
+
                 dataBaseE[yearE][monthE].append(modelE)
 
             # 医疗

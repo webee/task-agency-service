@@ -384,7 +384,7 @@ class Task(AbsFetchTask):
                            "缴费类型": item["jflx"],
                            "缴费基数": item["jfjs"],
                            "公司缴费": "-",
-                           "个人缴费": "-",
+                           "个人缴费": grjfje,
                            "缴费单位": item["dwmc"],
                         }
 
@@ -436,7 +436,7 @@ class Task(AbsFetchTask):
                            "缴费类型": item["jflx"],
                            "缴费基数": item["jfjs"],
                            "公司缴费": "-",
-                           "个人缴费": "-",
+                           "个人缴费": grjfje,
                            "缴费单位": item["dwmc"],
                         }
 
@@ -488,7 +488,7 @@ class Task(AbsFetchTask):
                            "缴费类型": item["jflx"],
                            "缴费基数": item["jfjs"],
                            "公司缴费": "-",
-                           "个人缴费": "-",
+                           "个人缴费": grjfje,
                            "缴费单位": item["dwmc"],
                         }
 
