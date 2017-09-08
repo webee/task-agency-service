@@ -11,7 +11,7 @@ from services.commons import AbsFetchTask
 
 LOGIN_URL = 'https://seyb.szsi.gov.cn/web/ajaxlogin.do'
 VC_URL = 'https://seyb.szsi.gov.cn/web/ImageCheck.jpg'
-USERINFO_URL='https://shebao.szsi.gov.cn:4482/socialsecurity/goInsured.do?method=listInsured'
+USERINFO_URL='https://seyb.szsi.gov.cn/web/ajax.do'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="深圳",
@@ -22,7 +22,9 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
+        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36',
+                 'X-Requested-With': 'XMLHttpRequest',
+                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -114,12 +116,18 @@ class Task(AbsFetchTask):
         """用户信息"""
         try:
             self.result_data["baseInfo"]={
-                '城市名称':'深圳市',
+                '城市名称':'深圳',
                 '城市编号': '440300',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
-            resp = self.s.get(USERINFO_URL)
+            datas=dict(
+                _isModel='true',
+                params='{"oper": "CbjbxxcxAction.queryGrcbjbxx", "params": {},"datas": {"ncm_gt_用户信息": {"params": {}}, "ncm_gt_参保状态": {"params": {}},"ncm_gt_缴纳情况": {"params": {}}}}'
+            )
+            resp = self.s.post(USERINFO_URL,datas)
             soup = BeautifulSoup(resp.content, 'html.parser')
+            jsonread = json.loads(soup.text)
+
             userinfoname = soup.findAll('dt')
             userinfovalues = soup.findAll('dd')
             fivedic={}
