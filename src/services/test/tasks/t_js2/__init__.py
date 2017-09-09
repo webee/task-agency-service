@@ -1,50 +1,65 @@
 import html
 import os
 import time
-import dill
 import bs4
-from services.webdriver import create_driver, DriverRequestsCoordinator
+from services.webdriver import new_driver, DriverRequestsCoordinator
 from services.commons import AbsFetchTask
 from services.errors import InvalidParamsError, AskForParamsError, InvalidConditionError, PreconditionNotSatisfiedError
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
-INDEX_URL = 'http://www.bjgjj.gov.cn/'
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
 LOGIN_PAGE_URL = 'http://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
 VC_IMAGE_URL = 'http://www.bjgjj.gov.cn/wsyw/servlet/PicCheckCode1?v='
 
 
+class value_is_number(object):
+    """判断元素value是数字"""
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        element = driver.find_element(*self.locator)
+        val = element.get_attribute('value')
+        return val and val.isnumeric()
+
+
 class Task(AbsFetchTask):
     task_info = {
-        'task_name': '测试selenium登录',
-        'help': '测试selenium登录'
+        'task_name': '测试selenium登录[fast]',
+        'help': '测试selenium登录[fast]'
     }
 
     def _get_common_headers(self):
         return {
-            'User-Agent': "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
+            'User-Agent': USER_AGENT
         }
 
     def _prepare(self, data=None):
         super()._prepare(data)
 
-        _driver = None
-        if 'driver_data' in self.state:
-            _driver = dill.loads(self.state['driver_data'])
-            del self.state['driver_data']
-        self.dsc = DriverRequestsCoordinator(d=_driver, create_session=self._create_session, create_driver=self._create_driver)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
-        driver = create_driver()
-        driver.get(LOGIN_PAGE_URL)
+        driver = new_driver(user_agent=USER_AGENT)
+
+        # 不加载验证码
+        script = """
+        var page = this;
+        page.onResourceRequested = function(requestData, networkRequest) {
+            var match = requestData.url.match(/PicCheckCode1/g);
+            if (match != null) {
+                //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
+                //networkRequest.cancel(); // or .abort()
+                networkRequest.abort();
+            }
+        };
+        """
+        driver.execute('executePhantomScript', {'script': script, 'args': []})
+
         return driver
-
-    def _create_session(self):
-        return self.s
-
-    def _update_session_data(self):
-        super()._update_session_data()
-        if self.dsc.d_is_created:
-            self.state['driver_data'] = dill.dumps(self.dsc.d)
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -56,9 +71,6 @@ class Task(AbsFetchTask):
             return self._new_vc()
 
     def _new_vc(self):
-        self.dsc.create_driver()
-        self.dsc.create_session()
-
         vc_url = VC_IMAGE_URL + str(int(time.time() * 1000))
         resp = self.s.get(vc_url)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
@@ -90,6 +102,10 @@ class Task(AbsFetchTask):
         assert '查询密码' in params, '缺少查询密码'
         assert 'vc' in params, '缺少验证码'
 
+        # TODO: 检查身份证号
+        # TODO: 检查密码
+        # TODO: 检查验证码
+
     def _unit_login(self, params=None):
         err_msg = None
         if params:
@@ -119,6 +135,11 @@ class Task(AbsFetchTask):
     def _do_login(self, username, password, vc):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx(excpeted_exceptions=(InvalidParamsError,)) as driver:
+            # 打开登录页
+            driver.get(LOGIN_PAGE_URL)
+            # 等待lk请求
+            WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="lk"]')))
+
             # 选择身份证号方式登录
             driver.find_element_by_xpath('/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr/td/div/form/div[1]/ul/li[3]/a').click()
 
@@ -144,7 +165,6 @@ class Task(AbsFetchTask):
 
             # 登录成功
             # 同步cookie到session
-            self.dsc.create_session()
             self.dsc.inc_and_sync_d_cookies()
 
             # 保存登录后的页面内容供抓取单元解析使用
@@ -160,10 +180,10 @@ class Task(AbsFetchTask):
             link = os.path.join(os.path.dirname(self.g.current_url), link)
 
             resp = self.s.get(link)
-            print(html.unescape(resp.text))
             self.result_data.update({
                 'xxx': a.text,
-                'link': link
+                'link': link,
+                'content': html.unescape(resp.text)
             })
             self.result_identity.update({
                 'task_name': self.task_info['task_name']
