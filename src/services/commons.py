@@ -14,6 +14,7 @@ class AbsFetchTask(AbsTaskUnitSessionTask, metaclass=ABCMeta):
 
         # result
         result: dict = self.result
+        result.setdefault('key', None)
         result.setdefault('meta', {})
         result.setdefault('data', {})
         result.setdefault('identity', {})

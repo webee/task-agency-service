@@ -328,7 +328,7 @@ class AbsTaskClassFinder(metaclass=ABCMeta):
 
 class AbsTaskResultHandler(metaclass=ABCMeta):
     @abstractmethod
-    def handle(self, task_id: str, result: dict):
+    def handle(self, task_id: str, result: dict, is_done: bool=True):
         raise NotImplementedError()
 
 
@@ -410,18 +410,18 @@ class SessionTasksManager(object):
         if task.end:
             # 任务结束
             result = task.session_data.result
-            if task.done:
-                # 任务成功
-                for handler in self._result_handlers:
-                    try:
-                        handler.handle(task.session_data.task_id, result)
-                    except:
-                        logger.warning(traceback.format_exc())
-            elif task.not_implemented:
+            if task.not_implemented:
                 # 任务未实现处理
                 for handler in self._not_implemented_result_handlers:
                     try:
                         handler.handle(task.session_data.task_id, result)
+                    except:
+                        logger.warning(traceback.format_exc())
+            else:
+                # 任务成功或失败
+                for handler in self._result_handlers:
+                    try:
+                        handler.handle(task.session_data.task_id, result, is_done=task.done)
                     except:
                         logger.warning(traceback.format_exc())
 
@@ -456,6 +456,7 @@ class UUIDSessionIDGenerator(AbsSessionIDGenerator):
 
 
 class MemorySessionStorage(AbsSessionStorage):
+    """内存存储，测试用"""
     def __init__(self, expire=None):
         self._expire = expire
         self.__sessions = {}
@@ -481,6 +482,7 @@ class MemorySessionStorage(AbsSessionStorage):
 
 
 class PathTaskClassFinder(AbsTaskClassFinder):
+    """通过路径模式寻找"""
     def __init__(self, get_path_func: Callable, cls_name: str):
         self._get_path_func = get_path_func
         self._cls_name = cls_name
