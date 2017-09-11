@@ -1,3 +1,4 @@
+import os
 import logging
 import traceback
 from contextlib import contextmanager
@@ -37,7 +38,10 @@ def new_driver(user_agent=None):
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
     caps["phantomjs.page.settings.userAgent"] = user_agent or "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
     caps["phantomjs.page.settings.loadImages"] = False
-    driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path='/tmp/ghostdriver.log')
+    service_log_path = None
+    if os.path.exists('/tmp'):
+        service_log_path = '/tmp/ghostdriver.log'
+    driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path=service_log_path)
     driver.implicitly_wait(10)
 
     driver.execute_script("""
