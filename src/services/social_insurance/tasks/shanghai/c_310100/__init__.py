@@ -178,6 +178,7 @@ class Task(AbsFetchTask):
                     '缴费类型': '-',
                     '公司缴费': '-',
                     '个人缴费': details[a].find('jsjs4').text,
+
                     #'实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
                  }
                 personmoney += float(details[a].find('jsjs4').text)

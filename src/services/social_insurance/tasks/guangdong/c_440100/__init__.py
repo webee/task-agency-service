@@ -3,14 +3,29 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-import time
 from bs4 import BeautifulSoup
-import re
-import pyquery
+import html
+import os
+import time
+from services.webdriver import new_driver, DriverRequestsCoordinator
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-LOGIN_URL="http://gzlss.hrssgz.gov.cn/cas/cmslogin"
-VC_URL="http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
+LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/cmslogin"
+VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
+USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 
+
+class value_is_number(object):
+    """判断元素value是数字"""
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        element = driver.find_element(*self.locator)
+        val = element.get_attribute('value')
+        return val and val.isnumeric()
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -28,9 +43,9 @@ class Task(AbsFetchTask):
             'Host':'gzlss.hrssgz.gov.cn'
         }
 
-    def _prepare(self):
+    def _prepare(self,data=None):
         """恢复状态，初始化结果"""
-        super()._prepare()
+        super()._prepare(data)
         # state
         # state: dict = self.state
         # TODO: restore from state
@@ -38,6 +53,24 @@ class Task(AbsFetchTask):
         # result
         # result: dict = self.result
         # TODO: restore from result
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+
+    def _create_driver(self):
+        driver = new_driver(user_agent=USER_AGENT)
+        # 不加载验证码
+        script = """
+        var page = this;
+        page.onResourceRequested = function(requestData, networkRequest) {
+            var match = requestData.url.match(/PicCheckCode1/g);
+            if (match != null) {
+                //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
+                //networkRequest.cancel(); // or .abort()
+                networkRequest.abort();
+            }
+        };
+        """
+        driver.execute('executePhantomScript', {'script': script, 'args': []})
+        return driver
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -64,17 +97,32 @@ class Task(AbsFetchTask):
         密码 = params['密码']
         if len(密码) < 4:
             raise InvalidParamsError('账号或密码错误')
-        if len(账号) < 4:
+        if len(账号) < 15:
             raise InvalidParamsError('账号或密码错误')
 
     def _loadJs(self):
         import execjs
         resps = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
-        modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"','')
+        modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"', '')
         jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
         jsstr = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/security.js")
-        ctx = execjs.compile(jsstr.text+jsstrs.text)
-        key=ctx.call("RSAUtils.getKeyPair", '010001','',modlus)
+        ctx = execjs.compile(jsstr.text + jsstrs.text)
+        key = ctx.call("RSAUtils.getKeyPair", '010001', '', modlus)
+
+        resp = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
+        lt = BeautifulSoup(resp.content, 'html.parser').find('input', {'name': 'lt'})['value']
+        data = {
+            'usertype': "2",
+            'lt': lt,
+            #'username': params.get('账号'),
+            #'password': params.get('密码'),
+            '_eventId': 'submit'
+        }
+
+        resps = self.s.post(
+            "http://gzlss.hrssgz.gov.cn/cas/login?service=http://gzlss.hrssgz.gov.cn:80/gzlss_web/business/tomain/main.xhtml",
+            data)
+        raise InvalidParamsError(resps.text)
 
     def _unit_login(self, params: dict):
         err_msg = None
@@ -82,26 +130,20 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
                 self.result_key = params.get('账号')
+
+                id_num=params.get('账号')
+                pass_word=params.get('密码')
+                vc = params['vc']
+
+                self._do_login(id_num, pass_word, vc)
+
+                #raise TaskNotImplementedError('查询服务维护中')
+                #  登录成功
                 # 保存到meta
+                self.result_key = id_num
                 self.result_meta['账号'] = params.get('账号')
                 self.result_meta['密码'] = params.get('密码')
 
-                raise TaskNotImplementedError('查询服务维护中')
-
-                self._loadJs()
-
-                resp = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
-                lt=BeautifulSoup(resp.content,'html.parser').find('input',{'name':'lt'})['value']
-                data={
-                    'usertype':"2",
-                    'lt':lt,
-                    'username':params.get('账号'),
-                    'password':params.get('密码'),
-                    '_eventId':'submit'
-                }
-
-                resps=self.s.post("http://gzlss.hrssgz.gov.cn/cas/login?service=http://gzlss.hrssgz.gov.cn:80/gzlss_web/business/tomain/main.xhtml",data)
-                raise  InvalidParamsError(resps.text)
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
@@ -111,6 +153,43 @@ class Task(AbsFetchTask):
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
+
+    def _do_login(self, username, password, vc):
+        """使用web driver模拟登录过程"""
+        with self.dsc.get_driver_ctx() as driver:
+            # 打开登录页
+            driver.get(LOGIN_URL)
+            # 等待lk请求
+            WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="fm1"]/input[1]')))
+
+            # 选择身份证号方式登录
+            driver.find_element_by_xpath('/html/body/form/table[1]/tr[4]/td/img').click()
+
+            username_input = driver.find_element_by_xpath('//*[@id="loginName"]')
+            password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
+            vc_input = driver.find_element_by_xpath('//*[@id="validateCode"]')
+            submit_btn = driver.find_element_by_xpath('//*[@id="submitbt"]')
+
+            # 用户名
+            username_input.clear()
+            username_input.send_keys(username)
+
+            # 密码
+            password_input.clear()
+            password_input.send_keys(password)
+            vc_input.clear()
+            vc_input.send_keys(vc)
+            # 提交
+            submit_btn.click()
+
+            if not driver.current_url == '':
+                raise InvalidParamsError('登录失败，请检查输入')
+
+            # 登录成功
+
+            # 保存登录后的页面内容供抓取单元解析使用
+            self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+            self.g.current_url = driver.current_url
 
     def _unit_fetch(self):
         try:
@@ -122,7 +201,9 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    client = TaskTestClient(Task(SessionData()))
+
+    meta = {'账号': '441225199102281010', '密码': 'wtz969462'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
     # 441225199102281010  wtz969462
