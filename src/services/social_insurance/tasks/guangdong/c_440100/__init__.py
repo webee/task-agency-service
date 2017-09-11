@@ -7,6 +7,7 @@ import time
 from bs4 import BeautifulSoup
 import execjs
 import re
+import pyquery
 
 LOGIN_URL="http://gzlss.hrssgz.gov.cn/cas/cmslogin"
 VC_URL="http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
@@ -23,8 +24,8 @@ class Task(AbsFetchTask):
         return {
             'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
             'Accept-Encoding':'gzip, deflate, sdch',
-            'Host':'zlss.hrssgz.gov.cn'
-
+            'Host':'zlss.hrssgz.gov.cn',
+            'X-Requested-With': 'XMLHttpRequest'
         }
 
     def _prepare(self):
@@ -69,10 +70,10 @@ class Task(AbsFetchTask):
     def _loadJs(self):
         resps = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
         modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"','')
-        #jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
+        jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
         jsstr = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/security.js")
-        ctx = execjs.compile(jsstr.text)
-        key=ctx.call("RSAUtils.getKeyPair ", '010001','',modlus)
+        ctx = execjs.compile(jsstr.text+jsstrs.text)
+        key=ctx.call("RSAUtils.getKeyPair", '010001','',modlus)
 
     def _unit_login(self, params: dict):
         err_msg = None
