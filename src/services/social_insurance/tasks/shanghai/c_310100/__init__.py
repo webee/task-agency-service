@@ -54,7 +54,7 @@ class Task(AbsFetchTask):
 
         if len(用户名) == 0:
             raise InvalidParamsError('用户名为空，请输入用户名')
-        elif len(用户名) < 4:
+        elif len(用户名) < 15:
             raise InvalidParamsError('用户名不正确，请重新输入')
 
         if len(密码) == 0:
@@ -132,21 +132,14 @@ class Task(AbsFetchTask):
 
             resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx.jsp")
             soup = BeautifulSoup(resp.content, 'html.parser')
-            years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
+            #years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
 
-            self.result_data['baseInfo'] = {
-                '姓名': soup.find('xm').text,
-                '身份证号': self.result_meta['用户名'],
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                '城市名称': '上海市',
-                '城市编号': '310100',
-                '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
-                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
-                '开始缴费时间': details[0].find('jsjs1').text,
-                '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
-                '个人医疗累计缴费': ''
-            }
+            if(soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2')!=None):
+                moneyTime=soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text
+            else:
+                moneyTime=len(details)
+
 
             # 社保缴费明细
             # 养老
@@ -155,8 +148,8 @@ class Task(AbsFetchTask):
             }
             dataBaseE = self.result_data['old_age']["data"]
             modelE = {}
+            personmoney= 0.00
 
-            details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
             dt = soup.findAll("jfdwinfo")
 
             for a in range(len(details)):
@@ -173,8 +166,8 @@ class Task(AbsFetchTask):
                     '缴费类型': '-',
                     '公司缴费': '-',
                     '个人缴费': details[a].find('jsjs4').text,
-                    # '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
-                }
+                 }
+                personmoney += float(details[a].find('jsjs4').text)
 
                 dataBaseE[yearE][monthE].append(modelE)
 
@@ -250,6 +243,24 @@ class Task(AbsFetchTask):
                 "status": ""
             })
 
+            if (soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3') != None):
+                personOldMoney = soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text
+            else:
+                personOldMoney = personmoney
+
+            self.result['data']['baseInfo'] = {
+                '姓名': soup.find('xm').text,
+                '身份证号': self.result_meta['用户名'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '上海市',
+                '城市编号': '310100',
+                '缴费时长': moneyTime,
+                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
+                '开始缴费时间': details[0].find('jsjs1').text,
+                '个人养老累计缴费': personOldMoney,
+                '个人医疗累计缴费': ''
+            }
+
             return
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -262,10 +273,11 @@ class Task(AbsFetchTask):
 
     def _match_commapy(self, dtime, dt):
         rescom = ""
-        for tr in range(len(dt)):
-            trd = dt[tr].find('jfsj').text.split('-')
-            if (trd[0] <= dtime <= trd[1]):
-                rescom = dt[tr].find('jfdw').text
+        if(dt!=None):
+            for tr in range(len(dt)):
+                trd = dt[tr].find('jfsj').text.split('-')
+                if (trd[0] <= dtime <= trd[1]):
+                    rescom = dt[tr].find('jfdw').text
 
         return rescom
 
