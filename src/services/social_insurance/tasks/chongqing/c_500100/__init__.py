@@ -16,7 +16,7 @@ DETAILED_LIST_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_query.do"
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="重庆",
-        expect_time=30,
+        expect_time=60,
         help="""<li>初始查询密码为社会保障卡卡号的后6位</li>
         <li>如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</li>
         <li>数据解析需要较长的时间，请耐心等待</li>
@@ -268,12 +268,12 @@ class Task(AbsFetchTask):
                         self.my_self_old_age = self.my_self_old_age + float(grjfje)
                         # 定义数据结构
                         obj = {
-                            "缴费时间": item["xssj"],
-                            "缴费类型": item["jflx"],
-                            "缴费基数": item["jfjs"],
-                            "公司缴费": "-",
-                            "个人缴费": grjfje,
-                            "缴费单位": item["dwmc"],
+                            "缴费时间": item.get('xssj', ''),
+                            "缴费类型": item.get('jflx', ''),
+                            "缴费基数": item.get('jfjs', ''),
+                            "公司缴费": "",
+                            "个人缴费": item.get('grjfje', ''),
+                            "缴费单位": item.get('dwmc', ''),
                         }
 
                         if item["jfbz"] == "已实缴":
@@ -325,12 +325,12 @@ class Task(AbsFetchTask):
                         self.my_self_medical_care = self.my_self_medical_care + float(grjfje)
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["fkkm"] == "基本医疗保险" and item["jfbz"] == "已实缴":
@@ -376,16 +376,14 @@ class Task(AbsFetchTask):
                     isStart = True
                     # 循环行
                     for item in result["result"]:
-                        # 个人缴费金额
-                        grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "足额缴费":
@@ -428,16 +426,14 @@ class Task(AbsFetchTask):
                     isStart = True
                     # 循环行
                     for item in result["result"]:
-                        # 个人缴费金额
-                        grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "已实缴":
@@ -480,16 +476,14 @@ class Task(AbsFetchTask):
                     isStart = True
                     # 循环行
                     for item in result["result"]:
-                        # 个人缴费金额
-                        grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "足额缴费":
