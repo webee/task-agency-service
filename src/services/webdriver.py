@@ -74,8 +74,11 @@ class DriverRequestsCoordinator(object):
     def d_is_created(self):
         return self._d is not None
 
-    def d_quit(self):
+    def d_quit(self, do_sync=True):
         if self.d_is_created:
+            if do_sync:
+                # 同步cookie到session
+                self.inc_and_sync_d_cookies()
             self.d.quit()
             self._d = None
 
@@ -98,15 +101,18 @@ class DriverRequestsCoordinator(object):
         return self._s
 
     @contextmanager
-    def get_driver_ctx(self, quit=True, excpeted_exceptions=()):
+    def get_driver_ctx(self, do_quit=True, do_sync=True, excepted_exceptions=()):
         try:
             yield self.d
-        except excpeted_exceptions:
+        except excepted_exceptions:
+            # 为了兼容老方法
+            do_quit = False
             raise
         except Exception:
-            logger.warning(traceback.format_exc())
-        if quit:
-            self.d_quit()
+            raise
+        finally:
+            if do_quit:
+                self.d_quit(do_sync)
 
     def create_driver(self):
         return self.d

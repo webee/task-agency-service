@@ -134,7 +134,7 @@ class Task(AbsFetchTask):
 
     def _do_login(self, username, password, vc):
         """使用web driver模拟登录过程"""
-        with self.dsc.get_driver_ctx(excpeted_exceptions=(InvalidParamsError,)) as driver:
+        with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
             driver.get(LOGIN_PAGE_URL)
             # 等待lk请求
@@ -164,8 +164,6 @@ class Task(AbsFetchTask):
                 raise InvalidParamsError('登录失败，请检查输入')
 
             # 登录成功
-            # 同步cookie到session
-            self.dsc.inc_and_sync_d_cookies()
 
             # 保存登录后的页面内容供抓取单元解析使用
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
