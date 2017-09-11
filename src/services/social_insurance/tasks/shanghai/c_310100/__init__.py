@@ -58,7 +58,7 @@ class Task(AbsFetchTask):
 
         if len(用户名) == 0:
             raise InvalidParamsError('用户名为空，请输入用户名')
-        elif len(用户名) < 4:
+        elif len(用户名) < 15:
             raise InvalidParamsError('用户名不正确，请重新输入')
 
         if len(密码) == 0:
@@ -277,10 +277,11 @@ class Task(AbsFetchTask):
 
     def _match_commapy(self, dtime, dt):
         rescom = ""
-        for tr in range(len(dt)):
-            trd = dt[tr].find('jfsj').text.split('-')
-            if (trd[0] <= dtime <= trd[1]):
-                rescom = dt[tr].find('jfdw').text
+        if(dt!=None):
+            for tr in range(len(dt)):
+                trd = dt[tr].find('jfsj').text.split('-')
+                if (trd[0] <= dtime <= trd[1]):
+                    rescom = dt[tr].find('jfdw').text
 
         return rescom
 
