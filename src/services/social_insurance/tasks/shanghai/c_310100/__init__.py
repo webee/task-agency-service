@@ -28,10 +28,6 @@ class Task(AbsFetchTask):
             'Host': 'www.12333sh.gov.cn',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result['data']['baseInfo']={}
-
     def _query(self, params: dict):
         """任务状态查询"""
         t = params.get('t')
@@ -92,7 +88,6 @@ class Task(AbsFetchTask):
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('用户名')
 
                 id_num = params.get("用户名")
                 account_pass = params.get("密码")
@@ -116,6 +111,8 @@ class Task(AbsFetchTask):
                         err_msg = spans[0].text
                     raise InvalidParamsError(err_msg)
 
+                # 设置key
+                self.result_key = params.get('用户名')
                 # 保存到meta
                 self.result_meta['用户名'] = params.get('用户名')
                 self.result_meta['密码'] = params.get('密码')
@@ -124,7 +121,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='用户名', name='用户名', cls='input', value=params.get('用户名', '')),
+            dict(key='用户名', name='用户名', cls='input', placeholder='请输入身份证号', value=params.get('用户名', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
@@ -143,13 +140,25 @@ class Task(AbsFetchTask):
             else:
                 moneyTime=len(details)
 
+            self.result_data['baseInfo'] = {
+                '姓名': soup.find('xm').text,
+                '身份证号': self.result_meta['用户名'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '上海市',
+                '城市编号': '310100',
+                '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
+                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
+                '开始缴费时间': details[0].find('jsjs1').text,
+                '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
+                '个人医疗累计缴费': ''
+            }
 
             # 社保缴费明细
             # 养老
-            self.result['data']['old_age'] = {
+            self.result_data['old_age'] = {
                 "data": {}
             }
-            dataBaseE = self.result['data']['old_age']["data"]
+            dataBaseE = self.result_data['old_age']["data"]
             modelE = {}
             personmoney= 0.00
 
@@ -172,14 +181,13 @@ class Task(AbsFetchTask):
                     #'实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
                  }
                 personmoney += float(details[a].find('jsjs4').text)
-
                 dataBaseE[yearE][monthE].append(modelE)
 
             # 医疗
-            self.result['data']['medical_care'] = {
+            self.result_data['medical_care'] = {
                 "data": {}
             }
-            dataBaseH = self.result['data']['medical_care']["data"]
+            dataBaseH = self.result_data['medical_care']["data"]
             modelH = {}
 
             for b in range(len(details)):
@@ -200,10 +208,10 @@ class Task(AbsFetchTask):
                 dataBaseH[yearH][monthH].append(modelH)
 
             # 失业
-            self.result['data']['unemployment'] = {
+            self.result_data['unemployment'] = {
                 "data": {}
             }
-            dataBaseI = self.result['data']['unemployment']["data"]
+            dataBaseI = self.result_data['unemployment']["data"]
             modelI = {}
 
             for c in range(len(details)):
@@ -224,7 +232,7 @@ class Task(AbsFetchTask):
                 dataBaseI[yearI][monthI].append(modelI)
 
             # 工伤
-            self.result['data']['injuries'] = {
+            self.result_data['injuries'] = {
                 "data": {
                     # '缴费时间': '-',
                     # '缴费单位': '-',
@@ -236,16 +244,16 @@ class Task(AbsFetchTask):
             }
 
             # 生育
-            self.result['data']['maternity'] = {
+            self.result_data['maternity'] = {
                 "data": {}
             }
 
-            self.result['identity'] = {
+            self.result_identity.update({
                 "task_name": "上海",
                 "target_name": soup.find('xm').text,
                 "target_id": self.result_meta['用户名'],
                 "status": ""
-            }
+            })
 
             if (soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3') != None):
                 personOldMoney = soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text

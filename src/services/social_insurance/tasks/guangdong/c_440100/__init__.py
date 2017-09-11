@@ -5,12 +5,12 @@ from services.commons import AbsFetchTask
 
 import time
 from bs4 import BeautifulSoup
-import execjs
 import re
 import pyquery
 
 LOGIN_URL="http://gzlss.hrssgz.gov.cn/cas/cmslogin"
 VC_URL="http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
+
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -24,8 +24,8 @@ class Task(AbsFetchTask):
         return {
             'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
             'Accept-Encoding':'gzip, deflate, sdch',
-            'Host':'zlss.hrssgz.gov.cn',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'Host':'gzlss.hrssgz.gov.cn'
         }
 
     def _prepare(self):
@@ -68,6 +68,7 @@ class Task(AbsFetchTask):
             raise InvalidParamsError('账号或密码错误')
 
     def _loadJs(self):
+        import execjs
         resps = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
         modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"','')
         jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
@@ -84,6 +85,8 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['账号'] = params.get('账号')
                 self.result_meta['密码'] = params.get('密码')
+
+                raise TaskNotImplementedError('查询服务维护中')
 
                 self._loadJs()
 
