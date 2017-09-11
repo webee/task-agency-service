@@ -118,7 +118,7 @@ class Task(AbsFetchTask):
 
     def _do_login(self, username, password, vc):
         """使用web driver模拟登录过程"""
-        with self.dsc.get_driver_ctx(excpeted_exceptions=(InvalidParamsError,)) as driver:
+        with self.dsc.get_driver_ctx(excepted_exceptions=(InvalidParamsError,)) as driver:
             # 选择身份证号方式登录
             driver.find_element_by_xpath('/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr/td/div/form/div[1]/ul/li[3]/a').click()
 
