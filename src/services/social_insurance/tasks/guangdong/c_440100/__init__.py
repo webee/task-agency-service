@@ -2,13 +2,10 @@ from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
-
-import time
 from bs4 import BeautifulSoup
-import re
 
-LOGIN_URL="http://gzlss.hrssgz.gov.cn/cas/cmslogin"
-VC_URL="http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
+LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/cmslogin"
+VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
 
 
 class Task(AbsFetchTask):
@@ -21,9 +18,10 @@ class Task(AbsFetchTask):
 
     def _get_common_headers(self):
         return {
-            'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
-            'Accept-Encoding':'gzip, deflate, sdch',
-            'Host':'gzlss.hrssgz.gov.cn'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Host': 'zlss.hrssgz.gov.cn',
+            'X-Requested-With': 'XMLHttpRequest'
         }
 
     def _prepare(self):
@@ -68,11 +66,11 @@ class Task(AbsFetchTask):
     def _loadJs(self):
         import execjs
         resps = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
-        modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"','')
-        #jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
+        modlus = BeautifulSoup(resps.content).findAll('script')[2].text.split('=')[3].split(';')[0].replace('"', '')
+        jsstrs = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/jquery-1.5.2.min.js")
         jsstr = self.s.get("http://gzlss.hrssgz.gov.cn/cas/third/security.js")
-        ctx = execjs.compile(jsstr.text)
-        key=ctx.call("RSAUtils.getKeyPair ", '010001','',modlus)
+        ctx = execjs.compile(jsstr.text + jsstrs.text)
+        key = ctx.call("RSAUtils.getKeyPair", '010001', '', modlus)
 
     def _unit_login(self, params: dict):
         err_msg = None
@@ -89,17 +87,19 @@ class Task(AbsFetchTask):
                 self._loadJs()
 
                 resp = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
-                lt=BeautifulSoup(resp.content,'html.parser').find('input',{'name':'lt'})['value']
-                data={
-                    'usertype':"2",
-                    'lt':lt,
-                    'username':params.get('账号'),
-                    'password':params.get('密码'),
-                    '_eventId':'submit'
+                lt = BeautifulSoup(resp.content, 'html.parser').find('input', {'name': 'lt'})['value']
+                data = {
+                    'usertype': "2",
+                    'lt': lt,
+                    'username': params.get('账号'),
+                    'password': params.get('密码'),
+                    '_eventId': 'submit'
                 }
 
-                resps=self.s.post("http://gzlss.hrssgz.gov.cn/cas/login?service=http://gzlss.hrssgz.gov.cn:80/gzlss_web/business/tomain/main.xhtml",data)
-                raise  InvalidParamsError(resps.text)
+                resps = self.s.post(
+                    "http://gzlss.hrssgz.gov.cn/cas/login?service=http://gzlss.hrssgz.gov.cn:80/gzlss_web/business/tomain/main.xhtml",
+                    data)
+                raise InvalidParamsError(resps.text)
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
@@ -120,6 +120,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
+
     client = TaskTestClient(Task(SessionData()))
     client.run()
 
