@@ -422,7 +422,7 @@ class SessionTasksManager(object):
                 for handler in self._result_handlers:
                     try:
                         handler.handle(task.session_data.task_id, result, is_done=task.done)
-                    except:
+                    except Exception as e:
                         logger.warning(traceback.format_exc())
 
             # 删除会话

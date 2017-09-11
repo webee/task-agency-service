@@ -16,7 +16,7 @@ DETAILED_LIST_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_query.do"
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="重庆",
-        expect_time=60,
+        expect_time=30,
         help="""<li>初始查询密码为社会保障卡卡号的后6位</li>
         <li>如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</li>
         <li>数据解析需要较长的时间，请耐心等待</li>
@@ -156,7 +156,7 @@ class Task(AbsFetchTask):
                 elif i == 1:
                     Company = tds[2].text.strip()
                 elif i == 2:
-                    self.old_age_lately_start_data = tds[7].text
+                    self.old_age_lately_start_data = tds[7].text.strip()
                     self.medical_care_lately_start_data = tds[8].text.strip()
                     self.injuries_lately_start_data = tds[9].text.strip()
                     self.maternity_lately_start_data = tds[10].text.strip()
@@ -223,6 +223,24 @@ class Task(AbsFetchTask):
             data["unemployment"] = {
                 "data": {}
             }
+
+            self.old_age_month = 0
+            self.medical_care_month = 0
+            self.injuries_month = 0
+            self.maternity_month = 0
+            self.unemployment_month = 0
+
+            nowTime = time.strftime('%Y%m', time.localtime(time.time()))
+
+            self.old_age_lately_data = nowTime
+            self.medical_care_lately_data = nowTime
+            self.injuries_lately_data = nowTime
+            self.maternity_lately_data = nowTime
+            self.unemployment_lately_data = nowTime
+
+            self.my_self_old_age = 0
+            self.my_self_medical_care = 0
+
             return
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -516,16 +534,26 @@ class Task(AbsFetchTask):
                                  self.unemployment_lately_start_data]
 
             data = self.result['data']
+
+            temp_latest_start_time = []
+            for item in latest_start_time:
+                if item:
+                    temp_latest_start_time.append(item)
             # 养老明细
-            self._unit_fetch_user_old_age(min(latest_start_time)[0:4])
+            if self.old_age_lately_start_data:
+                self._unit_fetch_user_old_age(min(temp_latest_start_time)[0:4])
             # 医疗明细
-            self._unit_fetch_user_medical_care(min(latest_start_time)[0:4])
+            if self.medical_care_lately_start_data:
+                self._unit_fetch_user_medical_care(min(temp_latest_start_time)[0:4])
             # 工伤明细
-            self._unit_fetch_user_injuries(min(latest_start_time)[0:4])
+            if self.injuries_lately_start_data:
+                self._unit_fetch_user_injuries(min(temp_latest_start_time)[0:4])
             # 生育明细
-            self._unit_fetch_user_maternity(min(latest_start_time)[0:4])
+            if self.maternity_lately_start_data:
+                self._unit_fetch_user_maternity(min(temp_latest_start_time)[0:4])
             # 失业明细
-            self._unit_fetch_user_unemployment(min(latest_start_time)[0:4])
+            if self.unemployment_lately_start_data:
+                self._unit_fetch_user_unemployment(min(temp_latest_start_time)[0:4])
 
             # 五险所有缴费时间
             social_payment_duration = [self.old_age_month,
@@ -543,7 +571,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"]["缴费时长"] = str(max(social_payment_duration))
             data["baseInfo"]["最近缴费时间"] = str(max(latest_time))
-            data["baseInfo"]["开始缴费时间"] = str(min(latest_start_time))
+            data["baseInfo"]["开始缴费时间"] = str(min(temp_latest_start_time))
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
