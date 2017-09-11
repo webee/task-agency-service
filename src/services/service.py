@@ -1,16 +1,18 @@
-import os
-import logging
 import importlib
+import logging
+import os
 import pkgutil
 import re
-import traceback
 import time
-from typing import List, Callable, TypeVar
-from abc import ABCMeta, abstractmethod
+import traceback
 import uuid
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-from services.errors import AskForParamsError, TaskNotAvailableError, PreconditionNotSatisfiedError, TaskNotImplementedError
+from typing import List, Callable, TypeVar
 
+from services.errors import AskForParamsError, TaskNotAvailableError, PreconditionNotSatisfiedError, \
+    TaskNotImplementedError
+from services.utils import AttributeDict
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +249,8 @@ class AbsTaskUnitSessionTask(AbsSessionTask, metaclass=ABCMeta):
 
     def _setup(self):
         super()._setup()
+        # 实现全局变量
+        self.g = AttributeDict()
         self._task_units: List[TaskUnitWithPre] = []
         self._task_unit_indexes = {}
         self._setup_task_units()
@@ -324,7 +328,7 @@ class AbsTaskClassFinder(metaclass=ABCMeta):
 
 class AbsTaskResultHandler(metaclass=ABCMeta):
     @abstractmethod
-    def handle(self, task_id: str, result: dict):
+    def handle(self, task_id: str, result: dict, is_done: bool=True):
         raise NotImplementedError()
 
 
@@ -400,24 +404,24 @@ class SessionTasksManager(object):
     def register_not_implemented_result_handler(self, handler: AbsTaskResultHandler):
         self._not_implemented_result_handlers.append(handler)
 
-    def _run(self, session_data: SessionData, params: dict, prepare_data, is_start=True):
-        task = self._get_task(session_data, prepare_data, is_start=is_start)
+    def _run(self, session_data: SessionData, params: dict, prepare_data, is_start):
+        task = self._get_task(session_data, prepare_data, is_start)
         res = task.run(params)
         if task.end:
             # 任务结束
             result = task.session_data.result
-            if task.done:
-                # 任务成功
-                for handler in self._result_handlers:
-                    try:
-                        handler.handle(task.session_data.task_id, result)
-                    except:
-                        logger.warning(traceback.format_exc())
-            elif task.not_implemented:
+            if task.not_implemented:
                 # 任务未实现处理
                 for handler in self._not_implemented_result_handlers:
                     try:
                         handler.handle(task.session_data.task_id, result)
+                    except:
+                        logger.warning(traceback.format_exc())
+            else:
+                # 任务成功或失败
+                for handler in self._result_handlers:
+                    try:
+                        handler.handle(task.session_data.task_id, result, is_done=task.done)
                     except:
                         logger.warning(traceback.format_exc())
 
@@ -433,7 +437,7 @@ class SessionTasksManager(object):
             raise ValueError('task session not exists')
         return session_data
 
-    def _get_task(self, session_data: SessionData, prepare_data, is_start=True) -> AbsSessionTask:
+    def _get_task(self, session_data: SessionData, prepare_data, is_start) -> AbsSessionTask:
         task_id = session_data.task_id
         try:
             task_cls = self._tcf.find(task_id)
@@ -452,6 +456,7 @@ class UUIDSessionIDGenerator(AbsSessionIDGenerator):
 
 
 class MemorySessionStorage(AbsSessionStorage):
+    """内存存储，测试用"""
     def __init__(self, expire=None):
         self._expire = expire
         self.__sessions = {}
@@ -477,6 +482,7 @@ class MemorySessionStorage(AbsSessionStorage):
 
 
 class PathTaskClassFinder(AbsTaskClassFinder):
+    """通过路径模式寻找"""
     def __init__(self, get_path_func: Callable, cls_name: str):
         self._get_path_func = get_path_func
         self._cls_name = cls_name

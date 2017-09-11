@@ -15,9 +15,9 @@ VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist.jsp"
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="上海",
-        help="""1. 用户名：输入公民身份证号码；<br/>
-        2. 密码：一般为6位数字；<br/>
-        3. 首次申请密码或遗忘网上登录密码，本人须携带有效身份证件至就近街道社区事务受理中心中就近社保分中心自助机具上申请办理。
+        help="""<li>用户名：为参保人身份证号</li>
+        <li>密码：一般为6位数字；</li>
+        <li>首次申请密码或遗忘网上登录密码，本人需携带有效身份证件至就近接到社区事务受理中心或就近社保分中心自助机申请办理。</li>
         """
     )
 
@@ -88,7 +88,6 @@ class Task(AbsFetchTask):
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('用户名')
 
                 id_num = params.get("用户名")
                 account_pass = params.get("密码")
@@ -112,6 +111,8 @@ class Task(AbsFetchTask):
                         err_msg = spans[0].text
                     raise InvalidParamsError(err_msg)
 
+                # 设置key
+                self.result_key = params.get('用户名')
                 # 保存到meta
                 self.result_meta['用户名'] = params.get('用户名')
                 self.result_meta['密码'] = params.get('密码')
@@ -132,26 +133,27 @@ class Task(AbsFetchTask):
             resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx.jsp")
             soup = BeautifulSoup(resp.content, 'html.parser')
             years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
+            details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
 
-            self.result['data']['baseInfo'] = {
+            self.result_data['baseInfo'] = {
                 '姓名': soup.find('xm').text,
                 '身份证号': self.result_meta['用户名'],
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
                 '城市名称': '上海市',
                 '城市编号': '310100',
                 '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
-                '最近缴费时间': years[len(years) - 1].find('jsjs1').text,
-                '开始缴费时间': years[0].find('jsjs1').text,
+                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
+                '开始缴费时间': details[0].find('jsjs1').text,
                 '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
                 '个人医疗累计缴费': ''
             }
 
             # 社保缴费明细
             # 养老
-            self.result['data']['old_age'] = {
+            self.result_data['old_age'] = {
                 "data": {}
             }
-            dataBaseE = self.result['data']['old_age']["data"]
+            dataBaseE = self.result_data['old_age']["data"]
             modelE = {}
 
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
@@ -177,10 +179,10 @@ class Task(AbsFetchTask):
                 dataBaseE[yearE][monthE].append(modelE)
 
             # 医疗
-            self.result['data']['medical_care'] = {
+            self.result_data['medical_care'] = {
                 "data": {}
             }
-            dataBaseH = self.result['data']['medical_care']["data"]
+            dataBaseH = self.result_data['medical_care']["data"]
             modelH = {}
 
             for b in range(len(details)):
@@ -201,10 +203,10 @@ class Task(AbsFetchTask):
                 dataBaseH[yearH][monthH].append(modelH)
 
             # 失业
-            self.result['data']['unemployment'] = {
+            self.result_data['unemployment'] = {
                 "data": {}
             }
-            dataBaseI = self.result['data']['unemployment']["data"]
+            dataBaseI = self.result_data['unemployment']["data"]
             modelI = {}
 
             for c in range(len(details)):
@@ -225,7 +227,7 @@ class Task(AbsFetchTask):
                 dataBaseI[yearI][monthI].append(modelI)
 
             # 工伤
-            self.result['data']['injuries'] = {
+            self.result_data['injuries'] = {
                 "data": {
                     # '缴费时间': '-',
                     # '缴费单位': '-',
@@ -237,16 +239,16 @@ class Task(AbsFetchTask):
             }
 
             # 生育
-            self.result['data']['maternity'] = {
+            self.result_data['maternity'] = {
                 "data": {}
             }
 
-            self.result['identity'] = {
+            self.result_identity.update({
                 "task_name": "上海",
                 "target_name": soup.find('xm').text,
                 "target_id": self.result_meta['用户名'],
                 "status": ""
-            }
+            })
 
             return
         except InvalidConditionError as e:
