@@ -24,7 +24,7 @@ class value_is_number(object):
         return val and val.isnumeric()
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
-LOGIN_PAGE_URL='https://seyb.szsi.gov.cn/web/ggfw/app/ggfwpf/login/yx/views/public/login/login_comm.html'
+LOGIN_PAGE_URL='https://seyb.szsi.gov.cn/web/ggfw/app/index.html#/ggfw/cxfw'
 LOGIN_URL = 'https://seyb.szsi.gov.cn/web/ajaxlogin.do'
 VC_URL = 'https://seyb.szsi.gov.cn/web/ImageCheck.jpg'
 USERINFO_URL='https://seyb.szsi.gov.cn/web/ajax.do'
@@ -144,15 +144,15 @@ class Task(AbsFetchTask):
             # 打开登录页
             driver.get(LOGIN_PAGE_URL)
             # 等待lk请求
-            WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="lk"]')))
+            #WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="lk"]')))
 
             # 选择身份证号方式登录
-            driver.find_element_by_xpath('/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr/td/div/form/div[1]/ul/li[3]/a').click()
+            driver.find_element_by_xpath('/html/body/div[2]/div/div/div/div/div/div[2]/div[2]/div/div[1]/a').click()
 
-            username_input = driver.find_element_by_xpath('//*[@id="bh1"]')
-            password_input = driver.find_element_by_xpath('//*[@id="mm1"]')
-            vc_input = driver.find_element_by_xpath('//*[@id="login_tab_2"]/div/div[3]/input')
-            submit_btn = driver.find_element_by_xpath('//*[@id="login_tab_2"]/div/div[4]/input[1]')
+            username_input = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[4]/div/div[1]/div/input')
+            password_input = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[4]/div/div[2]/div/input')
+            vc_input = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[4]/div/div[3]/div/input')
+            submit_btn = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[5]/input[1]')
 
             # 用户名
             username_input.clear()
@@ -166,14 +166,13 @@ class Task(AbsFetchTask):
             # 提交
             submit_btn.click()
 
-            if not driver.current_url == 'http://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-choice.jsp':
-                raise InvalidParamsError('登录失败，请检查输入')
-
-            # 登录成功
-
             # 保存登录后的页面内容供抓取单元解析使用
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             self.g.current_url = driver.current_url
+            if self.g.login_page_html.find('欢迎来到广东省办事大厅深圳分厅！')==-1:
+                raise InvalidParamsError('登录失败，请检查输入')
+            print(driver)
+            # 登录成功
     def _unit_fetch_userinfo(self):
         """用户信息"""
         try:
