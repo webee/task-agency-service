@@ -158,7 +158,9 @@ class AbsSessionTask(AbsStatefulTask):
             if isinstance(e, TaskNotImplementedError):
                 self._set_not_implemented()
             if not not_available:
-                logger.error(traceback.format_exc())
+                logger.error("%s, %s\n%s\n%s", self.session_data.id, self.session_data.task_id,
+                             params,
+                             traceback.format_exc())
             return dict(end=self.end, done=self.done, not_available=not_available, err_msg=str(e))
 
     def query(self, params: dict = None):
@@ -422,7 +424,7 @@ class SessionTasksManager(object):
                 for handler in self._result_handlers:
                     try:
                         handler.handle(task.session_data.task_id, result, is_done=task.done)
-                    except:
+                    except Exception as e:
                         logger.warning(traceback.format_exc())
 
             # 删除会话
