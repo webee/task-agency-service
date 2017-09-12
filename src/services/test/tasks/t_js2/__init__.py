@@ -176,9 +176,7 @@ class Task(AbsFetchTask):
             soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
             a = soup.select('a')[1]
             link = a.attrs['onclick'].split('"')[1]
-            parsed_link = parse.urlparse(self.g.current_url)
-            host = parse.ParseResult(parsed_link.scheme, parsed_link.netloc, '', '', '', '').geturl()
-            link = parse.urljoin(host, link)
+            link = parse.urljoin(self.g.current_url, link)
 
             resp = self.s.get(link)
             self.result_data.update({
