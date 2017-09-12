@@ -38,9 +38,8 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36',
-                 'X-Requested-With': 'XMLHttpRequest',
-                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
+        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'
+                 }
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -168,7 +167,6 @@ class Task(AbsFetchTask):
 
             # 保存登录后的页面内容供抓取单元解析使用
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-            self.g.current_url = driver.current_url
             if self.g.login_page_html.find('欢迎来到广东省办事大厅深圳分厅！')==-1:
                 raise InvalidParamsError('登录失败，请检查输入')
             print(driver)
@@ -181,12 +179,25 @@ class Task(AbsFetchTask):
                 '城市编号': '440300',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
+            strr='?r='+str(random.random())
+            resp=self.s.post(USERINFO_URL+strr,data=dict(_isModel='true',
+                                                    params='{"oper":"UnitHandleCommAction.insertLogRecord","params":{},"datas":{"@tmpGtDatas":{"rightId":"500101","rightName":"参保基本信息查询","recordType":"1"}}}'),headers={'X-Requested-With': 'XMLHttpRequest',
+                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                 'Accept': 'application / json, text / plain, * / *',
+                 'Connection': 'keep - alive'})
+            tokendic=resp.headers
+            token=tokendic['Token']
             datas=dict(
                 _isModel='true',
-                params='{"oper": "CbjbxxcxAction.queryGrcbjbxx", "params": {},"datas": {"ncm_gt_用户信息": {"params": {}}, "ncm_gt_参保状态": {"params": {}},"ncm_gt_缴纳情况": {"params": {}}}}'
+                params='{"oper":"CbjbxxcxAction.queryGrcbjbxx","params":{},"datas":{"ncm_gt_用户信息":{"params":{}},"ncm_gt_参保状态":{"params":{}},"ncm_gt_缴纳情况":{"params":{}}}}'
             )
-            resp = self.s.post(USERINFO_URL,datas)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            strrs = '?r=' + str(random.random())
+            resps = self.s.post(USERINFO_URL+strrs,datas,headers={'X-Requested-With': 'XMLHttpRequest',
+                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                 'Accept': 'application/json,text/plain, */*',
+                 'Token':token})
+            print(resps.text)
+            soup = BeautifulSoup(resps.content, 'html.parser')
             jsonread = json.loads(soup.text)
             userinfo=jsonread['datas']
             fivedic = {}
