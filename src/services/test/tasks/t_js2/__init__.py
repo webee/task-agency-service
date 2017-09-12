@@ -2,6 +2,7 @@ import html
 import os
 import time
 import bs4
+from urllib import parse
 from services.webdriver import new_driver, DriverRequestsCoordinator
 from services.commons import AbsFetchTask
 from services.errors import InvalidParamsError, AskForParamsError, InvalidConditionError, PreconditionNotSatisfiedError
@@ -175,7 +176,9 @@ class Task(AbsFetchTask):
             soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
             a = soup.select('a')[1]
             link = a.attrs['onclick'].split('"')[1]
-            link = os.path.join(os.path.dirname(self.g.current_url), link)
+            parsed_link = parse.urlparse(self.g.current_url)
+            host = parse.ParseResult(parsed_link.scheme, parsed_link.netloc, '', '', '', '').geturl()
+            link = parse.urljoin(host, link)
 
             resp = self.s.get(link)
             self.result_data.update({
