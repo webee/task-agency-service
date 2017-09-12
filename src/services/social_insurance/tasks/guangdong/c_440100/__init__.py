@@ -7,15 +7,16 @@ from bs4 import BeautifulSoup
 import html
 import os
 import time
-from services.webdriver import new_driver, DriverRequestsCoordinator
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium import webdriver
+import json
 
-LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/cmslogin"
+LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/login"
 VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
 USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
+User_BaseInfo="http://gzlss.hrssgz.gov.cn/gzlss_web/business/authentication/menu/getMenusByParentId.xhtml?parentId=SECOND-ZZCXUN"
 
 
 class value_is_number(object):
@@ -26,7 +27,7 @@ class value_is_number(object):
     def __call__(self, driver):
         element = driver.find_element(*self.locator)
         val = element.get_attribute('value')
-        return val #and val.isnumeric()
+        return val and val.isnumeric()
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -47,6 +48,7 @@ class Task(AbsFetchTask):
     def _prepare(self,data=None):
         """恢复状态，初始化结果"""
         super()._prepare(data)
+
         # state
         # state: dict = self.state
         # TODO: restore from state
@@ -54,7 +56,11 @@ class Task(AbsFetchTask):
         # result
         # result: dict = self.result
         # TODO: restore from result
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_chrome_driver)
+
+    def _create_chrome_driver(self):
+        driver = new_driver(user_agent=USER_AGENT, driver_type=DriverType.CHROME)
+        return  driver
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT)
@@ -62,7 +68,7 @@ class Task(AbsFetchTask):
         script = """
         var page = this;
         page.onResourceRequested = function(requestData, networkRequest) {
-            var match = requestData.url.match(/PicCheckCode1/g);
+            var match = requestData.url.match(/captcha.jpg/g);
             if (match != null) {
                 //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
                 //networkRequest.cancel(); // or .abort()
@@ -158,7 +164,6 @@ class Task(AbsFetchTask):
 
                 self._do_login(id_num, pass_word, vc)
 
-                #raise TaskNotImplementedError('查询服务维护中')
                 #  登录成功
                 # 保存到meta
                 self.result_key = id_num
@@ -179,18 +184,13 @@ class Task(AbsFetchTask):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
-            #driver.get(LOGIN_URL)
-            webdriver.Chrome().get(LOGIN_URL)
-            # 等待lk请求
-            #WebDriverWait(driver, 15).until(value_is_number((By.XPATH, '//*[@id="fm1"]/input[1]')))
+            driver.get(LOGIN_URL)
 
             username_input = driver.find_element_by_xpath('//*[@id="loginName"]')
             password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
             vc_input = driver.find_element_by_xpath('//*[@id="validateCode"]')
             user_type=driver.find_element_by_xpath('//*[@id="usertype2"]')
             submit_btn = driver.find_element_by_xpath('//*[@id="submitbt"]')
-            #il_input=driver.find_element_by_xpath('//*[@id="fm1"]/input[1]')
-            #fm_form=driver.find_element_by_xpath('//*[@id="fm1"]')
 
             # 用户名
             username_input.clear()
@@ -207,14 +207,12 @@ class Task(AbsFetchTask):
             user_type.click()
 
             # 提交
-            #fm_form.submit()
             submit_btn.click()
 
             if not driver.current_url =='http://gzlss.hrssgz.gov.cn/gzlss_web/business/tomain/main.xhtml':
                 raise InvalidParamsError('登录失败，请重新登录！')
 
             # 登录成功
-
             # 保存登录后的页面内容供抓取单元解析使用
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             self.g.current_url = driver.current_url
@@ -222,6 +220,42 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
+            soup=self.s.get(User_BaseInfo)
+            s=json.loads(soup.text)
+            perURl=s[8]['url']
+            res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+perURl)
+            redata=BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'})[0]
+            redata2 = BeautifulSoup(res.text,'html.parser').findAll('table', {'class': 'comitTable'})[1]
+
+            self.result_data['baseInfo']={
+                '姓名':redata.find('input',{'id':'aac003ss'})['value'],
+                '身份证号':redata.find('input',{'id':'aac002ss'})['value'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '广州市',
+                '城市编号': '440100',
+                '缴费时长':'',
+                '最近缴费时间': '',
+                '开始缴费时间': '',
+                '个人养老累计缴费': '',
+                '个人医疗累计缴费': '',
+
+                '个人编号': redata.find('input', {'id': 'aac001'})['value'],
+                '性别':redata.find('input',{'id':'aac004ss'})['value'],
+                '民族':redata2.find('select',{'id':'aac005'}).find(selected="selected").text.replace('\r','').replace('\n','').replace('\t',''),
+                '户口性质':redata.find('input',{'id':'aac009ss'})['value'],
+                '出生日期':redata.find('input',{'id':'aac006ss'})['value'],
+                '单位名称':redata.find('input',{'id':'aab069ss'})['value'],
+                '地址':redata2.find('input',{'id':'bab306'})['value'],
+                '电子邮箱':redata2.find('input',{'id':'bbc019'})['value']
+            }
+
+            # identity
+            self.result_identity.update({
+                "task_name": "广州",
+                "target_name": redata.find('input',{'id':'aac003ss'})['value'],
+                "target_id": self.result_meta['账号'],
+                "status": ""
+            })
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
