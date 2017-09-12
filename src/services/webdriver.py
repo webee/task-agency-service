@@ -34,25 +34,25 @@ class DriverType(object):
     CHROME = 1
 
 
-def new_driver(user_agent=None, driver_type=DriverType.PHANTOMJS):
+def new_driver(driver_type=DriverType.PHANTOMJS, **kwargs):
     if driver_type == DriverType.PHANTOMJS:
-        return new_phantomjs_driver(user_agent)
+        return new_phantomjs_driver(**kwargs)
     elif driver_type == DriverType.CHROME:
-        return new_chrome_driver()
+        return new_chrome_driver(**kwargs)
 
     raise RuntimeError('unknown driver type')
 
 
-def new_chrome_driver():
+def new_chrome_driver(*args, **kwargs):
     options = webdriver.ChromeOptions()
-    # prefs = {"profile.managed_default_content_settings.images": 2}
-    # options.add_experimental_option("prefs", prefs)
+    prefs = {"profile.managed_default_content_settings.images": 2}
+    options.add_experimental_option("prefs", prefs)
     driver = webdriver.Chrome(chrome_options=options)
 
     return driver
 
 
-def new_phantomjs_driver(user_agent=None):
+def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs):
     """实例化一个PhantomJS driver"""
     service_args = []
     service_args.append('--load-images=no')
@@ -61,21 +61,50 @@ def new_phantomjs_driver(user_agent=None):
     caps = {}
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
     caps["phantomjs.page.settings.userAgent"] = user_agent or "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
-    caps["phantomjs.page.settings.acceptLanguage"] = 'zh-CN,zh;q=0.8,zh-TW;q=0.6,en;q=0.4,ja;q=0.2,la;q=0.2'
     caps["phantomjs.page.settings.loadImages"] = False
     service_log_path = None
     if os.path.exists('/tmp'):
         service_log_path = '/tmp/ghostdriver.log'
     driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path=service_log_path)
+    driver.set_window_size(1920, 1080)
     driver.implicitly_wait(10)
 
-    driver.execute_script("""
-        var window = this;
-        window.alert = function(msg){document.cookie='_last_alert=' + escape(msg);};
-        window.confirm = function(msg) {return true;};
-    """)
-
     driver.command_executor._commands['executePhantomScript'] = ('POST', '/session/$sessionId/phantom/execute')
+    # 不加载某些url
+    script = """
+        var page = this;
+        page.onResourceRequested = function(requestData, networkRequest) {
+            var match = requestData.url.match(%s);
+            if (match != null) {
+                //networkRequest.cancel(); // or .abort()
+                networkRequest.abort();
+            } else {
+                page.browserLog.push('request: ' + requestData.url + ': ' + JSON.stringify(requestData));
+            }
+        }
+        page.onResourceReceived = function(response) {
+            page.browserLog.push('response: ' + response.url + ': ' + JSON.stringify(response));
+        }
+        page.onUrlChanged = function(targetUrl) {
+            page.browserLog.push('-> ' + targetUrl);
+        }
+        page.customHeaders = {'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.6,en;q=0.4,ja;q=0.2,la;q=0.2'}
+        
+        // alert
+        page.onAlert = function(msg){
+            console.log('ALERT: ' + msg);
+            page.browserLog.push('alert: ' + msg);
+            page.addCookie({name: '_last_alert', value: escape(msg)});
+        }
+        /*
+        page.alert = function(msg){
+            page.browserLog.push('alert: ' + msg);
+            page.addCookie({name: '_last_alert', value: escape(msg)});
+        }
+        page.confirm = function(msg) {return true;}
+        */
+        """ % js_re_ignore
+    driver.execute('executePhantomScript', {'script': script, 'args': []})
 
     return driver
 
@@ -163,14 +192,19 @@ class DriverRequestsCoordinator(object):
         if self._s_n <= self._d_n:
             return
 
-        if not (self._d and self.s):
+        if not (self._d and self._s):
             return
 
-        for c in list(self.s.cookies):
+        self._d.delete_all_cookies()
+        with_domain = self._d.current_url == 'about:blank'
+        for c in list(self._s.cookies):
             try:
-                self.d.add_cookie(dict(name=c.name, value=c.value, domain=c.domain, path=c.path, secure=c.secure))
+                d = dict(name=c.name, value=c.value, path=c.path)
+                if with_domain:
+                    d['domain'] = c.domain
+                self._d.add_cookie(d)
             except:
-                pass
+                logger.warning(traceback.format_exc())
 
         self._d_n = self._s_n
 
@@ -183,12 +217,13 @@ class DriverRequestsCoordinator(object):
         if self._d_n <= self._s_n:
             return
 
-        if not (self._d and self.s):
+        if not (self._s and self._d):
             return
 
-        for c in self.d.get_cookies():
+        self._s.cookies.clear()
+        for c in self._d.get_cookies():
             cx = dict(name=c['name'], path=c['path'], domain=c['domain'], value=c['value'], secure=c['secure'])
-            self.s.cookies.set(**cx)
+            self._s.cookies.set(**cx)
         self._s_n = self._d_n
 
     def inc_and_sync_d_cookies(self):
