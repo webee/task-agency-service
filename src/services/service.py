@@ -158,7 +158,9 @@ class AbsSessionTask(AbsStatefulTask):
             if isinstance(e, TaskNotImplementedError):
                 self._set_not_implemented()
             if not not_available:
-                logger.error(traceback.format_exc())
+                logger.error("%s, %s\n%s\n%s", self.session_data.id, self.session_data.task_id,
+                             params,
+                             traceback.format_exc())
             return dict(end=self.end, done=self.done, not_available=not_available, err_msg=str(e))
 
     def query(self, params: dict = None):

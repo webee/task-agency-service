@@ -29,7 +29,27 @@ def create_driver(user_agent=None):
     return driver
 
 
-def new_driver(user_agent=None):
+class DriverType(object):
+    PHANTOMJS = 0
+    CHROME = 1
+
+
+def new_driver(user_agent=None, driver_type=DriverType.PHANTOMJS):
+    if driver_type == DriverType.PHANTOMJS:
+        return new_phantomjs_driver(user_agent)
+    elif driver_type == DriverType.CHROME:
+        return new_chrome_driver()
+
+    raise RuntimeError('unknown driver type')
+
+
+def new_chrome_driver():
+    driver = webdriver.Chrome()
+
+    return driver
+
+
+def new_phantomjs_driver(user_agent=None):
     """实例化一个PhantomJS driver"""
     service_args = []
     service_args.append('--ignore-ssl-errors=true')
