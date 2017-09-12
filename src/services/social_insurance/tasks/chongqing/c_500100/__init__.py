@@ -156,7 +156,7 @@ class Task(AbsFetchTask):
                 elif i == 1:
                     Company = tds[2].text.strip()
                 elif i == 2:
-                    self.old_age_lately_start_data = tds[7].text
+                    self.old_age_lately_start_data = tds[7].text.strip()
                     self.medical_care_lately_start_data = tds[8].text.strip()
                     self.injuries_lately_start_data = tds[9].text.strip()
                     self.maternity_lately_start_data = tds[10].text.strip()
@@ -223,6 +223,24 @@ class Task(AbsFetchTask):
             data["unemployment"] = {
                 "data": {}
             }
+
+            self.old_age_month = 0
+            self.medical_care_month = 0
+            self.injuries_month = 0
+            self.maternity_month = 0
+            self.unemployment_month = 0
+
+            nowTime = time.strftime('%Y%m', time.localtime(time.time()))
+
+            self.old_age_lately_data = nowTime
+            self.medical_care_lately_data = nowTime
+            self.injuries_lately_data = nowTime
+            self.maternity_lately_data = nowTime
+            self.unemployment_lately_data = nowTime
+
+            self.my_self_old_age = 0
+            self.my_self_medical_care = 0
+
             return
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -268,12 +286,12 @@ class Task(AbsFetchTask):
                         self.my_self_old_age = self.my_self_old_age + float(grjfje)
                         # 定义数据结构
                         obj = {
-                            "缴费时间": item["xssj"],
-                            "缴费类型": item["jflx"],
-                            "缴费基数": item["jfjs"],
-                            "公司缴费": "-",
-                            "个人缴费": grjfje,
-                            "缴费单位": item["dwmc"],
+                            "缴费时间": item.get('xssj', ''),
+                            "缴费类型": item.get('jflx', ''),
+                            "缴费基数": item.get('jfjs', ''),
+                            "公司缴费": "",
+                            "个人缴费": item.get('grjfje', ''),
+                            "缴费单位": item.get('dwmc', ''),
                         }
 
                         if item["jfbz"] == "已实缴":
@@ -325,12 +343,12 @@ class Task(AbsFetchTask):
                         self.my_self_medical_care = self.my_self_medical_care + float(grjfje)
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["fkkm"] == "基本医疗保险" and item["jfbz"] == "已实缴":
@@ -376,16 +394,14 @@ class Task(AbsFetchTask):
                     isStart = True
                     # 循环行
                     for item in result["result"]:
-                        # 个人缴费金额
-                        grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "足额缴费":
@@ -428,16 +444,14 @@ class Task(AbsFetchTask):
                     isStart = True
                     # 循环行
                     for item in result["result"]:
-                        # 个人缴费金额
-                        grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "已实缴":
@@ -480,16 +494,14 @@ class Task(AbsFetchTask):
                     isStart = True
                     # 循环行
                     for item in result["result"]:
-                        # 个人缴费金额
-                        grjfje = item.get('grjfje', '0')
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item["xssj"],
-                           "缴费类型": item["jflx"],
-                           "缴费基数": item["jfjs"],
-                           "公司缴费": "-",
-                           "个人缴费": grjfje,
-                           "缴费单位": item["dwmc"],
+                           "缴费时间": item.get("xssj", ''),
+                           "缴费类型": item.get("jflx", ''),
+                           "缴费基数": item.get("jfjs", ''),
+                           "公司缴费": '',
+                           "个人缴费": item.get('grjfje', ''),
+                           "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "足额缴费":
@@ -522,16 +534,26 @@ class Task(AbsFetchTask):
                                  self.unemployment_lately_start_data]
 
             data = self.result['data']
+
+            temp_latest_start_time = []
+            for item in latest_start_time:
+                if item:
+                    temp_latest_start_time.append(item)
             # 养老明细
-            self._unit_fetch_user_old_age(min(latest_start_time)[0:4])
+            if self.old_age_lately_start_data:
+                self._unit_fetch_user_old_age(min(temp_latest_start_time)[0:4])
             # 医疗明细
-            self._unit_fetch_user_medical_care(min(latest_start_time)[0:4])
+            if self.medical_care_lately_start_data:
+                self._unit_fetch_user_medical_care(min(temp_latest_start_time)[0:4])
             # 工伤明细
-            self._unit_fetch_user_injuries(min(latest_start_time)[0:4])
+            if self.injuries_lately_start_data:
+                self._unit_fetch_user_injuries(min(temp_latest_start_time)[0:4])
             # 生育明细
-            self._unit_fetch_user_maternity(min(latest_start_time)[0:4])
+            if self.maternity_lately_start_data:
+                self._unit_fetch_user_maternity(min(temp_latest_start_time)[0:4])
             # 失业明细
-            self._unit_fetch_user_unemployment(min(latest_start_time)[0:4])
+            if self.unemployment_lately_start_data:
+                self._unit_fetch_user_unemployment(min(temp_latest_start_time)[0:4])
 
             # 五险所有缴费时间
             social_payment_duration = [self.old_age_month,
@@ -549,7 +571,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"]["缴费时长"] = str(max(social_payment_duration))
             data["baseInfo"]["最近缴费时间"] = str(max(latest_time))
-            data["baseInfo"]["开始缴费时间"] = str(min(latest_start_time))
+            data["baseInfo"]["开始缴费时间"] = str(min(temp_latest_start_time))
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 

@@ -11,6 +11,7 @@ from services.webdriver import new_driver, DriverRequestsCoordinator
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
 
 LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/cmslogin"
 VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
@@ -142,7 +143,7 @@ class Task(AbsFetchTask):
 
         resps = self.s.post(
             "http://gzlss.hrssgz.gov.cn/cas/login?service=http://gzlss.hrssgz.gov.cn:80/gzlss_web/business/tomain/main.xhtml",
-            data)
+            datas)
         raise InvalidParamsError(resps.text)
 
     def _unit_login(self, params=None):
@@ -178,17 +179,18 @@ class Task(AbsFetchTask):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
-            driver.get(LOGIN_URL)
+            #driver.get(LOGIN_URL)
+            webdriver.Chrome().get(LOGIN_URL)
             # 等待lk请求
-            #WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="fm1"]/input[1]')))
+            #WebDriverWait(driver, 15).until(value_is_number((By.XPATH, '//*[@id="fm1"]/input[1]')))
 
             username_input = driver.find_element_by_xpath('//*[@id="loginName"]')
             password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
             vc_input = driver.find_element_by_xpath('//*[@id="validateCode"]')
             user_type=driver.find_element_by_xpath('//*[@id="usertype2"]')
             submit_btn = driver.find_element_by_xpath('//*[@id="submitbt"]')
-            il_input=driver.find_element_by_xpath('//*[@id="fm1"]/input[1]')
-            fm_form=driver.find_element_by_xpath('//*[@id="fm1"]')
+            #il_input=driver.find_element_by_xpath('//*[@id="fm1"]/input[1]')
+            #fm_form=driver.find_element_by_xpath('//*[@id="fm1"]')
 
             # 用户名
             username_input.clear()
@@ -200,13 +202,15 @@ class Task(AbsFetchTask):
 
             # 验证码
             vc_input.clear()
-            vc_input.send_keys()
+            vc_input.send_keys(vc)
+
+            user_type.click()
 
             # 提交
-            fm_form.submit()
-            #submit_btn.click()
+            #fm_form.submit()
+            submit_btn.click()
 
-            if driver.current_url =='http://gzlss.hrssgz.gov.cn/cas/cmslogin':
+            if not driver.current_url =='http://gzlss.hrssgz.gov.cn/gzlss_web/business/tomain/main.xhtml':
                 raise InvalidParamsError('登录失败，请重新登录！')
 
             # 登录成功
