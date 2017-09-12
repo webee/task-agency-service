@@ -18,14 +18,14 @@ USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) 
 
 
 class value_is_number(object):
-    """判断元素value是数字"""
+
     def __init__(self, locator):
         self.locator = locator
 
     def __call__(self, driver):
         element = driver.find_element(*self.locator)
         val = element.get_attribute('value')
-        return val and val.isnumeric()
+        return val #and val.isnumeric()
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -37,10 +37,10 @@ class Task(AbsFetchTask):
 
     def _get_common_headers(self):
         return {
-            'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
-            'Accept-Encoding':'gzip, deflate, sdch',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Host':'gzlss.hrssgz.gov.cn'
+            'User-Agent':USER_AGENT,
+            # 'Accept-Encoding':'gzip, deflate, sdch',
+            # 'X-Requested-With': 'XMLHttpRequest',
+            # 'Host':'gzlss.hrssgz.gov.cn'
         }
 
     def _prepare(self,data=None):
@@ -83,6 +83,27 @@ class Task(AbsFetchTask):
         resp = self.s.get(VC_URL)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '账号' not in params:
+                params['账号'] = meta.get('账号')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '账号' and '账号' in meta:
+                continue
+            elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            res.append(pr)
+        return res
+
     def _setup_task_units(self):
         """设置任务执行单元"""
         self._add_unit(self._unit_login)
@@ -111,7 +132,7 @@ class Task(AbsFetchTask):
 
         resp = self.s.get("http://gzlss.hrssgz.gov.cn/cas/login")
         lt = BeautifulSoup(resp.content, 'html.parser').find('input', {'name': 'lt'})['value']
-        data = {
+        datas = {
             'usertype': "2",
             'lt': lt,
             #'username': params.get('账号'),
@@ -124,15 +145,14 @@ class Task(AbsFetchTask):
             data)
         raise InvalidParamsError(resps.text)
 
-    def _unit_login(self, params: dict):
+    def _unit_login(self, params=None):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('账号')
 
-                id_num=params.get('账号')
-                pass_word=params.get('密码')
+                id_num=params['账号']
+                pass_word=params['密码']
                 vc = params['vc']
 
                 self._do_login(id_num, pass_word, vc)
@@ -141,8 +161,8 @@ class Task(AbsFetchTask):
                 #  登录成功
                 # 保存到meta
                 self.result_key = id_num
-                self.result_meta['账号'] = params.get('账号')
-                self.result_meta['密码'] = params.get('密码')
+                self.result_meta['账号'] = id_num
+                self.result_meta['密码'] = pass_word
 
                 return
             except (AssertionError, InvalidParamsError) as e:
@@ -160,15 +180,15 @@ class Task(AbsFetchTask):
             # 打开登录页
             driver.get(LOGIN_URL)
             # 等待lk请求
-            WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="fm1"]/input[1]')))
-
-            # 选择身份证号方式登录
-            driver.find_element_by_xpath('/html/body/form/table[1]/tr[4]/td/img').click()
+            #WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="fm1"]/input[1]')))
 
             username_input = driver.find_element_by_xpath('//*[@id="loginName"]')
             password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
             vc_input = driver.find_element_by_xpath('//*[@id="validateCode"]')
+            user_type=driver.find_element_by_xpath('//*[@id="usertype2"]')
             submit_btn = driver.find_element_by_xpath('//*[@id="submitbt"]')
+            il_input=driver.find_element_by_xpath('//*[@id="fm1"]/input[1]')
+            fm_form=driver.find_element_by_xpath('//*[@id="fm1"]')
 
             # 用户名
             username_input.clear()
@@ -177,13 +197,17 @@ class Task(AbsFetchTask):
             # 密码
             password_input.clear()
             password_input.send_keys(password)
-            vc_input.clear()
-            vc_input.send_keys(vc)
-            # 提交
-            submit_btn.click()
 
-            if not driver.current_url == '':
-                raise InvalidParamsError('登录失败，请检查输入')
+            # 验证码
+            vc_input.clear()
+            vc_input.send_keys()
+
+            # 提交
+            fm_form.submit()
+            #submit_btn.click()
+
+            if driver.current_url =='http://gzlss.hrssgz.gov.cn/cas/cmslogin':
+                raise InvalidParamsError('登录失败，请重新登录！')
 
             # 登录成功
 
