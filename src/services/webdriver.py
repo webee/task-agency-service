@@ -44,7 +44,10 @@ def new_driver(user_agent=None, driver_type=DriverType.PHANTOMJS):
 
 
 def new_chrome_driver():
-    driver = webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    # prefs = {"profile.managed_default_content_settings.images": 2}
+    # options.add_experimental_option("prefs", prefs)
+    driver = webdriver.Chrome(chrome_options=options)
 
     return driver
 
@@ -52,11 +55,13 @@ def new_chrome_driver():
 def new_phantomjs_driver(user_agent=None):
     """实例化一个PhantomJS driver"""
     service_args = []
+    service_args.append('--load-images=no')
+    service_args.append('--disk-cache=yes')
     service_args.append('--ignore-ssl-errors=true')
-    service_args.append('--webdriver-logfile=/tmp/ghostdriver.log')
     caps = {}
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
     caps["phantomjs.page.settings.userAgent"] = user_agent or "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
+    caps["phantomjs.page.settings.acceptLanguage"] = 'zh-CN,zh;q=0.8,zh-TW;q=0.6,en;q=0.4,ja;q=0.2,la;q=0.2'
     caps["phantomjs.page.settings.loadImages"] = False
     service_log_path = None
     if os.path.exists('/tmp'):
@@ -105,6 +110,7 @@ class DriverRequestsCoordinator(object):
                 self.inc_and_sync_d_cookies()
             self.d.quit()
             self._d = None
+            self._d_n = 0
 
     @property
     def d(self) -> RemoteWebDriver:

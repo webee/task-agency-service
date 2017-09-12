@@ -120,7 +120,7 @@ class Task(AbsFetchTask):
                 self.result_key = username
                 self.result_meta.update({
                     '身份证号': username,
-                    '密码': password
+                    '查询密码': password
                 })
                 return
             except (AssertionError, InvalidParamsError) as e:
