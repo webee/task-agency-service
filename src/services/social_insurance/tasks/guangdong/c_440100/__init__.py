@@ -227,6 +227,7 @@ class Task(AbsFetchTask):
             redata=BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'})[0]
             redata2 = BeautifulSoup(res.text,'html.parser').findAll('table', {'class': 'comitTable'})[1]
 
+            # 个人基本信息
             self.result_data['baseInfo']={
                 '姓名':redata.find('input',{'id':'aac003ss'})['value'],
                 '身份证号':redata.find('input',{'id':'aac002ss'})['value'],
@@ -249,13 +250,40 @@ class Task(AbsFetchTask):
                 '电子邮箱':redata2.find('input',{'id':'bbc019'})['value']
             }
 
-            # identity
+            # identity信息
             self.result_identity.update({
                 "task_name": "广州",
                 "target_name": redata.find('input',{'id':'aac003ss'})['value'],
                 "target_id": self.result_meta['账号'],
                 "status": ""
             })
+
+            # 社保明细
+            # 养老保险明细
+            self.result_data['old_age'] = {"data": {}}
+            dataBaseE = self.result_data['old_age']["data"]
+            modelE = {}
+
+            # 医疗保险明细
+            self.result_data['medical_care'] = {"data": {}}
+            dataBaseH = self.result_data['medical_care']["data"]
+            modelH = {}
+
+            # 失业保险明细
+            self.result_data['unemployment'] = {"data": {}}
+            dataBaseI = self.result_data['unemployment']["data"]
+            modelI = {}
+
+            # 工伤保险明细
+            self.result_data['injuries'] = {"data": {}}
+            dataBaseC=self.result_data['injuries']["data"]
+            modelC={}
+
+            # 生育保险明细
+            self.result_data['maternity'] = {"data": {}}
+            dataBaseB = self.result_data['maternity']["data"]
+            modelB = {}
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
