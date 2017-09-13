@@ -3,7 +3,7 @@ import time
 import random
 import json
 import datetime
-from services.webdriver import new_driver, DriverRequestsCoordinator
+from services.webdriver import new_driver, DriverRequestsCoordinator,DriverType
 from bs4 import BeautifulSoup
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
@@ -28,6 +28,7 @@ LOGIN_PAGE_URL='https://seyb.szsi.gov.cn/web/ggfw/app/index.html#/ggfw/cxfw'
 LOGIN_URL = 'https://seyb.szsi.gov.cn/web/ajaxlogin.do'
 VC_URL = 'https://seyb.szsi.gov.cn/web/ImageCheck.jpg'
 USERINFO_URL='https://seyb.szsi.gov.cn/web/ajax.do'
+dlToken=''
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="深圳",
@@ -51,7 +52,7 @@ class Task(AbsFetchTask):
     def _prepare(self, data=None):
         super()._prepare(data)
 
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_chrome_driver)
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT)
@@ -119,7 +120,9 @@ class Task(AbsFetchTask):
                 password =params['密码']
                 vc = params['vc']
                 self._do_login(username, password, vc)
+
                 # 登录成功
+                dlToken=self.s.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                 self.result_key = username
 
                 # 保存到meta
@@ -167,10 +170,15 @@ class Task(AbsFetchTask):
 
             # 保存登录后的页面内容供抓取单元解析使用
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-            if self.g.login_page_html.find('欢迎来到广东省办事大厅深圳分厅！')==-1:
+            if self.g.login_page_html.find('<a ng-show="!ncUser" ng-click="login()" style="display: none;">')==-1:
                 raise InvalidParamsError('登录失败，请检查输入')
-            print(driver)
+
             # 登录成功
+
+    def _create_chrome_driver(self):
+        driver = new_driver(user_agent=USER_AGENT, driver_type=DriverType.CHROME)
+        return driver
+
     def _unit_fetch_userinfo(self):
         """用户信息"""
         try:
@@ -191,11 +199,17 @@ class Task(AbsFetchTask):
                 _isModel='true',
                 params='{"oper":"CbjbxxcxAction.queryGrcbjbxx","params":{},"datas":{"ncm_gt_用户信息":{"params":{}},"ncm_gt_参保状态":{"params":{}},"ncm_gt_缴纳情况":{"params":{}}}}'
             )
-            strrs = '?r=' + str(random.random())
-            resps = self.s.post(USERINFO_URL+strrs,datas,headers={'X-Requested-With': 'XMLHttpRequest',
-                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                 'Accept': 'application/json,text/plain, */*',
-                 'Token':token})
+            strrs =USERINFO_URL+ '?r=' + str(random.random())
+            resps = self.s.post(strrs,datas,headers={'X-Requested-With': 'XMLHttpRequest',
+                                                     'Accept-Language': 'zh-CN,zh;q=0.8',
+                                                     'Accept-Encoding': 'gzip, deflate, br',
+                                                     'Connection': 'keep - alive',
+                                                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                     'Accept': 'application/json,text/plain, */*',
+                                                     'Token':dlToken,
+                                                     'Referer':'https://seyb.szsi.gov.cn/web/ggfw/app/index.html' ,
+                                                     'Origin':'https://seyb.szsi.gov.cn',
+                                                     'Host':'seyb.szsi.gov.cn'})
             print(resps.text)
             soup = BeautifulSoup(resps.content, 'html.parser')
             jsonread = json.loads(soup.text)
