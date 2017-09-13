@@ -28,7 +28,7 @@ LOGIN_PAGE_URL='https://seyb.szsi.gov.cn/web/ggfw/app/index.html#/ggfw/cxfw'
 LOGIN_URL = 'https://seyb.szsi.gov.cn/web/ajaxlogin.do'
 VC_URL = 'https://seyb.szsi.gov.cn/web/ImageCheck.jpg'
 USERINFO_URL='https://seyb.szsi.gov.cn/web/ajax.do'
-dlToken=''
+
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="深圳",
@@ -52,27 +52,16 @@ class Task(AbsFetchTask):
     def _prepare(self, data=None):
         super()._prepare(data)
 
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_chrome_driver)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver())
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT)
-
-        # 不加载验证码
-        script = """
-        var page = this;
-        page.onResourceRequested = function(requestData, networkRequest) {
-            var match = requestData.url.match(/PicCheckCode1/g);
-            if (match != null) {
-                //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
-                //networkRequest.cancel(); // or .abort()
-                networkRequest.abort();
-            }
-        };
-        """
-        driver.execute('executePhantomScript', {'script': script, 'args': []})
+        driver = new_driver(user_agent=USER_AGENT,js_re_ignore='/cas\/ImageCheck.jpg/g')
+        driver.get(LOGIN_PAGE_URL)
 
         return driver
-
+    def _create_chrome_driver(self):
+        driver = new_driver(user_agent=USER_AGENT, driver_type=DriverType.CHROME)
+        return driver
     def _setup_task_units(self):
         """设置任务执行单元"""
         self._add_unit(self._unit_login)
@@ -122,7 +111,7 @@ class Task(AbsFetchTask):
                 self._do_login(username, password, vc)
 
                 # 登录成功
-                dlToken=self.s.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+                self.s.dlToken=self.s.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                 self.result_key = username
 
                 # 保存到meta
@@ -175,9 +164,7 @@ class Task(AbsFetchTask):
 
             # 登录成功
 
-    def _create_chrome_driver(self):
-        driver = new_driver(user_agent=USER_AGENT, driver_type=DriverType.CHROME)
-        return driver
+
 
     def _unit_fetch_userinfo(self):
         """用户信息"""
@@ -206,7 +193,7 @@ class Task(AbsFetchTask):
                                                      'Connection': 'keep - alive',
                                                      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                                      'Accept': 'application/json,text/plain, */*',
-                                                     'Token':dlToken,
+                                                     'Token':self.s.dlToken,
                                                      'Referer':'https://seyb.szsi.gov.cn/web/ggfw/app/index.html' ,
                                                      'Origin':'https://seyb.szsi.gov.cn',
                                                      'Host':'seyb.szsi.gov.cn'})
