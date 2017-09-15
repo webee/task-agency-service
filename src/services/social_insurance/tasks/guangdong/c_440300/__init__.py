@@ -11,6 +11,9 @@ from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 class value_is_number(object):
@@ -169,28 +172,46 @@ class Task(AbsFetchTask):
             #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             # 提交
             submit_btn.click()
+            time.sleep(2)
+            WebDriverWait(driver, 10).until(
+                lambda driver:
+                    EC.invisibility_of_element_located((By.XPATH, 'html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]'))(driver)
+                or EC.element_to_be_clickable((By.XPATH, '//*[@id="div_dialog_login"]/div/div/div/form/div[5]/input[1]'))(driver))
+
+            login_btn = driver.find_element_by_xpath('html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]')
+            s = login_btn.get_attribute('style')
+            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            if not s:
+                # failed
+                err_msg = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[3]/font').text
+                raise InvalidParamsError(err_msg)
+                # TODO
+            else:
+                # success
+                print('success')
+            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
 
             # 保存登录后的页面内容供抓取单元解析使用
-            login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-
-            # print(login_page_html[login_page_html.find('欢迎')-5:login_page_html.find('欢迎')+15])
-            # if login_page_html.find('<a ng-show="!ncUser" ng-click="login()" style="display: none;">')==-1:
-            resp = self.s.post(LOGIN_URL, data=dict(
-                r=random.random(),
-                LOGINID=username,
-                PASSWORD=login_page_html[login_page_html.find('PASSWORD=')+9:login_page_html.find('&amp;IMAGCHECK=')],
-                IMAGCHECK=vc,
-                OPERTYPE2=3,
-                ISBIND='false',
-                now=time.strftime('%a %b %d %Y %H:%M:%S', time.localtime()),
-                callback=''
-            ))
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            jsonread = json.loads(soup.text.replace('(','').replace(')',''))
-            flag=jsonread['flag']
-            errormsg = jsonread['message']
-            if flag=='-1':
-                raise InvalidParamsError(errormsg)
+            # login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+            #
+            # # print(login_page_html[login_page_html.find('欢迎')-5:login_page_html.find('欢迎')+15])
+            # # if login_page_html.find('<a ng-show="!ncUser" ng-click="login()" style="display: none;">')==-1:
+            # resp = self.s.post(LOGIN_URL, data=dict(
+            #     r=random.random(),
+            #     LOGINID=username,
+            #     PASSWORD=login_page_html[login_page_html.find('PASSWORD=')+9:login_page_html.find('&amp;IMAGCHECK=')],
+            #     IMAGCHECK=vc,
+            #     OPERTYPE2=3,
+            #     ISBIND='false',
+            #     now=time.strftime('%a %b %d %Y %H:%M:%S', time.localtime()),
+            #     callback=''
+            # ))
+            # soup = BeautifulSoup(resp.content, 'html.parser')
+            # jsonread = json.loads(soup.text.replace('(','').replace(')',''))
+            # flag=jsonread['flag']
+            # errormsg = jsonread['message']
+            # if flag=='-1':
+            #     raise InvalidParamsError(errormsg)
 
 
     def _unit_fetch_userinfo(self):
@@ -229,7 +250,7 @@ class Task(AbsFetchTask):
                                                      'Referer':'https://seyb.szsi.gov.cn/web/ggfw/app/index.html' ,
                                                      'Origin':'https://seyb.szsi.gov.cn',
                                                      'Host':'seyb.szsi.gov.cn'})
-            print(resps.text)
+            #print(resps.text)
             soup = BeautifulSoup(resps.content, 'html.parser')
             self.s.Token =resps.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
             jsonread = json.loads(soup.text)
@@ -245,7 +266,10 @@ class Task(AbsFetchTask):
                     if k=='身份证号':
                         self.result_identity['target_id'] =v
                     if k == '参保状态':
-                        self.result_identity['status'] = v
+                        if v=='参加':
+                            self.result_identity['status'] = '正常缴纳'
+                        else:
+                            self.result_identity['status'] = '停缴'
 
             monthnum = 0
             for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
@@ -399,7 +423,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'}
+    meta = {'用户名': 'keguangping', '密码': 'Kegp850907'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
