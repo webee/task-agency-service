@@ -266,7 +266,7 @@ class Task(AbsFetchTask):
                     if k=='身份证号':
                         self.result_identity['target_id'] =v
                     if k == '参保状态':
-                        if v=='参加':
+                        if v=='正常':
                             self.result_identity['status'] = '正常缴纳'
                         else:
                             self.result_identity['status'] = '停缴'
@@ -423,7 +423,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'keguangping', '密码': 'Kegp850907'}
+    meta = {'用户名': 'gaoyingen', '密码': 'Gao1831850'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
