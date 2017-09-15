@@ -369,6 +369,7 @@ class Task(AbsFetchTask):
                         self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                     mx=json.loads(resp.text)["datas"]
                     for i in range(0,len(mx[arrmingxi[ii]]['dataset'])):
+                        arr=[]
                         if v=='old_age'or v=='medical_care':
                             personjfsum=personjfsum+float(mx[arrmingxi[ii]]['dataset'][i]['个人缴'])
                             #enterjfsum=enterjfsum+float(mx['dataset'][i]['单位缴'])
@@ -403,7 +404,8 @@ class Task(AbsFetchTask):
                             '缴费合计': mx[arrmingxi[ii]]['dataset'][i]['缴费合计'],
                             '备注': mx[arrmingxi[ii]]['dataset'][i]['备注']
                         }
-                        self.result_data[v]['data'][years][months]=mxdic
+                        arr.append(mxdic)
+                        self.result_data[v]['data'][years][months] = arr
                 ii=ii+1
                 if v == 'old_age':
                     self.result_data["baseInfo"].setdefault('个人养老累计缴费', personjfsum)
