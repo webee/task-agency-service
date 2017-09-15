@@ -11,9 +11,7 @@ from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
-#from selenium.webdriver.common.by import By
-#from selenium.webdriver.support.ui import WebDriverWait
-#from selenium.webdriver.support import expected_conditions as EC
+
 
 class value_is_number(object):
     """判断元素value是数字"""
@@ -97,6 +95,8 @@ class Task(AbsFetchTask):
             if pr['key'] == '用户名' and '用户名' in meta:
                 continue
             elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            elif pr['key']=='other':
                 continue
             res.append(pr)
         return res
@@ -211,7 +211,7 @@ class Task(AbsFetchTask):
                                         'Accept': 'application / json, text / plain, * / *',
                                         'Token': self.s.Token,
                                         'Connection': 'keep - alive'})
-            print(resp.text)
+
             self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
             '''第二次'''
             datass=dict(
@@ -399,6 +399,12 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'keguangping', '密码': 'Kegp850907'}
+    meta = {'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
+
+    '''有效账号'''
+    #'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'
+    #'用户名':'keguangping'， 密码：'Kegp850907'
+    #'用户名': 'ligang860119', '密码': 'ligangL860'
+    #'用户名': 'gaoyingen', '密码': 'Gao1831850'
