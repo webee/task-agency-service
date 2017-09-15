@@ -2,6 +2,8 @@ import base64
 import time
 import random
 import json
+from PIL import Image
+import io
 import datetime
 from services.webdriver import new_driver, DriverRequestsCoordinator,DriverType
 from bs4 import BeautifulSoup
@@ -9,9 +11,9 @@ from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+#from selenium.webdriver.common.by import By
+#from selenium.webdriver.support.ui import WebDriverWait
+#from selenium.webdriver.support import expected_conditions as EC
 
 class value_is_number(object):
     """判断元素value是数字"""
@@ -24,7 +26,7 @@ class value_is_number(object):
         return val and val.isnumeric()
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
-LOGIN_PAGE_URL='https://seyb.szsi.gov.cn/web/ggfw/app/index.html#/ggfw/cxfw'
+LOGIN_PAGE_URL='https://seyb.szsi.gov.cn/web/ggfw/app/index.html#/ggfw/home'
 LOGIN_URL = 'https://seyb.szsi.gov.cn/web/ajaxlogin.do'
 VC_URL = 'https://seyb.szsi.gov.cn/web/ImageCheck.jpg'
 USERINFO_URL='https://seyb.szsi.gov.cn/web/ajax.do'
@@ -39,8 +41,7 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'
-                 }
+        return { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -51,11 +52,10 @@ class Task(AbsFetchTask):
 
     def _prepare(self, data=None):
         super()._prepare(data)
-
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver())
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT,js_re_ignore='/cas\/ImageCheck.jpg/g')
+        driver = new_driver(user_agent=USER_AGENT,js_re_ignore='/web\/ImageCheck.jpg/g')
         driver.get(LOGIN_PAGE_URL)
 
         return driver
@@ -111,7 +111,19 @@ class Task(AbsFetchTask):
                 self._do_login(username, password, vc)
 
                 # 登录成功
-                self.s.dlToken=self.s.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+                self.s.Token=self.s.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+
+                # 查询（点击查询）
+                strr = '?r=' + str(random.random())
+                resp = self.s.post(USERINFO_URL + strr, data=dict(_isModel='true',
+                                                                  params='{"oper":"FrontPageAction.queryNavDimension","params":{},"datas":{"@tmpGtDatas":{"业务类型":"5"}}}'),
+                                   headers={'X-Requested-With': 'XMLHttpRequest',
+                                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                            'Accept': 'application / json, text / plain, * / *',
+                                            'Token': self.s.Token,
+                                            'Connection': 'keep - alive'})
+                self.s.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+
                 self.result_key = username
 
                 # 保存到meta
@@ -154,16 +166,31 @@ class Task(AbsFetchTask):
             password_input.send_keys(password)
             vc_input.clear()
             vc_input.send_keys(vc)
+            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             # 提交
             submit_btn.click()
 
             # 保存登录后的页面内容供抓取单元解析使用
-            self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-            if self.g.login_page_html.find('<a ng-show="!ncUser" ng-click="login()" style="display: none;">')==-1:
-                raise InvalidParamsError('登录失败，请检查输入')
+            login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
 
-            # 登录成功
-
+            # print(login_page_html[login_page_html.find('欢迎')-5:login_page_html.find('欢迎')+15])
+            # if login_page_html.find('<a ng-show="!ncUser" ng-click="login()" style="display: none;">')==-1:
+            resp = self.s.post(LOGIN_URL, data=dict(
+                r=random.random(),
+                LOGINID=username,
+                PASSWORD=login_page_html[login_page_html.find('PASSWORD=')+9:login_page_html.find('&amp;IMAGCHECK=')],
+                IMAGCHECK=vc,
+                OPERTYPE2=3,
+                ISBIND='false',
+                now=time.strftime('%a %b %d %Y %H:%M:%S', time.localtime()),
+                callback=''
+            ))
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            jsonread = json.loads(soup.text.replace('(','').replace(')',''))
+            flag=jsonread['flag']
+            errormsg = jsonread['message']
+            if flag=='-1':
+                raise InvalidParamsError(errormsg)
 
 
     def _unit_fetch_userinfo(self):
@@ -174,39 +201,42 @@ class Task(AbsFetchTask):
                 '城市编号': '440300',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
-            strr='?r='+str(random.random())
-            resp=self.s.post(USERINFO_URL+strr,data=dict(_isModel='true',
-                                                    params='{"oper":"UnitHandleCommAction.insertLogRecord","params":{},"datas":{"@tmpGtDatas":{"rightId":"500101","rightName":"参保基本信息查询","recordType":"1"}}}'),headers={'X-Requested-With': 'XMLHttpRequest',
-                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                 'Accept': 'application / json, text / plain, * / *',
-                 'Connection': 'keep - alive'})
-            tokendic=resp.headers
-            token=tokendic['Token']
-            datas=dict(
+            # 查询（点击业务查询请求三次）
+            '''第一次'''
+            strr = '?r=' + str(random.random())
+            resp = self.s.post(USERINFO_URL + strr, data=dict(_isModel='true',
+                                                              params='{"oper":"UnitHandleCommAction.insertLogRecord","params":{},"datas":{"@tmpGtDatas":{"rightId":"500101","rightName":"参保基本信息查询","recordType":"1"}}}'),
+                               headers={'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application / json, text / plain, * / *',
+                                        'Token': self.s.Token,
+                                        'Connection': 'keep - alive'})
+            print(resp.text)
+            self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+            '''第二次'''
+            datass=dict(
                 _isModel='true',
                 params='{"oper":"CbjbxxcxAction.queryGrcbjbxx","params":{},"datas":{"ncm_gt_用户信息":{"params":{}},"ncm_gt_参保状态":{"params":{}},"ncm_gt_缴纳情况":{"params":{}}}}'
             )
             strrs =USERINFO_URL+ '?r=' + str(random.random())
-            resps = self.s.post(strrs,datas,headers={'X-Requested-With': 'XMLHttpRequest',
+            resps = self.s.post(strrs,datass,headers={'X-Requested-With': 'XMLHttpRequest',
                                                      'Accept-Language': 'zh-CN,zh;q=0.8',
                                                      'Accept-Encoding': 'gzip, deflate, br',
                                                      'Connection': 'keep - alive',
                                                      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                                      'Accept': 'application/json,text/plain, */*',
-                                                     'Token':self.s.dlToken,
+                                                     'Token':self.s.Token,
                                                      'Referer':'https://seyb.szsi.gov.cn/web/ggfw/app/index.html' ,
                                                      'Origin':'https://seyb.szsi.gov.cn',
                                                      'Host':'seyb.szsi.gov.cn'})
             print(resps.text)
             soup = BeautifulSoup(resps.content, 'html.parser')
+            self.s.Token =resps.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
             jsonread = json.loads(soup.text)
             userinfo=jsonread['datas']
             fivedic = {}
-            status = '不正常'
             for k,v in userinfo['ncm_gt_用户信息']['params'].items():
-                if k.find('参保状态')==-1:
-                    if v == '参加':
-                        status = '正常'
+                if k.find('参保状态')>0:
                     fivedic.setdefault(k[:2], v)
                 else:
                     self.result_data["baseInfo"].setdefault(k, v)
@@ -214,15 +244,30 @@ class Task(AbsFetchTask):
                         self.result_identity['target_name'] = v
                     if k=='身份证号':
                         self.result_identity['target_id'] =v
+                    if k == '参保状态':
+                        self.result_identity['status'] = v
 
             monthnum = 0
             for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
                 self.result_data["baseInfo"].setdefault(k, v)
-                if k.find('保险累计月数') == -1 and monthnum < int(v):
-                    monthnum = int(v)
-            self.result_identity['status'] =status
+                if k.find('保险累计月数') > -1:
+                    if(monthnum < int(v)):
+                        monthnum = int(v)
+
             self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
             self.result_data["baseInfo"].setdefault('五险状态',fivedic)
+
+            '''第三次'''
+            strr = '?r=' + str(random.random())
+            resp = self.s.post(USERINFO_URL + strr, data=dict(_isModel='true',
+                                                              params='{"oper":"QfzscxAction.queryQfzs","params":{},"datas":{"ncm_gt_欠费总数":{"params":{}}}}'),
+                               headers={'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application / json, text / plain, * / *',
+                                        'Token': self.g.Token,
+                                        'Connection': 'keep - alive'})
+            self.s.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+
             #TODO: 执行任务，如果没有登录，则raise PermissionError
             return
         except PermissionError as e:
@@ -231,65 +276,111 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         """五险"""
         try:
-            # 明细(险种比较多)arrtype={'01':'基本养老保险','02':'失业保险','03':'基本医疗保险','04':'工伤保险','05':'生育保险'}
+            strr =USERINFO_URL+ '?r=' + str(random.random())
+            resp = self.s.post(strr,
+                               data=dict(_isModel='true',params='{"oper":"UnitHandleCommAction.insertLogRecord","params":{},"datas":{"@tmpGtDatas":{"rightId":"500201","rightName":"参保缴费明细查询","recordType":"1"}}}'),
+                               headers={'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application / json, text / plain, * / *',
+                                        'Connection': 'keep - alive', 'Token': self.s.Token})
+            self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+
+            # strr = USERINFO_URL + '?r=' + str(random.random())
+            # resp = self.s.post(strr, datas, headers={'X-Requested-With': 'XMLHttpRequest',
+            #                                          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            #                                          'Accept': 'application/json,text/plain,*/*',
+            #                                          'Accept-Encoding':'gzip,deflate,br',
+            #                                          'Accept-Language':'zh-CN,zh;q=0.8',
+            #                                          'Connection': 'keep-alive', 'Token': self.s.Token,
+            #                                          'Host': 'seyb.szsi.gov.cn', 'Origin': 'https://seyb.szsi.gov.cn',
+            #                                          'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
+            self.g.Token = self.s.Token
+            #明细(险种比较多)arrtype={'01':'基本养老保险','02':'失业保险','03':'基本医疗保险','04':'工伤保险','05':'生育保险'}
             arrtype = {'Yl': 'old_age', 'Shiye': 'unemployment', 'Yil': 'medical_care', 'Gs': 'injuries', 'Sy': 'maternity'}
+            arrmingxi=['ncm_glt_养老缴费明细','ncm_glt_失业缴费明细','ncm_glt_医疗缴费明细','ncm_glt_工伤缴费明细','ncm_glt_生育缴费明细']
             statetime=''
             endtime=''
+            ii=0
             for k, v in arrtype.items():
-                self.result_data[v]['data']={}
+                self.result_data[v]={}
+                self.result_data[v]['data'] = {}
                 years=''
                 months=''
                 personjfsum=0.00
                 datas=dict(
                     _isModel= 'true',
-                    params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"ncm_glt_医疗缴费明细": {"params": {"pageSize": 10, "curPageNum": 1}, "dataset": [], "heads": [],"heads_change": []}}}'
+                    params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"'+arrmingxi[ii]+'": {"params": {"pageSize": 10, "curPageNum": 1}, "dataset": [], "heads": [],"heads_change": []}}}'
                 )
-                resp = self.s.post(USERINFO_URL,datas)
+                strr = USERINFO_URL + '?r=' + str(random.random())
+                resp = self.s.post(strr,datas,headers={'X-Requested-With': 'XMLHttpRequest',
+                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'Accept': 'application / json, text / plain, * / *',
+                                        'Connection': 'keep - alive','Token':self.g.Token,
+                                        'Host':'seyb.szsi.gov.cn','Origin':'https://seyb.szsi.gov.cn',
+                                        'Referer':'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
+                self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                 pagearr=json.loads(resp.text)
+
                 """获取分页"""
-                pagesize=pagearr["datas"]['params']['pagesize']
-                rowsCount=pagearr["datas"]['params']['rowsCount']
+                pagesize=pagearr["datas"][arrmingxi[ii]]['params']['pageSize']
+                rowsCount=pagearr["datas"][arrmingxi[ii]]['params']['rowsCount']
                 pagenum=rowsCount/pagesize
                 pagenums=rowsCount//pagesize
                 if pagenum>pagenums:
                     pagenums=pagenums+1
-                for i in round(1,pagenums+1):
-                    datas = dict(
-                        _isModel='true',
-                        params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"ncm_glt_医疗缴费明细": {"params": {"pageSize": 10, "curPageNum": '+i+',"maxPageSize":50,"rowsCount":'+rowsCount+',"Total_showMsg":null,"Total_showMsgCell":null,"Total_Cols":[]},"heads":[],"heads_change":[],"dataset":[]}}}'
-                    )
-                    resp = self.s.post(USERINFO_URL, datas)
+                for i in range(1,pagenums+1):
+                    if i!=1:
+                        datas = dict(
+                            _isModel='true',
+                            params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"'+arrmingxi[ii]+'": {"params": {"pageSize": 10, "curPageNum": '+str(i)+',"maxPageSize":50,"rowsCount":'+str(rowsCount)+',"Total_showMsg":null,"Total_showMsgCell":null,"Total_Cols":[]},"heads":[],"heads_change":[],"dataset":[]}}}'
+                        )
+                        strr = USERINFO_URL + '?r=' + str(random.random())
+                        resp = self.s.post(strr, datas, headers={'X-Requested-With': 'XMLHttpRequest',
+                                                                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                                 'Accept': 'application / json, text / plain, * / *',
+                                                                 'Connection': 'keep - alive', 'Token': self.g.Token,
+                                                                 'Host': 'seyb.szsi.gov.cn',
+                                                                 'Origin': 'https://seyb.szsi.gov.cn',
+                                                                 'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
+                        self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                     mx=json.loads(resp.text)["datas"]
-                    for i in round(0,len(mx['dataset'])):
+                    for i in range(0,len(mx[arrmingxi[ii]]['dataset'])):
                         if v=='old_age'or v=='medical_care':
-                            personjfsum=personjfsum+float(mx['dataset'][i]['个人缴'])
+                            personjfsum=personjfsum+float(mx[arrmingxi[ii]]['dataset'][i]['个人缴'])
                             #enterjfsum=enterjfsum+float(mx['dataset'][i]['单位缴'])
-                        yearmonth=mx['dataset'][i]['缴费年月'].replace('年','').replace('月','')
-                        if statetime==''or int(statetime)>int(yearmonth):
+                        yearmonth=mx[arrmingxi[ii]]['dataset'][i]['缴费年月'].replace('年','').replace('月','')
+                        if len(yearmonth)==5:
+                            yearmonth=yearmonth[:4]+'0'+yearmonth[-1:]
+                        if statetime=='':
                             statetime=yearmonth
-                        if endtime=='' or int(endtime)<int(yearmonth):
+                        elif int(statetime)>int(yearmonth):
+                            statetime = yearmonth
+                        if endtime=='':
                             endtime=yearmonth
+                        elif  int(endtime)<int(yearmonth):
+                            endtime = yearmonth
                         if years=='' or years!=yearmonth[:4]:
                             years=yearmonth[:4]
                             self.result_data[v]['data'][years]={}
-                            if months == yearmonth[-2:]:
-                                self.result_data[v]['data'][years][months] = {}
+                            if len(months)>0:
+                                if months == yearmonth[-2:]:
+                                    self.result_data[v]['data'][years][months] = {}
                         if months == '' or months != yearmonth[-2:]:
                             months=yearmonth[-2:]
                             self.result_data[v]['data'][years][months]={}
                         mxdic={
                             '缴费时间':yearmonth,
                             '缴费类型':'-',
-                            '缴费基数':mx['dataset'][i]['缴费工资'],
-                            '公司缴费':mx['dataset'][i]['单位缴'],
-                            '个人缴费': mx['dataset'][i]['个人缴'],
-                            '缴费单位': mx['dataset'][i]['单位名称'],
-                            '单位编号': mx['dataset'][i]['单位编号'],
-                            '缴费合计': mx['dataset'][i]['缴费合计'],
-                            '备注': mx['dataset'][i]['备注']
+                            '缴费基数':mx[arrmingxi[ii]]['dataset'][i]['缴费工资'],
+                            '公司缴费':mx[arrmingxi[ii]]['dataset'][i]['单位缴'],
+                            '个人缴费': mx[arrmingxi[ii]]['dataset'][i]['个人缴'],
+                            '缴费单位': mx[arrmingxi[ii]]['dataset'][i]['单位名称'],
+                            '单位编号': mx[arrmingxi[ii]]['dataset'][i]['单位编号'],
+                            '缴费合计': mx[arrmingxi[ii]]['dataset'][i]['缴费合计'],
+                            '备注': mx[arrmingxi[ii]]['dataset'][i]['备注']
                         }
                         self.result_data[v]['data'][years][months]=mxdic
-
+                ii=ii+1
                 if v == 'old_age':
                     self.result_data["baseInfo"].setdefault('个人养老累计缴费', personjfsum)
                 if v == 'medical_care':
