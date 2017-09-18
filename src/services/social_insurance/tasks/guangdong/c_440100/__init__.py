@@ -12,12 +12,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import json
+import re
+import datetime
 
 LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/login"
 VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
 USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 User_BaseInfo="http://gzlss.hrssgz.gov.cn/gzlss_web/business/authentication/menu/getMenusByParentId.xhtml?parentId=SECOND-ZZCXUN"
-
+# Medical_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/authentication/menu/getMenusByParentId.xhtml?parentId=SECOND-ZZHUCX"
+Search_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/getPersonPayHistoryInfoByPage.xhtml?querylog=true&businessocde=SBGRJFLSCX&visitterminal=PC"
+Sixian_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/viewPage/viewPersonPayHistoryInfo.xhtml?xzType=1&startStr=&endStr=&querylog=true&businessocde=291QB-GRJFLS&visitterminal=PC&aac001="
+Yiliao_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/getHealthcarePersonPayHistorySumup.xhtml?query=1&querylog=true&businessocde=291QB_YBGRJFLSCX&visitterminal=PC&aac001="
 
 class value_is_number(object):
 
@@ -34,6 +39,7 @@ class Task(AbsFetchTask):
         city_name="广州",
         help="""
         <li>个人用户第一次忘记密码，需要到各办事窗口办理；在办事窗口补充完整相关信息（如电子邮箱地址）以后，忘记密码功能才能使用。</li>
+        <li>由于目前缴费历史的查询量较多，为减轻广州社保系统压力，限制每人每天只能查询5次，敬请谅解！</li>
         """
     )
 
@@ -48,7 +54,7 @@ class Task(AbsFetchTask):
     def _prepare(self,data=None):
         """恢复状态，初始化结果"""
         super()._prepare(data)
-
+        self.result_data['baseInfo']={}
         # state
         # state: dict = self.state
         # TODO: restore from state
@@ -56,27 +62,16 @@ class Task(AbsFetchTask):
         # result
         # result: dict = self.result
         # TODO: restore from result
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_chrome_driver)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_chrome_driver(self):
         driver = new_driver(user_agent=USER_AGENT, driver_type=DriverType.CHROME)
         return  driver
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT)
-        # 不加载验证码
-        script = """
-        var page = this;
-        page.onResourceRequested = function(requestData, networkRequest) {
-            var match = requestData.url.match(/captcha.jpg/g);
-            if (match != null) {
-                //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
-                //networkRequest.cancel(); // or .abort()
-                networkRequest.abort();
-            }
-        };
-        """
-        driver.execute('executePhantomScript', {'script': script, 'args': []})
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/cas\/captcha.jpg/g')
+        # 随便访问一个相同host的地址，方便之后设置cookie
+        driver.get('http://gzlss.hrssgz.gov.cn/')
         return driver
 
     def _query(self, params: dict):
@@ -190,7 +185,6 @@ class Task(AbsFetchTask):
             password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
             vc_input = driver.find_element_by_xpath('//*[@id="validateCode"]')
             user_type=driver.find_element_by_xpath('//*[@id="usertype2"]')
-            submit_btn = driver.find_element_by_xpath('//*[@id="submitbt"]')
 
             # 用户名
             username_input.clear()
@@ -206,83 +200,235 @@ class Task(AbsFetchTask):
 
             user_type.click()
 
-            # 提交
-            submit_btn.click()
+            # 登录
+            driver.find_element_by_xpath('//*[@id="submitbt"]').click()
 
-            if not driver.current_url =='http://gzlss.hrssgz.gov.cn/gzlss_web/business/tomain/main.xhtml':
-                raise InvalidParamsError('登录失败，请重新登录！')
+            if driver.current_url.startswith('http://gzlss.hrssgz.gov.cn/cas/login'):
+                err_msg = '登录失败，请重新登录！'
+                try:
+                    err_msg = driver.find_element_by_xpath('//*[@id="*.errors"]').text
+                finally:
+                    raise InvalidParamsError(err_msg)
 
             # 登录成功
-            # 保存登录后的页面内容供抓取单元解析使用
+            # 保存登录后的页面内容供抓取单元解析使
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             self.g.current_url = driver.current_url
+
+    def _to_replace(self,con):
+        res=con.replace('\r','').replace('\n','').replace('\t','')
+        return res
 
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-            soup=self.s.get(User_BaseInfo)
-            s=json.loads(soup.text)
-            perURl=s[8]['url']
-            res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+perURl)
-            redata=BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'})[0]
-            redata2 = BeautifulSoup(res.text,'html.parser').findAll('table', {'class': 'comitTable'})[1]
+            s=json.loads(self.s.get(User_BaseInfo).text)   # 个人信息导航
 
-            # 个人基本信息
-            self.result_data['baseInfo']={
-                '姓名':redata.find('input',{'id':'aac003ss'})['value'],
-                '身份证号':redata.find('input',{'id':'aac002ss'})['value'],
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                '城市名称': '广州市',
-                '城市编号': '440100',
-                '缴费时长':'',
-                '最近缴费时间': '',
-                '开始缴费时间': '',
-                '个人养老累计缴费': '',
-                '个人医疗累计缴费': '',
+            res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+s[8]['url'])   # 个人基础信息
+            redata=BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'})[0]   # 姓名等信息
+            redata2 = BeautifulSoup(res.text,'html.parser').findAll('table', {'class': 'comitTable'})[1]   #民族等信息
 
-                '个人编号': redata.find('input', {'id': 'aac001'})['value'],
-                '性别':redata.find('input',{'id':'aac004ss'})['value'],
-                '民族':redata2.find('select',{'id':'aac005'}).find(selected="selected").text.replace('\r','').replace('\n','').replace('\t',''),
-                '户口性质':redata.find('input',{'id':'aac009ss'})['value'],
-                '出生日期':redata.find('input',{'id':'aac006ss'})['value'],
-                '单位名称':redata.find('input',{'id':'aab069ss'})['value'],
-                '地址':redata2.find('input',{'id':'bab306'})['value'],
-                '电子邮箱':redata2.find('input',{'id':'bbc019'})['value']
-            }
-
-            # identity信息
-            self.result_identity.update({
-                "task_name": "广州",
-                "target_name": redata.find('input',{'id':'aac003ss'})['value'],
-                "target_id": self.result_meta['账号'],
-                "status": ""
-            })
 
             # 社保明细
+            userNum=BeautifulSoup(self.s.get(Search_URL).text,'html.parser').find('select',{'id':'aac001'}).text.replace('\n','')   # 员工编号
+            sixian=BeautifulSoup(self.s.get(Sixian_URL+userNum).text,'html.parser').find('table').findAll("tr",{'class':'table_white_data'})
+
+            # 医疗保险明细
+            permedicalTotal=0.0
+            HmoneyCount=0
+            paraURL = "&startStr=199001&endStr=" + time.strftime('%Y%m', time.localtime()) + ""  # 医疗保险地址参数
+            yiliao = BeautifulSoup(self.s.get(Yiliao_URL + userNum + paraURL).text, 'html.parser')
+            a = yiliao.find('table', {'id': 'tableDataList'}).find('script').text
+            if "请明天再查" in a:
+                raise InvalidParamsError("您今天的缴费历史查询已经达到5次，请明天再查。")
+
+            sidata = yiliao.find('table', {'id': 'tableDataList'})
+            si_status = self._to_replace(sidata.findAll("tr")[1].findAll("td")[10].text)[0:2]  # 缴存状态
+            si_com = self._to_replace(sidata.findAll("tr")[2].findAll("td")[3].text)  # 缴费单位
+            yiliaoData = sidata.findAll("tr", {'temp': '职工社会医疗保险'})
+
+            self.result_data['medical_care'] = {"data": {}}
+            dataBaseH = self.result_data['medical_care']["data"]
+            modelH = {}
+            for a in range(len(yiliaoData)):
+                td = yiliaoData[a].findAll("td")
+                permedicalTotal += float(re.findall(r"\d+\.?\d*", td[7].text)[0])
+
+                yearH = self._to_replace(td[1].text)[0:4]
+                monthH = self._to_replace(td[1].text)[4:6]
+                rangNum = int(self._to_replace(td[3].text))
+                HmoneyCount += rangNum
+                for a1 in range(-1, rangNum - 1):
+                    nowtime = datetime.date(int(yearH) + (int(monthH) + a1) // 12, (int(monthH) + a1) % 12 + 1,1).strftime('%Y%m')
+                    modelH = {
+                        '缴费单位': si_com,
+                        '缴费类型': si_status,
+                        '缴费时间': nowtime,
+                        '缴费基数': self._to_replace(td[9].text),
+                        '政府资助': re.findall(r"\d+\.?\d*", td[8].text)[0],
+                        '公司缴费': float(re.findall(r"\d+\.?\d*", td[6].text)[0]) / rangNum,
+                        '个人缴费': float(re.findall(r"\d+\.?\d*", td[7].text)[0]) / rangNum
+                    }
+                    dataBaseH.setdefault(nowtime[0:4], {})
+                    dataBaseH[nowtime[0:4]].setdefault(nowtime[4:6], [])
+                    dataBaseH[nowtime[0:4]][nowtime[4:6]].append(modelH)
+
+
             # 养老保险明细
             self.result_data['old_age'] = {"data": {}}
             dataBaseE = self.result_data['old_age']["data"]
             modelE = {}
+            peroldTotal=0.0
+            for b in range(len(sixian) - 3):
+                td2 = sixian[b].findAll("td")
+                peroldTotal += float(td2[5].text)
 
-            # 医疗保险明细
-            self.result_data['medical_care'] = {"data": {}}
-            dataBaseH = self.result_data['medical_care']["data"]
-            modelH = {}
+                yearE = td2[0].text[0:4]
+                monthE = td2[0].text[4:6]
+                rangNumE = int(td2[2].text)
+                for b1 in range(-1, rangNumE - 1):
+                    nowtime2 = datetime.date(int(yearE) + (int(monthE) + b1) // 12, (int(monthE) + b1) % 12 + 1,1).strftime('%Y%m')
+                    modelE = {
+                        '缴费单位': td2[11].text,
+                        '缴费类型': td2[12].text,
+                        '缴费时间': nowtime2,
+                        '缴费基数': td2[3].text,
+                        '公司缴费': float(td2[4].text) / rangNumE,
+                        '个人缴费': float(td2[5].text) / rangNumE
+                    }
+                    dataBaseE.setdefault(nowtime2[0:4], {})
+                    dataBaseE[nowtime2[0:4]].setdefault(nowtime2[4:6], [])
+                    dataBaseE[nowtime2[0:4]][nowtime2[4:6]].append(modelE)
+
 
             # 失业保险明细
             self.result_data['unemployment'] = {"data": {}}
             dataBaseI = self.result_data['unemployment']["data"]
             modelI = {}
+            for c in range(len(sixian) - 3):
+                td3 = sixian[c].findAll("td")
+                yearI = td3[0].text[0:4]
+                monthI = td3[0].text[4:6]
+                rangNumI = int(td3[2].text)
+                for c1 in range(-1, rangNumI - 1):
+                    nowtime3 = datetime.date(int(yearI) + (int(monthI) + c1) // 12, (int(monthI) + c1) % 12 + 1,1).strftime('%Y%m')
+                    modelI = {
+                        '缴费单位': td3[11].text,
+                        '缴费类型': td3[12].text,
+                        '缴费时间': nowtime3,
+                        '缴费基数': td3[3].text,
+                        '公司缴费': float(td3[6].text) / rangNumI,
+                        '个人缴费': float(td3[7].text) / rangNumI
+                    }
+                    dataBaseI.setdefault(nowtime3[0:4], {})
+                    dataBaseI[nowtime3[0:4]].setdefault(nowtime3[4:6], [])
+                    dataBaseI[nowtime3[0:4]][nowtime3[4:6]].append(modelI)
+
 
             # 工伤保险明细
             self.result_data['injuries'] = {"data": {}}
             dataBaseC=self.result_data['injuries']["data"]
             modelC={}
+            for d in range(len(sixian) - 3):
+                td4 = sixian[d].findAll("td")
+                yearC = td4[0].text[0:4]
+                monthC = td4[0].text[4:6]
+                rangNumC = int(td4[2].text)
+                for d1 in range(-1, rangNumC - 1):
+                    nowtime4 = datetime.date(int(yearC) + (int(monthC) + d1) // 12, (int(monthC) + d1) % 12 + 1,1).strftime('%Y%m')
+                    modelC = {
+                        '缴费单位': td4[11].text,
+                        '缴费类型': td4[12].text,
+                        '缴费时间': nowtime4,
+                        '缴费基数': td4[3].text,
+                        '公司缴费': float(td4[8].text) / rangNumC,
+                        '个人缴费': '-'
+                    }
+                    dataBaseC.setdefault(nowtime4[0:4], {})
+                    dataBaseC[nowtime4[0:4]].setdefault(nowtime4[4:6], [])
+                    dataBaseC[nowtime4[0:4]][nowtime4[4:6]].append(modelC)
+
 
             # 生育保险明细
             self.result_data['maternity'] = {"data": {}}
             dataBaseB = self.result_data['maternity']["data"]
             modelB = {}
+            for f in range(len(sixian) - 3):
+                td5 = sixian[f].findAll("td")
+                yearB = td5[0].text[0:4]
+                monthB = td5[0].text[4:6]
+                rangNumB = int(td5[2].text)
+                for f1 in range(-1, rangNumB - 1):
+                    nowtime5 = datetime.date(int(yearB) + (int(monthB) + f1) // 12, (int(monthB) + f1) % 12 + 1,1).strftime('%Y%m')
+                    modelB = {
+                        '缴费单位': td5[11].text,
+                        '缴费类型': td5[12].text,
+                        '缴费时间': nowtime5,
+                        '缴费基数': td5[3].text,
+                        '公司缴费': float(td5[9].text) / rangNumB,
+                        '个人缴费': '-'
+                    }
+                    dataBaseB.setdefault(nowtime5[0:4], {})
+                    dataBaseB[nowtime5[0:4]].setdefault(nowtime5[4:6], [])
+                    dataBaseB[nowtime5[0:4]][nowtime5[4:6]].append(modelB)
+
+
+            social_status={
+                '医疗':si_status,
+                '养老':sixian[len(sixian)-4].findAll("td")[12].text,
+                '失业':sixian[len(sixian)-4].findAll("td")[12].text,
+                '工伤':sixian[len(sixian)-4].findAll("td")[12].text,
+                '生育':sixian[len(sixian)-4].findAll("td")[12].text
+            }
+
+            # 缴费时长
+            EmoneyCount=sixian[len(sixian)-3].findAll("td")[1].text
+            EmoneyCount2=sixian[len(sixian)-3].findAll("td")[2].text
+            EmoneyCount3=sixian[len(sixian)-3].findAll("td")[3].text
+            EmoneyCount4=sixian[len(sixian)-3].findAll("td")[4].text
+            rescount=[EmoneyCount,EmoneyCount2,EmoneyCount3,EmoneyCount4]
+            moneyCount=max(rescount)
+
+            # 个人基本信息
+            self.result_data['baseInfo'] = {
+                '姓名': redata.find('input', {'id': 'aac003ss'})['value'],
+                '身份证号': redata.find('input', {'id': 'aac002ss'})['value'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '广州市',
+                '城市编号': '440100',
+                '缴费时长': moneyCount,
+                '最近缴费时间':sixian[len(sixian)-4].findAll("td")[1].text,
+                '开始缴费时间': sixian[0].findAll("td")[0].text,
+                '个人养老累计缴费':peroldTotal,
+                '个人医疗累计缴费': permedicalTotal,
+                '五险状态': social_status,
+                '状态':social_status['养老'],
+
+                '个人编号': redata.find('input', {'id': 'aac001'})['value'],
+                '性别': redata.find('input', {'id': 'aac004ss'})['value'],
+                #'民族': redata2.find('select', {'id': 'aac005'}).find(selected="selected").text.replace('\r', '').replace('\n', '').replace('\t', ''),
+                '户口性质': redata.find('input', {'id': 'aac009ss'})['value'],
+                '出生日期': redata.find('input', {'id': 'aac006ss'})['value'],
+                '单位名称': redata.find('input', {'id': 'aab069ss'})['value'],
+                '地址': redata2.find('input', {'id': 'bab306'})['value'],
+                '电子邮箱': redata2.find('input', {'id': 'bbc019'})['value']
+            }
+
+            # identity信息
+            self.result_identity.update({
+                "task_name": "广州",
+                "target_name": redata.find('input', {'id': 'aac003ss'})['value'],
+                "target_id": self.result_meta['账号'],
+                "status": social_status['养老']
+            })
+
+            # 暂时不用代码
+            # siresp=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+s[1]['url'])  # 四险导航
+            # sdata=BeautifulSoup(siresp.text,'html.parser')   # 四险find信息
+            # hs = json.loads(self.s.get(Medical_URL).text)  # 医疗保险信息
+            # medDetailURL=hs[0]['url']         # 医疗
+            # hresp=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+medDetailURL)
+            # hdata = BeautifulSoup(hresp.text, 'html.parser')  # 医疗find信息
 
             return
         except PermissionError as e:
@@ -292,8 +438,14 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '441225199102281010', '密码': 'wtz969462'}
+    meta = {'账号': '440104198710011919', '密码': 'jy794613'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
+    #file=open("D:/789654321.html",'r')
+
     # 441225199102281010  wtz969462
+
+    # 441481198701204831', '密码': 'taifaikcoi168'
+
+    # '账号': '440104198710011919', '密码': 'jy794613'
