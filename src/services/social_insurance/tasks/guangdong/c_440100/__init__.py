@@ -71,7 +71,7 @@ class Task(AbsFetchTask):
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/cas\/captcha.jpg/g')
         # 随便访问一个相同host的地址，方便之后设置cookie
-        driver.get('http://gzlss.hrssgz.gov.cn/')
+        driver.get('http://gzlss.hrssgz.gov.cn/xxxx')
         return driver
 
     def _query(self, params: dict):
@@ -240,7 +240,7 @@ class Task(AbsFetchTask):
             yiliao = BeautifulSoup(self.s.get(Yiliao_URL + userNum + paraURL).text, 'html.parser')
             a = yiliao.find('table', {'id': 'tableDataList'}).find('script').text
             if "请明天再查" in a:
-                raise InvalidParamsError("您今天的缴费历史查询已经达到5次，请明天再查。")
+                raise TaskNotAvailableError("您今天的缴费历史查询已经达到5次，请明天再查。")
 
             sidata = yiliao.find('table', {'id': 'tableDataList'})
             si_status = self._to_replace(sidata.findAll("tr")[1].findAll("td")[10].text)[0:2]  # 缴存状态
