@@ -37,7 +37,7 @@ class Task(AbsFetchTask):
 
     def _prepare(self, data=None):
         super()._prepare()
-        self.result['data']['baseInfo']={}
+        self.result_data['baseInfo']={}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -99,7 +99,6 @@ class Task(AbsFetchTask):
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('用户名')
 
                 id_num = params.get("用户名")
                 account_pass = params.get("密码")
@@ -113,12 +112,15 @@ class Task(AbsFetchTask):
                     'tm':str(time.time()*1000)[0:13],
                 }
                 resp = self.s.post(LOGIN_URL, data=data)
-
-
-                # 保存到meta
-                self.result_meta['用户名'] = params.get('用户名')
-                self.result_meta['密码'] = params.get('密码')
-                return
+                res=json.loads(resp.text)
+                if(len(res)>1):
+                    raise InvalidParamsError(res['msg'])
+                else:
+                    # 保存到meta
+                    self.result_key = id_num
+                    self.result_meta['用户名'] = id_num
+                    self.result_meta['密码'] = account_pass
+                    return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
@@ -128,197 +130,193 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
-    # 转换五险状态
-    def _convert_type(self, nums):
-        res = ""
-        if nums == "1":
-            res = "正常参保"
-        elif nums == "2":
-            res = "暂停"
-        elif nums == "3":
-            res = "终止"
-        return res
+    def _convert_type(self,num):
+        resinfo=""
+        if(num=="1"):
+            resinfo="正常"
+        else:
+            resinfo="异常"
+        return resinfo
 
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-
             # 个人信息
             res = self.s.get("https://gr.cdhrss.gov.cn:442/cdwsjb/personal/personalHomeAction!query.do")
             s = json.loads(res.text)["fieldData"]
 
-            self.result['data']['baseInfo'] = {
-                '个人编号': s['aaz500'],
-                '姓名': s['aac003'],
-                '社会保障号': s['aac002'],
-                '人员状态': s['aac008'],
-                '参保单位': s['aab069'],
-                '参保地区': s['yab003'],
-            }
-
-            # 社保明细-----养老
-
-            # 社保缴费明细
-            self.result['data']["old_age"] = {  # 养老
-                "data": {}
-            }
-            basedataE = self.result['data']["old_age"]["data"]
-            modelE = {}
-
-            self.result['data']["medical_care"] = {  # 医疗
-                "data": {}
-            }
-            basedataH = self.result['data']["medical_care"]["data"]
-            modelH = {}
-
-            self.result['data']["unemployment"] = {  # 失业
-                "data": {}
-            }
-            basedataI = self.result['data']["unemployment"]["data"]
-            modelI = {}
-
-            self.result['data']["injuries"] = {  # 工伤
-                "data": {}
-            }
-            basedataC = self.result['data']["injuries"]["data"]
-            modelC = {}
-
-            self.result['data']["maternity"] = {  # 生育
-                "data": {}
-            }
-            basedataB = self.result['data']["maternity"]["data"]
-            modelB = {}
-
-            startTime = ""#rs['workDate'][0:6]  # 查询开始时间
+            # 社保明细
+            startTime = "199001"
             endTime = time.strftime("%Y%m", time.localtime())  # 查询结束时间
 
-
-            # 社保明细-----养老
-            detailEI = self.s.get(
-                Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=01")
+            # 社保缴费明细-----养老
+            self.result['data']["old_age"] = { "data": {}}
+            basedataE = self.result['data']["old_age"]["data"]
+            modelE = {}
+            peroldTotal=0.0
+            detailEI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=01")
             sEI = json.loads(detailEI.text)['lists']['dg_payment']['list']
-            for a in range(len(detailEI)):
-                years = str(detailEI[a]['payDate'])[0:4]
-                months = str(detailEI[a]['payDate'])[4:6]
+            for a in range(len(sEI)):
+                years = str(sEI[a]['aae002'])[0:4]
+                months = str(sEI[a]['aae002'])[4:6]
                 basedataE.setdefault(years, {})
                 basedataE[years].setdefault(months, [])
 
                 modelE = {
-                    '缴费单位':sEI[a]['aab004'],
-                    '缴费年月': sEI[a]['aae002'],
+                    '缴费单位': sEI[a]['aab004'],
+                    '缴费时间': sEI[a]['aae002'],
+                    '缴费类型':'',
                     '缴费基数': sEI[a]['yac004'],
-                    '单位缴存额': sEI[a]['dwjfje'],
-                    '个人缴存额': sEI[a]['grjfje'],
-                    '缴费合计':sEI[a]['jfjezh']
+                    '公司缴费': sEI[a]['dwjfje'],
+                    '个人缴费': sEI[a]['grjfje']
+                    #'缴费合计': sEI[a]['jfjezh']
                 }
-
+                peroldTotal += float(sEI[a]['grjfje'])
                 basedataE[years][months].append(modelE)
 
+
+            self.result['data']["medical_care"] = {"data": {}}
+            basedataH = self.result['data']["medical_care"]["data"]
+            modelH = {}
+            permedicalTotal=0.0
             # 社保明细-----医疗
-            detailHI = self.s.get(
-                Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=03")
+            detailHI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=03")
             sHI = json.loads(detailHI.text)['lists']['dg_payment']['list']
-            for b in range(len(detailHI)):
-                yearH = str(detailHI[b]['payDate'])[0:4]
-                monthH = str(detailHI[b]['payDate'])[4:6]
+            for b in range(len(sHI)):
+                yearH = str(sHI[b]['aae002'])[0:4]
+                monthH = str(sHI[b]['aae002'])[4:6]
                 basedataH.setdefault(yearH, {})
                 basedataH[yearH].setdefault(monthH, [])
 
                 modelH = {
-                    '缴费单位':sHI[b]['aab004'],
-                    '缴费年月':sHI[b]['aae002'],
+                    '缴费单位': sHI[b]['aab004'],
+                    '缴费时间': sHI[b]['aae002'],
+                    '缴费类型': '',
                     '缴费基数': sHI[b]['yac004'],
-                    '单位缴存额': sHI[b]['dwjfje'],
-                    '个人缴存额': sHI[b]['grjfje'],
-                    '缴费合计': sHI[b]['jfjezh']
+                    '公司缴费': sHI[b]['dwjfje'],
+                    '个人缴费': sHI[b]['grjfje'],
+                    #'缴费合计': sHI[b]['jfjezh']
                 }
-
+                permedicalTotal += float(sHI[b]['grjfje'])
                 basedataH[yearH][monthH].append(modelH)
 
 
-            # 社保明细-----工伤
-            detailCI = self.s.get(
-                Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=04")
-            sCI = json.loads(detailCI.text)['lists']['dg_payment']['list']
-            for c in range(len(detailCI)):
-                yearC = str(detailCI[c]['payDate'])[0:4]
-                monthC = str(detailCI[c]['payDate'])[4:6]
-                basedataC.setdefault(yearC, {})
-                basedataC[yearC].setdefault(monthC, [])
-
-                modelC = {
-                    '缴费单位':sCI[c]['aab004'],
-                    '缴费年月': sCI[c]['aae002'],
-                    '缴费基数': sCI[c]['yac004'],
-                    '单位缴存额': sCI[c]['dwjfje'],
-                    '个人缴存额': sCI[c]['grjfje'],
-                    '缴费合计': sCI[c]['jfjezh']
-                }
-
-                basedataC[yearC][monthC].append(modelC)
-
-
+            self.result['data']["unemployment"] = {"data": {}}
+            basedataI = self.result['data']["unemployment"]["data"]
+            modelI = {}
             # 社保明细-----失业
-            detailII = self.s.get(
-                Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=02")
+            detailII = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=02")
             sII = json.loads(detailII.text)['lists']['dg_payment']['list']
-            for d in range(len(detailII)):
-                yearI = str(detailII[d]['payDate'])[0:4]
-                monthI = str(detailII[d]['payDate'])[4:6]
+            for d in range(len(sII)):
+                yearI = str(sII[d]['aae002'])[0:4]
+                monthI = str(sII[d]['aae002'])[4:6]
                 basedataI.setdefault(yearI, {})
                 basedataI[yearI].setdefault(monthI, [])
 
                 modelI = {
-                    '缴费单位':sII[d]['aab004'],
-                    '缴费年月': sII[d]['aae002'],
+                    '缴费单位': sII[d]['aab004'],
+                    '缴费时间': sII[d]['aae002'],
+                    '缴费类型': '',
                     '缴费基数': sII[d]['yac004'],
-                    '单位缴存额': sII[d]['dwjfje'],
-                    '个人缴存额': sII[d]['grjfje'],
-                    '缴费合计': sII[d]['jfjezh']
+                    '公司缴费': sII[d]['dwjfje'],
+                    '个人缴费': sII[d]['grjfje'],
+                    #'缴费合计': sII[d]['jfjezh']
                 }
-
                 basedataI[yearI][monthI].append(modelI)
 
 
+            self.result['data']["injuries"] = {"data": {}}
+            basedataC = self.result['data']["injuries"]["data"]
+            modelC = {}
+            # 社保明细-----工伤
+            detailCI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=04")
+            sCI = json.loads(detailCI.text)['lists']['dg_payment']['list']
+            for c in range(len(sCI)):
+                yearC = str(sCI[c]['aae002'])[0:4]
+                monthC = str(sCI[c]['aae002'])[4:6]
+                basedataC.setdefault(yearC, {})
+                basedataC[yearC].setdefault(monthC, [])
+
+                modelC = {
+                    '缴费单位': sCI[c]['aab004'],
+                    '缴费时间': sCI[c]['aae002'],
+                    '缴费类型': '',
+                    '缴费基数': sCI[c]['yac004'],
+                    '公司缴费': sCI[c]['dwjfje'],
+                    '个人缴费': '-',
+                    #'缴费合计': sCI[c]['jfjezh']
+                }
+                basedataC[yearC][monthC].append(modelC)
+
+
+            self.result['data']["maternity"] = {"data": {}}
+            basedataB = self.result['data']["maternity"]["data"]
+            modelB = {}
             # 社保明细-----生育
-            detailBI = self.s.get(
-                Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=05")
+            detailBI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=05")
             sBI = json.loads(detailBI.text)['lists']['dg_payment']['list']
-            for f in range(len(detailBI)):
-                yearB = str(detailBI[f]['payDate'])[0:4]
-                monthB = str(detailBI[f]['payDate'])[4:6]
+            for f in range(len(sBI)):
+                yearB = str(sBI[f]['aae002'])[0:4]
+                monthB = str(sBI[f]['aae002'])[4:6]
                 basedataB.setdefault(yearB, {})
                 basedataB[yearB].setdefault(monthB, [])
 
                 modelB = {
                     '缴费单位': sBI[f]['aab004'],
-                    '缴费年月': sBI[f]['aae002'],
+                    '缴费时间': sBI[f]['aae002'],
+                    '缴费类型': '',
                     '缴费基数': sBI[f]['yac004'],
-                    '单位缴存额': sBI[f]['dwjfje'],
-                    '个人缴存额': sBI[f]['grjfje'],
-                    '缴费合计': sBI[f]['jfjezh']
+                    '公司缴费': sBI[f]['dwjfje'],
+                    '个人缴费': '-',
+                    #'缴费合计': sBI[f]['jfjezh']
                 }
-
                 basedataB[yearB][monthB].append(modelB)
 
 
             # 五险状态
-            stype = json.loads(
-                self.s.get(""))
+            stype =self.s.get("https://gr.cdhrss.gov.cn:442/cdwsjb/personal/query/queryCZInsuranceInfoAction.do")
+            stypes=BeautifulSoup(stype.text,'html.parser').find('div',{'id':'SeInfo'})
+            stype2=json.loads(stypes.text.split('data')[39].split(';')[0].replace('=',''))['list']
             social_Type = {
-                '养老': self._convert_type(stype[0]['paymentState']),
-                '医疗': self._convert_type(stype[2]['paymentState']),
-                '失业': self._convert_type(stype[1]['paymentState']),
-                '工伤': self._convert_type(stype[5]['paymentState']),
-                '生育': self._convert_type(stype[6]['paymentState'])
+                '养老': self._convert_type(stype2[0]['aac031']),
+                '医疗': self._convert_type(stype2[2]['aac031']),
+                '失业': self._convert_type(stype2[1]['aac031']),
+                '工伤': self._convert_type(stype2[3]['aac031']),
+                '生育': self._convert_type(stype2[4]['aac031'])
             }
 
+
+            # 个人基本信息
+            if(s['aac031']=="参保缴费"):
+                status="正常"
+            else:
+                status="异常"
+
+            mcount=[len(sEI)-1,len(sHI)-1,len(sII)-1,len(sCI)-1,len(sBI)-1]    # 缴费时长
+            moneyCount=max(mcount)
+
+            self.result_data['baseInfo'] = {
+                '姓名': s['aac003'],
+                '身份证号': s['aac002'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '成都',
+                '城市编号': '510100',
+                '缴费时长': moneyCount,
+                '最近缴费时间': sEI[0]['aae002'],
+                '开始缴费时间': sEI[len(sEI)-1]['aae002'],
+                '个人养老累计缴费': peroldTotal,
+                '个人医疗累计缴费': permedicalTotal,
+                '五险状态': social_Type,
+                '状态': status,
+
+                '个人编号': s['aac001'],
+            }
 
             self.result['identity'] = {
                 "task_name": "成都",
                 "target_name": s['aac003'],
-                "target_id": self.result['meta']["登录号"],
-                "status": ""
+                "target_id": self.result['meta']["用户名"],
+                "status": status
             }
 
             return
