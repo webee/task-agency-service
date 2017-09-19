@@ -204,7 +204,7 @@ class DriverRequestsCoordinator(object):
                     d['domain'] = c.domain
                 self._d.add_cookie(d)
             except:
-                logger.warning(traceback.format_exc())
+                logger.debug(traceback.format_exc())
 
         self._d_n = self._s_n
 

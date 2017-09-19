@@ -71,7 +71,7 @@ class Task(AbsFetchTask):
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/cas\/captcha.jpg/g')
         # 随便访问一个相同host的地址，方便之后设置cookie
-        driver.get('http://gzlss.hrssgz.gov.cn/')
+        driver.get('http://gzlss.hrssgz.gov.cn/xxxx')
         return driver
 
     def _query(self, params: dict):

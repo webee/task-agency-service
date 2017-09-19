@@ -140,8 +140,8 @@ class Task(AbsFetchTask):
             driver.get(LOGIN_PAGE_URL)
 
             # FIXME: debug
-            # for l in driver.get_log('browser'):
-            #     print(l)
+            for l in driver.get_log('browser'):
+                print(l)
 
             username_input = driver.find_element_by_xpath('//*[@id="loginName"]')
             password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
@@ -167,8 +167,8 @@ class Task(AbsFetchTask):
             driver.find_element_by_xpath('//*[@id="submitbt"]').click()
 
             # FIXME: debug
-            # for l in driver.get_log('browser'):
-            #     print(l)
+            for l in driver.get_log('browser'):
+                print(l)
 
             if driver.current_url.startswith('http://gzlss.hrssgz.gov.cn/cas/login'):
                 err_msg = '登录失败，请检查输入'
@@ -195,8 +195,6 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    # meta = {'账号': '441225199102281010', '密码': 'wtz969462'}
-    meta = {'账号': '440104198710011919', '密码': 'jy794613'}
-    # meta = {'账号': '441481198701204831', '密码': 'taifaikcoi168'}
+    meta = {'账号': '441225199102281010', '密码': 'wtz969462'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
