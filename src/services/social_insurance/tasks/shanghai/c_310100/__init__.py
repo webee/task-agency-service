@@ -140,6 +140,18 @@ class Task(AbsFetchTask):
             else:
                 moneyTime=len(details)
 
+            self.result_data['baseInfo'] = {
+                '姓名': soup.find('xm').text,
+                '身份证号': self.result_meta['用户名'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '上海市',
+                '城市编号': '310100',
+                '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
+                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
+                '开始缴费时间': details[0].find('jsjs1').text,
+                '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
+                '个人医疗累计缴费': ''
+            }
 
             # 社保缴费明细
             # 养老
@@ -166,9 +178,10 @@ class Task(AbsFetchTask):
                     '缴费类型': '-',
                     '公司缴费': '-',
                     '个人缴费': details[a].find('jsjs4').text,
+
+                    #'实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
                  }
                 personmoney += float(details[a].find('jsjs4').text)
-
                 dataBaseE[yearE][monthE].append(modelE)
 
             # 医疗
