@@ -72,15 +72,17 @@ class Task(AbsFetchTask):
         return res
 
     # 初始化/登录
-    def _unit_login(self, params=None):
+    def _unit_login(self, params=None, from_error=False):
         err_msg = None
         resp = self.s.get(LOGIN_PAGE_URL)
         n = datetime.datetime.now() + datetime.timedelta(days=1)
-        if 1 <= n.day <= 6:
+        if 1 <= n.day <= 6 or from_error:
             soup = BeautifulSoup(resp.content, 'html.parser')
             if not soup.find('form'):
                 # 可能暂停维护了
                 raise TaskNotAvailableError(soup.find('td').text)
+            if from_error:
+                return
 
         if params:
             try:
@@ -109,6 +111,9 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
+            except Exception:
+                self._unit_login(params, from_error=True)
+                raise
 
         raise AskForParamsError([
             dict(key='other', name='[{"tabName":"城市职工","tabCode":"1","isEnable":"1"},{"tabName":"城市居民","tabCode":"2","isEnable":"0"}]', cls='tab'),
