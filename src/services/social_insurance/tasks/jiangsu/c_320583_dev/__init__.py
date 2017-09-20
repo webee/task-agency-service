@@ -4,53 +4,62 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
-from services.service import AskForParamsError, PreconditionNotSatisfiedError
-
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
+from services.errors import InvalidParamsError, TaskNotImplementedError
+from services.commons import AbsFetchTask
 MAIN_URL = 'http://sbzx.ks.gov.cn:81/webPages/grjb.aspx'
 LOGIN_URL = 'http://sbzx.ks.gov.cn:81/webPages/grxxcxdl.aspx'
 USER_INFO_URL = "http://sbzx.ks.gov.cn:81/webPages/grjb.aspx"
 DETAILED_LIST_URL = "http://sbzx.ks.gov.cn:81/webPages/"
 
 
-class Task(AbsTaskUnitSessionTask):
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
+class Task(AbsFetchTask):
+    task_info = dict(
+        city_name="昆山",
+        help="""<li></li>
+            """
+    )
+    def _get_common_headers(self):
+            return {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'}
 
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
-        result.setdefault('identity', {})
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
 
-
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
-
     def _query(self, params: dict):
         t = params.get('t')
         if t == 'vc':
             return self._new_vc()
 
-    # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'txtSocial' in params, '缺少社保编号'
-        assert 'txtIdCard' in params, '缺少身份证号'
+        assert '身份证号' in params, '缺少身份证号'
+        assert '社保编号' in params, '缺少社保编号'
+        #assert 'vc' in params, '缺少验证码'
         # other check
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if 'id_num' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if 'account_num' not in params:
+                params['社保编号'] = meta.get('社保编号')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '身份证号' and '身份证号' in meta:
+                continue
+            elif pr['key'] == '社保编号' and '社保编号' in meta:
+                continue
+            res.append(pr)
+        return res
+
 
     def _unit_login(self, params=None):
         err_msg = None
@@ -58,8 +67,8 @@ class Task(AbsTaskUnitSessionTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                txtSocial = params['txtSocial']
-                txtIdCard = params['txtIdCard']
+                txtSocial = params['社保编号']
+                txtIdCard = params['身份证号']
                 self.s = requests.Session()
 
                 data = {
@@ -73,26 +82,28 @@ class Task(AbsTaskUnitSessionTask):
                 if resp.url != MAIN_URL:
                     raise Exception("登录失败！请重新登录")
 
-                self.result['key'] = txtIdCard
-                self.result['meta'] = {
-                    '身份证编号': txtIdCard,
-                    '社保编号': txtSocial
-                }
+                self.result_key = txtIdCard
+                # 保存到meta
+                self.result_meta['身份证编号'] = txtIdCard
+                self.result_meta['社保编号'] = txtSocial
+
+                #self.result_identity['task_name'] = '昆山'
+                #self.result_identity['target_id'] = txtIdCard
+
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='txtIdCard', name='身份证号', cls='input'),
-            dict(key='txtSocial', name='社保编号', cls='input'),
-            dict(key='cityName', name='城市Code', cls='input:hidden', value='昆山市'),
-            dict(key='cityCode', name='城市名称', cls='input:hidden', value='320583')
+            dict(key='身份证号', name='身份证号', cls='input'),
+            dict(key='社保编号', name='社保编号', cls='input')
+            #dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
 
     # 获取用户基本信息
     def _unit_fetch_user_info(self):
         try:
-            data = self.result['data']
+            data = self.result_data
             resp = self.s.post(USER_INFO_URL)
             soup = BeautifulSoup(str(resp.content, 'utf-8'), 'html.parser')
             result = soup.findAll('table')
@@ -108,7 +119,7 @@ class Task(AbsTaskUnitSessionTask):
                 "人员状态": tds[12].text,
                 "身份证号": self.result['key'],
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
-                "城市名称": '昆山市',
+                "城市名称": '昆山',
                 "城市编号": '320583',
                 "缴费时长": '',
                 "最近缴费时间": '',
@@ -139,9 +150,9 @@ class Task(AbsTaskUnitSessionTask):
             }
 
             # 设置identity
-            identity = self.result['identity']
+            identity = self.result_identity
             identity.update({
-                'task_name': '昆山市',
+                'task_name': '昆山',
                 'target_name': tds[2].text,
                 'target_id': self.result['meta']["身份证编号"],
                 'status': "",
@@ -162,7 +173,7 @@ class Task(AbsTaskUnitSessionTask):
 
     # 养老
     def _unit_fetch_user_old_age(self):
-        data = self.result['data']
+        data = self.result_data
         # 统计养老实际缴费月数
         self.old_age_month = 0
         # 统计个人缴费养老金额
