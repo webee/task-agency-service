@@ -87,7 +87,7 @@ class Task(AbsFetchTask):
 
                 self.result_key = id_num
                 # 保存到meta
-                self.result_meta ['身份证号']= id_num
+                self.result_meta ['身份证编号']= id_num
                 self.result_meta['个人编号']=  account_num
 
                 self.result_identity['task_name'] = '苏州'
@@ -112,7 +112,7 @@ class Task(AbsFetchTask):
             div_table = soup.find('input', {'name': 'psMsgBar'}).attrs['value']
             name = div_table.split('td')[7][1:-2]
             personNum = self.result_meta["个人编号"]
-            sfzNum = self.result_meta["身份证号"]
+            sfzNum = self.result_meta["身份证编号"]
 
             data["baseInfo"] = {
                 "姓名": name,
