@@ -211,9 +211,6 @@ class Task(AbsFetchTask):
                     raise InvalidParamsError(err_msg)
 
             # 登录成功
-            # 保存登录后的页面内容供抓取单元解析使
-            self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-            self.g.current_url = driver.current_url
 
     def _to_replace(self,con):
         res=con.replace('\r','').replace('\n','').replace('\t','')
