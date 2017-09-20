@@ -217,20 +217,20 @@ class Task(AbsFetchTask):
             data["unemployment"] = {
                 "data": {}
             }
-            key1 = old_age_state["养老"]
-            key2 = old_age_state["医疗"]
-            key3 = old_age_state["失业"]
-            key4 = old_age_state["工伤"]
-            key5 = old_age_state["生育"]
-            if key1 == key2 and key2 == key3 and key3 == key4 and key4 == key5:
-                if key1.find("正常") > -1:
-                    paymentStart = "正常"
-                else:
-                    paymentStart = "异常"
-            else:
-                paymentStart = "异常"
 
-            # 设置identity
+            paymentStart = "停缴"
+            if old_age_state["养老"].find("正常") > -1:
+                paymentStart = "正常"
+            elif old_age_state["医疗"].find("正常") > -1:
+                paymentStart = "正常"
+            elif old_age_state["失业"].find("正常") > -1:
+                paymentStart = "正常"
+            elif old_age_state["工伤"].find("正常") > -1:
+                paymentStart = "正常"
+            elif old_age_state["生育"].find("正常") > -1:
+                paymentStart = "正常"
+
+                # 设置identity
             identity = self.result['identity']
             identity.update({
                 'task_name': '北京市',

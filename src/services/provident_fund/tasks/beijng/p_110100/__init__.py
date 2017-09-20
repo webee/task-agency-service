@@ -10,7 +10,6 @@ from services.errors import InvalidParamsError, AskForParamsError, InvalidCondit
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
-
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0'
 LOGIN_PAGE_URL = 'http://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
 VC_IMAGE_URL = 'http://www.bjgjj.gov.cn/wsyw/servlet/PicCheckCode1?v='
@@ -44,7 +43,6 @@ class Task(AbsFetchTask):
 
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
-
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT)
 
@@ -73,7 +71,7 @@ class Task(AbsFetchTask):
             return self._new_vc()
 
     def _new_vc(self):
-        vc_url = VC_IMAGE_URL + str(int(time.time())*1000)
+        vc_url = VC_IMAGE_URL + str(int(time.time()) * 1000)
         resp = self.s.get(vc_url)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
@@ -120,16 +118,6 @@ class Task(AbsFetchTask):
                 res.append(pr)
             else:
                 res.append(pr)
-
-
-            # TODO: 进一步检查details
-
-            # if pr['key'] == "other":
-            #     type = pr['value']
-            #
-            # elif pr['key'] == 'mm' + type and 'mm' + type in meta:
-            #     continue
-
         return res
 
     def _check_login_parama(self, params):
@@ -141,6 +129,9 @@ class Task(AbsFetchTask):
         elif params["other"] == "3":
             assert 'bh1' in params, '缺少身份证号码'
             assert 'mm1' in params, '缺少密码'
+            r = r'(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)'
+            assert re.findall(r, params['bh1']), '请输入有效的身份证编号'
+
         assert 'vc' in params, '缺少验证码'
 
         # TODO: 检验身份证
@@ -174,7 +165,9 @@ class Task(AbsFetchTask):
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
         raise AskForParamsError([
-            dict(key='other', name='[{"tabName":"联名卡号","tabCode":"5","isEnable":"1"},{"tabName":"身份证号","tabCode":"3","isEnable":"1"}]', cls='tab',value=params.get('类型Code', '')),
+            dict(key='other',
+                 name='[{"tabName":"身份证号","tabCode":"3","isEnable":"1"},{"tabName":"联名卡号","tabCode":"5","isEnable":"1"}]',
+                 cls='tab', value=params.get('类型Code', '')),
             dict(key='bh1', name='身份证号', cls='input', tabCode="3", value=params.get('账号', '')),
             dict(key='mm1', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),
             dict(key='bh5', name='联名卡号', cls='input', tabCode="5", value=params.get('账号', '')),
@@ -191,7 +184,8 @@ class Task(AbsFetchTask):
             WebDriverWait(driver, 10).until(value_is_number((By.XPATH, '//*[@id="lk"]')))
 
             # 选择身份证号方式登录
-            driver.find_element_by_xpath('/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr/td/div/form/div[1]/ul/li['+type+']/a').click()
+            driver.find_element_by_xpath(
+                '/html/body/table[2]/tbody/tr[3]/td/table/tbody/tr/td/div/form/div[1]/ul/li[' + type + ']/a').click()
             if type == "1":
                 id = "5"
                 input = "0"
@@ -199,10 +193,10 @@ class Task(AbsFetchTask):
                 id = "1"
                 input = "2"
 
-            username_input = driver.find_element_by_xpath('//*[@id="bh'+id+'"]')
-            password_input = driver.find_element_by_xpath('//*[@id="mm'+id+'"]')
-            vc_input = driver.find_element_by_xpath('//*[@id="login_tab_'+input+'"]/div/div[3]/input')
-            submit_btn = driver.find_element_by_xpath('//*[@id="login_tab_'+input+'"]/div/div[4]/input[1]')
+            username_input = driver.find_element_by_xpath('//*[@id="bh' + id + '"]')
+            password_input = driver.find_element_by_xpath('//*[@id="mm' + id + '"]')
+            vc_input = driver.find_element_by_xpath('//*[@id="login_tab_' + input + '"]/div/div[3]/input')
+            submit_btn = driver.find_element_by_xpath('//*[@id="login_tab_' + input + '"]/div/div[4]/input[1]')
 
             # 用户名
             username_input.clear()
@@ -246,7 +240,7 @@ class Task(AbsFetchTask):
                 trs.reverse()
                 for tr in trs:
                     tds = tr.findAll("td")
-                    if tr != trs[len(trs)-1]:
+                    if tr != trs[len(trs) - 1]:
                         a = tds[1].findAll("a")[0]
                         link = a.attrs['onclick'].split('"')[1]
                         link = parse.urljoin(self.g.current_url, link)
@@ -334,9 +328,3 @@ if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task())
     client.run()
-
-
-
-
-
-
