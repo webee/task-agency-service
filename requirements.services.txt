@@ -4,3 +4,4 @@ schema
 selenium
 dill
 Pillow
+lxml
