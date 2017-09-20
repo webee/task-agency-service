@@ -42,9 +42,9 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if 'id_num' not in params:
+            if '身份证号' not in params:
                 params['身份证号'] = meta.get('身份证号')
-            if 'account_num' not in params:
+            if '社保编号' not in params:
                 params['社保编号'] = meta.get('社保编号')
         return params
 
