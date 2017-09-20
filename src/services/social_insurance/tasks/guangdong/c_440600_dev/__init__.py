@@ -9,37 +9,30 @@ import io
 import requests
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
-from services.service import AskForParamsError, PreconditionNotSatisfiedError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
+from services.errors import InvalidParamsError, TaskNotImplementedError
+from services.commons import AbsFetchTask
 
 MAIN_URL = 'http://61.142.213.86/grwssb/action/MainAction'
 LOGIN_URL = 'http://61.142.213.86/grwssb/action/GRLoginAction'
 VCIMAGE_URL='http://61.142.213.86/grwssb/imagecheck.jsp'
 VC_URL='http://61.142.213.86/grwssb/checkimage.jsp'
 
-class Task(AbsTaskUnitSessionTask):
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
-
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
+class Task(AbsFetchTask):
+    task_info = dict(
+        city_name="佛山",
+        help="""<li>可向公司人事或者经办人索取公积金账号。</li>
+            <li>如需设置密码，可登录公积金官网后进行设置。</li>
+            """
+    )
+    def _get_common_headers(self):
+        return { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
+        }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_name, self._unit_login)
 
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
     def _query(self, params: dict):
         t = params.get('t')
         if t == 'vc':
@@ -47,18 +40,39 @@ class Task(AbsTaskUnitSessionTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'id_num' in params, '缺少个人编号'
-        assert 'password' in params, '缺少密码'
+        assert '身份证号' in params, '缺少身份证号'
+        assert '密码' in params, '缺少密码'
         # other check
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
+        return params
 
-    def _unit_login(self, params=None):
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '身份证号' and '身份证号' in meta:
+                continue
+            elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            elif pr['key']=='other':
+                continue
+            res.append(pr)
+        return res
+    def _unit_login(self, params:dict):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params['id_num']
-                pwd = params['password']
+                id_num = params['身份证号']
+                pwd = params['密码']
 
                 resp = self.s.post(LOGIN_URL, data=dict(
                     UserID=id_num,
@@ -100,24 +114,24 @@ class Task(AbsTaskUnitSessionTask):
                 else:
                     print()
 
-                self.result['key'] = '%s.%s' % ('real', id_num)
-                self.result['meta'] = {
-                    'task': 'real',
-                    'id_num': id_num
-                }
+                self.result_key =id_num
+                self.result_meta['身份证号'] = id_num
+                self.result_meta['密码'] = pwd
+                self.result_identity['task_name']='佛山'
+                self.result_identity['target_id'] = id_num
+
                 return
             except Exception as e:
                 err_msg = str(e)
 
-
         raise AskForParamsError([
-            dict(key='id_num', name='个人编号', cls='input'),
-            dict(key='password', name='密码',cls='input' ),
+            dict(key='身份证号', name='身份证号', cls='input',value=params.get('身份证号', '')),
+            dict(key='密码', name='密码',cls='input:password' , value=params.get('密码', ''))
         ], err_msg)
 
     def _unit_fetch_name(self):
         try:
-            data = self.result['data']
+            data = self.result_data
             #基本信息
             baseinfo_URL=MAIN_URL+'?ActionType=grcx_grjbzlcx&flag=true'
             resp = self.s.get(baseinfo_URL)
@@ -128,10 +142,22 @@ class Task(AbsTaskUnitSessionTask):
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 data['baseinfo'].setdefault(cell[0], cell[1])
+                if cell[0]=='姓名':
+                    self.result_identity['target_name']=cell[3]
+                if cell[0]=='养老 实际缴费月数':
+                    data['baseinfo'].setdefault('缴费时长', cell[1])
                 if(len(cell)>3):
-                    data['baseinfo'].setdefault(cell[2], cell[3])#.replace('\xa0', '')
+                    if cell[2]=='个人社保号':
+                        data['baseinfo'].setdefault('社保编号', cell[3])
+                    else:
+                        data['baseinfo'].setdefault(cell[2], cell[3])#.replace('\xa0', '')
                 if len(cell)>5:
                     data['baseinfo'].setdefault(cell[4], cell[5])
+
+            data['baseinfo'].setdefault('城市名称', '佛山')
+            data['baseinfo'].setdefault('城市编号', '440600')
+
+
             #五险arrtype={'01':'基本养老保险','02':'失业保险','03':'基本医疗保险','04':'工伤保险','05':'生育保险'}
             arrtype = {'grcx_ylbxjfcx': 'old_age', 'grcx_syebxjfcx': 'unemployment', 'grcx_yilbxjfcx': 'medical_care', 'grcx_gsbxjfcx': 'injuries', 'grcx_syubxjfcx': 'maternity'}
             for k, v in arrtype.items():
@@ -213,6 +239,6 @@ class Task(AbsTaskUnitSessionTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-
-    client = TaskTestClient(Task())
+    meta = {'身份证号': '440681198412040228', '密码': '198412'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
