@@ -261,6 +261,8 @@ class Task(AbsFetchTask):
                                         "证件类型": _tds[31].text,
                                         "个人登记号": _tds[29].text,
                                         "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
+                                        '城市名称': '北京市',
+                                        '城市编号': '110100'
                                     }
                                     self.result_data["companyList"].append({
                                         "最后业务日期": re.sub('\s', '', _tds[53].text),
