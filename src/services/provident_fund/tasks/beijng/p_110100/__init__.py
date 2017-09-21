@@ -145,7 +145,7 @@ class Task(AbsFetchTask):
                 self._check_login_parama(params)
                 if params["other"] == "3":
                     code = "1"
-                elif params["other"] == "5":
+                elif params["other"] == "1":
                     code = "5"
                 else:
                     code = "1"
@@ -166,13 +166,13 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
         raise AskForParamsError([
             dict(key='other',
-                 name='[{"tabName":"身份证号","tabCode":"3","isEnable":"1"},{"tabName":"联名卡号","tabCode":"5","isEnable":"1"}]',
+                 name='[{"tabName":"身份证号","tabCode":"3","isEnable":"1"},{"tabName":"联名卡号","tabCode":"1","isEnable":"1"}]',
                  cls='tab', value=params.get('类型Code', '')),
             dict(key='bh1', name='身份证号', cls='input', tabCode="3", value=params.get('账号', '')),
             dict(key='mm1', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),
-            dict(key='bh5', name='联名卡号', cls='input', tabCode="5", value=params.get('账号', '')),
-            dict(key='mm5', name='密码', cls='input:password', tabCode="5", value=params.get('密码', '')),
-            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="[3,5]", value=''),
+            dict(key='bh5', name='联名卡号', cls='input', tabCode="1", value=params.get('账号', '')),
+            dict(key='mm5', name='密码', cls='input:password', tabCode="1", value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="[3,1]", value=''),
         ], err_msg)
 
     def _do_login(self, username, password, vc, type):
