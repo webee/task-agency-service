@@ -12,7 +12,7 @@ from services.errors import InvalidParamsError, TaskNotImplementedError, Invalid
     PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
 
-MAIN_URL = r''
+MAIN_URL = r'http://www.nbgjj.com/GJJQuery?'
 LOGIN_URL = r"http://www.nbgjj.com/perlogin.jhtml"
 VC_URL = r"http://www.nbgjj.com/website/trans/ValidateImg"
 
@@ -124,7 +124,7 @@ class Task(AbsFetchTask):
 
                 # 个人基本信息
                 accnum=resp.cookies['gjjaccnum']
-                res=self.s.get("http://www.nbgjj.com/GJJQuery?tranCode=142503&task=&accnum="+accnum)
+                res=self.s.get(MAIN_URL+"tranCode=142503&task=&accnum="+accnum)
                 resdata=json.loads(res.text)
                 self.result_data['baseInfo'] = {
                     '姓名':resdata['accname'],
@@ -152,7 +152,7 @@ class Task(AbsFetchTask):
                 # 缴费明细
                 starttime=str(datetime.datetime.now()-datetime.timedelta(days=365*3))[0:10]    # 开始时间
                 endtime=str(datetime.datetime.now())[0:10]                                      # 结束时间
-                detailurl=self.s.get("http://www.nbgjj.com/GJJQuery?tranCode=142504&task=ftp&indiacctype=1&accnum="+accnum+"&begdate="+starttime+"&enddate="+endtime)
+                detailurl=self.s.get(MAIN_URL+"tranCode=142504&task=ftp&indiacctype=1&accnum="+accnum+"&begdate="+starttime+"&enddate="+endtime)
                 detailData=json.loads(detailurl.text)
                 self.result_data['detail'] = {"data": {}}
                 baseDetail = self.result_data["detail"]["data"]
@@ -162,12 +162,12 @@ class Task(AbsFetchTask):
                     months=detailData[aa]["trandate"][5:7]
                     model={
                         '时间':detailData[aa]["trandate"],
-                        '类型':detailData[aa]["ywtype"],
+                        '类型':detailData[aa]["ywtype"].strip(),
                         '汇缴年月': "-",
                         '收入':detailData[aa]["amt"],
                         '支出':"-",
                         '余额': detailData[aa]["bal"],
-                        '单位名称':detailData[aa]["unitaccname"]
+                        '单位名称':detailData[aa]["unitaccname"].strip()
                     }
 
                     baseDetail.setdefault(years, {})
