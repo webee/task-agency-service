@@ -163,7 +163,7 @@ class Task(AbsFetchTask):
                     model={
                         '时间':detailData[aa]["trandate"],
                         '类型':detailData[aa]["ywtype"].strip(),
-                        '汇缴年月': "-",
+                        '汇缴年月': detailData[aa]["trandate"],
                         '收入':detailData[aa]["amt"],
                         '支出':"-",
                         '余额': detailData[aa]["bal"],
