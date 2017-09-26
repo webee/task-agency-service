@@ -204,6 +204,8 @@ class Task(AbsFetchTask):
             table = soup.select('.table')[0]
             data = self.result_data
             data['baseInfo'] = {
+                '城市名称': '上海',
+                '城市编号': '310100',
                 '证件号': '',
                 '证件类型': '',
                 '个人登记号': '',
