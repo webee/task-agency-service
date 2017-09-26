@@ -2,6 +2,7 @@ import time
 import hashlib
 from PIL import Image
 import io
+import re
 from urllib import parse
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
@@ -245,14 +246,21 @@ class Task(AbsFetchTask):
                             '业务原因': cell[4].replace('\xa0', '')
                         }
                     else:
+                        strname=cell[3].replace('年', '-').replace('月', '')
+                        strtype =cell[3]
+                        strtime =''
+                        if len(re.findall(r"汇缴(.+?)公积金", strname))>0:
+                            strtype=strname[:2]
+                            strtime=strname[2:9]
+
                         dic = {
                             '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
                             '单位名称': cell[1],
                             '支出': 0,
                             '收入': cell[2],
-                            '汇缴年月': '',
+                            '汇缴年月': strtime,
                             '余额': '',
-                            '类型': cell[3],
+                            '类型':strtype ,
                             '业务原因': cell[4].replace('\xa0', '')
                         }
 
