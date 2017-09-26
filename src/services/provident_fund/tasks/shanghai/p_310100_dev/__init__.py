@@ -134,6 +134,9 @@ class Task(AbsFetchTask):
                 self.result_key = id_num
                 self.result_meta['用户名'] = id_num
                 self.result_meta['密码'] = password
+                self.result_identity['task_name'] = '上海'
+                self.result_identity['target_id'] = id_num
+
                 return
             except Exception as e:
                 err_msg = str(e)
@@ -219,6 +222,8 @@ class Task(AbsFetchTask):
                                                                                                  '').replace(
                                                     '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', ''))
 
+            self.result_identity['target_name']=data['baseInfo']['姓名']
+            self.result_identity['status'] = data['baseInfo']['当前账户状态']
             # 内容
             infourl = LOGIN_URL + '?ID=11'
             resp = self.s.get(infourl)
