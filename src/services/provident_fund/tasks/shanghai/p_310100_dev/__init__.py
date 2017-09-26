@@ -132,8 +132,8 @@ class Task(AbsFetchTask):
         vc = self._new_vc()
         raise AskForParamsError([
             dict(key='用户名', name='用户名', cls='input'),
-            dict(key='密码',name='密码',cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='密码',name='密码',cls='input:password'),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
     def _do_login(self, username, password, vc):
         """使用web driver模拟登录过程"""
@@ -189,7 +189,7 @@ class Task(AbsFetchTask):
             soup = self.g.soup
             table = soup.select('.table')[0]
             data = self.result_data
-            data['baseinfo'] = {
+            data['baseInfo'] = {
                 '证件号': '',
                 '证件类型': '',
                 '个人登记号': ''
@@ -197,7 +197,7 @@ class Task(AbsFetchTask):
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
                 if len(cell)>1:
-                    data['baseinfo'].setdefault(cell[0], cell[1].replace('\r\n             ','').replace('  >>>住房公积金本年度账户明细','').replace('\xa0\xa0\xa0\xa0\xa0【修改】','').replace('             ',''))
+                    data['baseInfo'].setdefault(cell[0], cell[1].replace('\r\n             ','').replace('  >>>住房公积金本年度账户明细','').replace('\xa0\xa0\xa0\xa0\xa0【修改】','').replace('             ','').replace('  ',''))
 
             #内容
             infourl=LOGIN_URL+'?ID=11'
@@ -261,8 +261,8 @@ class Task(AbsFetchTask):
                             "单位登记号": "",
                             "所属管理部编号": "",
                             "所属管理部名称": "",
-                            "当前余额": data['baseinfo']['账户余额'],
-                            "帐户状态": data['baseinfo']['当前账户状态'],
+                            "当前余额": data['baseInfo']['账户余额'],
+                            "帐户状态": data['baseInfo']['当前账户状态'],
                             "当年缴存金额": 0,
                             "当年提取金额": 0,
                             "上年结转余额": 0,
@@ -278,7 +278,7 @@ class Task(AbsFetchTask):
                         "单位登记号": "",
                         "所属管理部编号": "",
                         "所属管理部名称": "",
-                        "当前余额": data['baseinfo']['账户余额'],
+                        "当前余额": data['baseInfo']['账户余额'],
                         "帐户状态": '转出',
                         "当年缴存金额": 0,
                         "当年提取金额": 0,
