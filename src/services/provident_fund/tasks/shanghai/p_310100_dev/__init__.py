@@ -1,4 +1,3 @@
-
 import time
 import hashlib
 from PIL import Image
@@ -6,7 +5,7 @@ import io
 from urllib import parse
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
-from services.webdriver import new_driver, DriverRequestsCoordinator,DriverType
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
@@ -14,8 +13,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+
 class value_is_number(object):
     """判断元素value是数字"""
+
     def __init__(self, locator):
         self.locator = locator
 
@@ -24,13 +25,14 @@ class value_is_number(object):
         val = element.get_attribute('value')
         return val and val.isnumeric()
 
+
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
-LOGIN_PAGE_URL='https://persons.shgjj.com/'
+LOGIN_PAGE_URL = 'https://persons.shgjj.com/'
 MAIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/main_menu.jsp'
 LOGIN_URL = 'https://persons.shgjj.com/MainServlet'
 VC_URL = 'https://persons.shgjj.com/VerifyImageServlet'
-GJJMX_URL='http://www.aygjj.com/gjjcx/zfbzgl/gjjmxcx/gjjmx_cx.jsp'
-GJJ_URL='http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/gjjmx_cxtwo.jsp'
+GJJMX_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/gjjmxcx/gjjmx_cx.jsp'
+GJJ_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/gjjmx_cxtwo.jsp'
 
 
 class Task(AbsFetchTask):
@@ -41,13 +43,13 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'
-        }
+        return {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'
+            }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_name, self._unit_login)
-
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -58,9 +60,10 @@ class Task(AbsFetchTask):
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert '用户名' in params, '缺少用户名'
-        assert '密码' in params,'缺少密码'
+        assert '密码' in params, '缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -69,15 +72,17 @@ class Task(AbsFetchTask):
             if '密码' not in params:
                 params['密码'] = meta.get('密码')
         return params
+
     def _prepare(self, data=None):
         super()._prepare(data)
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT,js_re_ignore='/web\/ImageCheck.jpg/g')
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
         driver.get(LOGIN_PAGE_URL)
 
         return driver
+
     def _param_requirements_handler(self, param_requirements, details):
         meta = self.prepared_meta
         res = []
@@ -98,31 +103,33 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
                 id_num = params['用户名']
-                password=params['密码']
+                password = params['密码']
                 vc = params['vc']
-                #self._do_login(id_num, password, vc)
+                # self._do_login(id_num, password, vc)
 
                 m = hashlib.md5()
                 m.update(password.encode(encoding='utf-8'))
                 hashpsw = m.hexdigest()
-                data ={
-                    'password_md5':hashpsw,
-                    'username':id_num,
-                    'password':password,
-                    'imagecode':vc,
-                    'ID':'0',
-                    'SUBMIT.x':'35',
+                data = {
+                    'password_md5': hashpsw,
+                    'username': id_num,
+                    'password': password,
+                    'imagecode': vc,
+                    'ID': '0',
+                    'SUBMIT.x': '35',
                     'SUBMIT.y': '8'
                 }
-                resp = self.s.post(LOGIN_URL,data=data,headers={'Content-Type':'application/x-www-form-urlencoded','Cache-Control':'max-age=0','Upgrade-Insecure-Requests':'1'})
+                resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
+                                                                  'Cache-Control': 'max-age=0',
+                                                                  'Upgrade-Insecure-Requests': '1'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 errormsg = soup.findAll('font')[0].text
-                if errormsg and errormsg!=id_num:
+                if errormsg and errormsg != id_num:
                     raise Exception(errormsg)
                 else:
-                    self.g.soup=soup
+                    self.g.soup = soup
 
-                self.result_key =id_num
+                self.result_key = id_num
                 self.result_meta['用户名'] = id_num
                 self.result_meta['密码'] = password
                 return
@@ -132,19 +139,24 @@ class Task(AbsFetchTask):
         vc = self._new_vc()
         raise AskForParamsError([
             dict(key='用户名', name='用户名', cls='input'),
-            dict(key='密码',name='密码',cls='input:password'),
+            dict(key='密码', name='密码', cls='input:password'),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
+
     def _do_login(self, username, password, vc):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
             driver.get(LOGIN_PAGE_URL)
             Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            username_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]/td[2]/input')
-            password_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[3]/td[2]/input')
-            vc_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[4]/td[2]/input')
-            submit_btn = driver.find_element_by_xpath('/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[5]/td[2]/input[1]')
+            username_input = driver.find_element_by_xpath(
+                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]/td[2]/input')
+            password_input = driver.find_element_by_xpath(
+                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[3]/td[2]/input')
+            vc_input = driver.find_element_by_xpath(
+                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[4]/td[2]/input')
+            submit_btn = driver.find_element_by_xpath(
+                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[5]/td[2]/input[1]')
             ok = driver.find_element_by_name("SUBMIT")
             Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             # 用户名
@@ -181,7 +193,7 @@ class Task(AbsFetchTask):
             # else:
             #     # success
             #     print('success')
-            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            # Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
 
     def _unit_fetch_name(self):
         try:
@@ -196,66 +208,69 @@ class Task(AbsFetchTask):
             }
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
-                if len(cell)>1:
-                    data['baseInfo'].setdefault(cell[0], cell[1].replace('\r\n             ','').replace('  >>>住房公积金本年度账户明细','').replace('\xa0\xa0\xa0\xa0\xa0【修改】','').replace('             ','').replace('  ',''))
+                if len(cell) > 1:
+                    data['baseInfo'].setdefault(cell[0].replace(' ', ''),
+                                                cell[1].replace('\r\n             ', '').replace('  >>>住房公积金本年度账户明细',
+                                                                                                 '').replace(
+                                                    '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', ''))
 
-            #内容
-            infourl=LOGIN_URL+'?ID=11'
+            # 内容
+            infourl = LOGIN_URL + '?ID=11'
             resp = self.s.get(infourl)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
             enterarr = []
-            enterdic={}
-            enterfullname=''
-            infotable= soup.select('.table')[0].findAll('tr')
-            years=''
-            months=''
+            enterdic = {}
+            enterfullname = ''
+            infotable = soup.select('.table')[0].findAll('tr')
+            years = ''
+            months = ''
 
-            for y in range(2,len(infotable)):
-                dic={}
+            for y in range(2, len(infotable)):
+                dic = {}
                 arr = []
                 cell = [i.text for i in infotable[y].find_all('td')]
-                if len(cell)>4:
+                if len(cell) > 4:
                     if cell[3] == '支取':
-                        dic={
-                            '日期':cell[0],
+                        dic = {
+                            '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
                             '单位名称': cell[1],
                             '支出': cell[2],
-                            '收入':0,
-                            '汇缴年月':'',
-                            '余额':'',
-                            '业务描述': cell[3],
-                            '业务原因': cell[4].replace('\xa0','')
+                            '收入': 0,
+                            '汇缴年月': '',
+                            '余额': '',
+                            '类型': cell[3],
+                            '业务原因': cell[4].replace('\xa0', '')
                         }
                     else:
                         dic = {
-                            '日期': cell[0],
+                            '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
                             '单位名称': cell[1],
-                            '支出':  0,
-                            '收入':cell[2],
+                            '支出': 0,
+                            '收入': cell[2],
                             '汇缴年月': '',
                             '余额': '',
-                            '业务描述': cell[3],
+                            '类型': cell[3],
                             '业务原因': cell[4].replace('\xa0', '')
                         }
 
-                    times=cell[0][:7].replace('年','')
-                    if years!=times[:4]:
-                        years=times[:4]
+                    times = cell[0][:7].replace('年', '')
+                    if years != times[:4]:
+                        years = times[:4]
                         data['detail']['data'][years] = {}
-                        if months!=times[-2:]:
+                        if months != times[-2:]:
                             months = times[-2:]
                     else:
-                        if months!=times[-2:]:
+                        if months != times[-2:]:
                             months = times[-2:]
                         else:
-                            arr =data['detail']['data'][years][months]
+                            arr = data['detail']['data'][years][months]
                     arr.append(dic)
                     data['detail']['data'][years][months] = arr
                     print(arr)
-                    if enterfullname=='':
-                        enterfullname=cell[1]
+                    if enterfullname == '':
+                        enterfullname = cell[1]
                         enterdic = {
                             "单位名称": cell[1],
                             "单位登记号": "",
@@ -266,34 +281,34 @@ class Task(AbsFetchTask):
                             "当年缴存金额": 0,
                             "当年提取金额": 0,
                             "上年结转余额": 0,
-                            "最后业务日期":cell[0],
+                            "最后业务日期": cell[0],
                             "转出金额": 0
                         }
 
-                    elif enterfullname!=cell[1]:
+                    elif enterfullname != cell[1]:
                         enterfullname = cell[1]
                         enterarr.append(enterdic)
                         enterdic = {
-                        "单位名称": cell[1],
-                        "单位登记号": "",
-                        "所属管理部编号": "",
-                        "所属管理部名称": "",
-                        "当前余额": data['baseInfo']['账户余额'],
-                        "帐户状态": '转出',
-                        "当年缴存金额": 0,
-                        "当年提取金额": 0,
-                        "上年结转余额": 0,
-                        "最后业务日期": cell[0],
-                        "转出金额": 0
-                    }
+                            "单位名称": cell[1],
+                            "单位登记号": "",
+                            "所属管理部编号": "",
+                            "所属管理部名称": "",
+                            "当前余额": data['baseInfo']['账户余额'],
+                            "帐户状态": '转出',
+                            "当年缴存金额": 0,
+                            "当年提取金额": 0,
+                            "上年结转余额": 0,
+                            "最后业务日期": cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
+                            "转出金额": 0
+                        }
             enterarr.append(enterdic)
-            data['companyList']=enterarr
+            data['companyList'] = enterarr
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
-        vc_url = VC_URL #+ str(int(time.time() * 1000))
+        vc_url = VC_URL  # + str(int(time.time() * 1000))
         resp = self.s.get(vc_url)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
@@ -303,4 +318,4 @@ if __name__ == '__main__':
 
     client = TaskTestClient(Task())
     client.run()
-# 	用户名：Candina，密码：123456
+    # 	用户名：Candina，密码：123456
