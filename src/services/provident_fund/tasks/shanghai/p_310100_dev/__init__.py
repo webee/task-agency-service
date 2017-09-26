@@ -204,9 +204,12 @@ class Task(AbsFetchTask):
             table = soup.select('.table')[0]
             data = self.result_data
             data['baseInfo'] = {
+                '城市名称': '上海',
+                '城市编号': '310100',
                 '证件号': '',
                 '证件类型': '',
-                '个人登记号': ''
+                '个人登记号': '',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
@@ -246,12 +249,12 @@ class Task(AbsFetchTask):
                             '业务原因': cell[4].replace('\xa0', '')
                         }
                     else:
-                        strname=cell[3].replace('年', '-').replace('月', '')
+                        strname=cell[3].replace('年', '').replace('月', '')
                         strtype =cell[3]
                         strtime =''
                         if len(re.findall(r"汇缴(.+?)公积金", strname))>0:
                             strtype=strname[:2]
-                            strtime=strname[2:9]
+                            strtime=strname[2:8]
 
                         dic = {
                             '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
