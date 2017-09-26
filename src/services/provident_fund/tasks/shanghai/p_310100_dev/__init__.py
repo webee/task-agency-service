@@ -247,12 +247,12 @@ class Task(AbsFetchTask):
                             '业务原因': cell[4].replace('\xa0', '')
                         }
                     else:
-                        strname=cell[3].replace('年', '-').replace('月', '')
+                        strname=cell[3].replace('年', '').replace('月', '')
                         strtype =cell[3]
                         strtime =''
                         if len(re.findall(r"汇缴(.+?)公积金", strname))>0:
                             strtype=strname[:2]
-                            strtime=strname[2:9]
+                            strtime=strname[2:8]
 
                         dic = {
                             '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
