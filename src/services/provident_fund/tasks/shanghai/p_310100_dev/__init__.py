@@ -38,7 +38,8 @@ GJJ_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/gjjmx_cxtwo.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="上海",
-        help="""<li></li>
+        help="""<li>如您未在公积金网站查询过您的公积金信息，请到上海公积金管理中心官网网完成“注册”然后再登录。</li>
+                <li>用户名指的是在注册时自行设置的2-12位英文字母或数字（区分大小写）。</li>
                 """
     )
 
@@ -281,7 +282,7 @@ class Task(AbsFetchTask):
                             "当年缴存金额": 0,
                             "当年提取金额": 0,
                             "上年结转余额": 0,
-                            "最后业务日期": cell[0],
+                            "最后业务日期": cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
                             "转出金额": 0
                         }
 
