@@ -3,7 +3,7 @@
 #地址：http://www.fssi.gov.cn/
 #账号：440681198412040228
 #密码：198412
-import datetime
+import datetime,time
 from PIL import Image
 import io
 import requests
@@ -67,7 +67,7 @@ class Task(AbsFetchTask):
         return res
     def _unit_login(self, params:dict):
         err_msg = None
-        if params:
+        if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
@@ -138,12 +138,16 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             table_text = soup.select('.dataTable')[1]
             rows = table_text.find_all('tr')
-            data['baseinfo'] = {}
+            data['baseinfo'] = {
+                '城市名称': '佛山',
+                '城市编号': '440600',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+            }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 data['baseinfo'].setdefault(cell[0], cell[1])
                 if cell[0]=='姓名':
-                    self.result_identity['target_name']=cell[3]
+                    self.result_identity['target_name']=cell[1]
                 if cell[0]=='养老 实际缴费月数':
                     data['baseinfo'].setdefault('缴费时长', cell[1])
                 if(len(cell)>3):
@@ -153,28 +157,36 @@ class Task(AbsFetchTask):
                         data['baseinfo'].setdefault(cell[2], cell[3])#.replace('\xa0', '')
                 if len(cell)>5:
                     data['baseinfo'].setdefault(cell[4], cell[5])
-
-            data['baseinfo'].setdefault('城市名称', '佛山')
-            data['baseinfo'].setdefault('城市编号', '440600')
+            self.result_identity['status'] = ''
 
 
+            arrtime=[]
+            grylsum=0.00
+            gryilsum=0.00
             #五险arrtype={'01':'基本养老保险','02':'失业保险','03':'基本医疗保险','04':'工伤保险','05':'生育保险'}
             arrtype = {'grcx_ylbxjfcx': 'old_age', 'grcx_syebxjfcx': 'unemployment', 'grcx_yilbxjfcx': 'medical_care', 'grcx_gsbxjfcx': 'injuries', 'grcx_syubxjfcx': 'maternity'}
             for k, v in arrtype.items():
-                newurl='?menuid='+ k +'&ActionType=grcx_ylbxjfcx&flag=true'
+                newurl='?menuid='+ k +'&ActionType='+ k +'&flag=true'
                 arrtype_URL=MAIN_URL+newurl
                 data[v] = {}
                 data[v]['data'] = {}
                 yearkeys = ''
-                resp = self.s.get(arrtype_URL)
+                #resp = self.s.get(arrtype_URL)
+                resp=self.s.post(MAIN_URL,data=dict(menuid=k,ActionType=k,flag='true'))
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 tablelist=soup.select('.list_table')[0]
-                titkeys = ''
+                titkeys =[]
                 for td in tablelist.find('thead').findAll('td'):
-                    if len(titkeys)<1:
-                        titkeys =td.getText()
-                    else:
-                        titkeys=titkeys+','+td.getText()
+                    titlename=td.getText()
+                    if titlename=='缴费起止时间':
+                        titlename='缴费时间'
+                    if titlename=='个人缴费(每月)(元)':
+                        titlename='个人缴费'
+                    if titlename=='单位缴费(每月)(元)':
+                        titlename='公司缴费'
+                    if titlename == '单位名称':
+                        titlename = '缴费单位'
+                    titkeys.append(titlename)
                 for tr in tablelist.find('tbody').findAll('tr'):
                     dic = {}
                     i = 0
@@ -186,19 +198,24 @@ class Task(AbsFetchTask):
                             monthkeyslist = td.getText().split('-')
                             if len(monthkeyslist) > 1:
                                 values=monthkeyslist[0]
+                                arrtime.append(monthkeyslist[0])
                         if i == 7:
                             monthcount=int(td.getText())
                             values=monthcount/monthcount
                         if i==8:
                             values=float(td.getText())/monthcount
+                            if v=='old_age':
+                                grylsum=grylsum+float(td.getText())
+                            if v == 'medical_care':
+                                gryilsum = gryilsum + float(td.getText())
                         if i==9:
                             values=float(td.getText())/monthcount
                         if i==10:
                             values=float(td.getText())/monthcount
                         if i == 11:
                             values = float(td.getText()) / monthcount
-                        dic.setdefault(titkeys.split(',')[i], values)
-                        if i == 11:
+                        dic.setdefault(titkeys[i], values)
+                        if i == 11 or len(titkeys)==i+1:
                             for y in range(-1,monthcount-1):
                                 dic1={}
                                 arr = []
@@ -216,16 +233,23 @@ class Task(AbsFetchTask):
                                     if key == monthkeys[-2:]:
                                         months = monthkeys[-2:]
                                         arr = value
-                                    else:
-                                        print(key)
+
                                 dic['缴费起止时间']=monthkeys
                                 dic1=dic.copy()
+                                dic1.setdefault('缴费类型','正常应缴')
                                 arr.append(dic1)
-                                if len(months) > 0:
+                                if months:
                                     data[v]['data'][yearkeys][months] = arr
                                 else:
                                     data[v]['data'][yearkeys].setdefault(monthkeys[-2:], arr)
                         i = i + 1
+                if v=='old_age':
+                    data['baseinfo'].setdefault('个人养老累计缴费', grylsum)
+                if v == 'medical_care':
+                    data['baseinfo'].setdefault('个人医疗累计缴费', gryilsum)
+
+            data['baseinfo'].setdefault('最近缴费时间', max(arrtime))
+            data['baseinfo'].setdefault('开始缴费时间',min(arrtime))
 
             return
         except PermissionError as e:
@@ -239,6 +263,6 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '440681198412040228', '密码': '198412'}
-    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
+    #meta = {'身份证号': '440681198412040228', '密码': '198412'}prepare_data=dict(meta=meta)
+    client = TaskTestClient(Task())
     client.run()
