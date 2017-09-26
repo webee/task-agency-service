@@ -197,7 +197,7 @@ class Task(AbsFetchTask):
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
                 if len(cell)>1:
-                    data['baseInfo'].setdefault(cell[0], cell[1].replace('\r\n             ','').replace('  >>>住房公积金本年度账户明细','').replace('\xa0\xa0\xa0\xa0\xa0【修改】','').replace('             ','').replace('  ',''))
+                    data['baseInfo'].setdefault(cell[0].replace(' ',''), cell[1].replace('\r\n             ','').replace('  >>>住房公积金本年度账户明细','').replace('\xa0\xa0\xa0\xa0\xa0【修改】','').replace('             ',''))
 
             #内容
             infourl=LOGIN_URL+'?ID=11'
