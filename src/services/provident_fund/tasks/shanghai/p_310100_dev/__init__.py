@@ -206,7 +206,8 @@ class Task(AbsFetchTask):
             data['baseInfo'] = {
                 '证件号': '',
                 '证件类型': '',
-                '个人登记号': ''
+                '个人登记号': '',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
