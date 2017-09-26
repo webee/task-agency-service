@@ -130,23 +130,26 @@ class Task(AbsFetchTask):
             datas = soup.select('.table-content')
 
             self.result_data['baseInfo']={
-            '个人公积金帐号':datas[0].findAll("td")[1].text,
-            '姓名':datas[0].findAll("td")[3].text,
-            '身份证号':datas[0].findAll("td")[5].text,
+                '公积金帐号':datas[0].findAll("td")[1].text,
+                '姓名':datas[0].findAll("td")[3].text,
+                '身份证号':datas[0].findAll("td")[5].text,
 
-            '性别':datas[1].findAll("td")[1].text,
-            '手机号':datas[1].findAll("td")[3].text,
-            '卡号':datas[1].findAll("td")[5].text,
+                '性别':datas[1].findAll("td")[1].text,
+                '手机号':datas[1].findAll("td")[3].text,
+                '卡号':datas[1].findAll("td")[5].text,
 
-            '工资基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
+                '工资基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
 
-            '单位缴存比例':datas[4].findAll("td")[1].text,
-            '职工缴存比例':datas[4].findAll("td")[3].text,
+                '单位缴存比例':datas[4].findAll("td")[1].text,
+                '职工缴存比例':datas[4].findAll("td")[3].text,
 
-            '单位月应缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
-            '职工月应缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
+                '单位月应缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
+                '职工月应缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
 
-            '开户日期':datas[7].findAll("td")[1].text,
+                '开户日期':datas[7].findAll("td")[1].text,
+                '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '贵阳市',
+                '城市编号': '520100'
 
             # '汇缴状态': datas[8].findAll("td")[1].text,
             # '月应缴额':datas[3].findAll("td")[3].text.replace('￥','').replace('元',''),

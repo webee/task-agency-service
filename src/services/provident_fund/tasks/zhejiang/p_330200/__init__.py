@@ -132,6 +132,9 @@ class Task(AbsFetchTask):
                     '公积金账号':resdata['accnum'],
                     '缴存基数':resdata['basenum'],
                     '开户日期':resdata['begdate'],
+                    '更新日期':time.strftime("%Y-%m-%d",time.localtime()),
+                    '城市名称':'宁波市',
+                    '城市编号':'330200'
                 }
 
                 # 公司信息

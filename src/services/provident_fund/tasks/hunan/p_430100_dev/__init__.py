@@ -47,7 +47,6 @@ class Task(AbsFetchTask):
         if t == 'vc':
             return self._new_vc()
 
-    # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert '身份证号' in params, '缺少身份证号'
@@ -119,6 +118,9 @@ class Task(AbsFetchTask):
                     '单位月缴额':basedatass[6].findAll("td")[1].text.strip().replace('元',''),
                     '个人月缴额':basedatass[7].findAll("td")[1].text.strip().replace('元',''),
                     '缴至年月':basedatass[10].findAll("td")[1].text.strip(),
+                    '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
+                    '城市名称': '长沙市',
+                    '城市编号': '430100'
                 }
 
                 self.result_data['companyList'] = {

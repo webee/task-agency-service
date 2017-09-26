@@ -118,31 +118,34 @@ class Task(AbsFetchTask):
                 self.result_meta['密码']=account_pass
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
-                data = soup.find('div', {'class': 'query-wrap'})
-                data = re.sub('\s', '', data.text)
+                datas = soup.findAll('div', {'class': 'cx'})[0]
+                data = datas.findAll('p')
 
                 self.result['data']['baseInfo'] = {
-                    '公积金账户': re.findall(r"公积金账户：(.+?)单位信息", data)[0],
-                    '开户日期': re.findall(r"开户日期：(.+?)缴存人姓名", data)[0],
-                    '姓名': re.findall(r"缴存人姓名：(.+?)缴存基数", data)[0],
+                    '姓名': data[3].text.split('：')[1],
                     '身份证号': self.result_meta['身份证号'],
-                    '缴存基数': re.findall(r"缴存基数：(.+?)月缴额", data)[0],
-                    '月缴额': re.findall(r"月缴额：(.+?)个人缴存比例", data)[0],
-                    '个人缴存比例': re.findall(r"个人缴存比例：(.+?)单位缴存比例", data)[0],
-                    '单位缴存比例': re.findall(r"单位缴存比例：(.+?)缴存余额", data)[0],
+                    '公积金账号': data[0].text.split('：')[1],
+                    '开户日期': data[2].text.split('：')[1],
+                    '缴存基数': data[4].text.split('：')[1],
+                    '月缴额': data[5].text.split('：')[1],
+                    '个人缴存比例': data[6].text.split('：')[1],
+                    '单位缴存比例': data[7].text.split('：')[1],
+                    '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
+                    '城市名称': '郑州市',
+                    '城市编号': '410100'
                 }
 
                 self.result_data['companyList'] = {
-                    "单位名称": re.findall(r"单位信息：(.+?)开户日期", data)[0],
+                    "单位名称": data[1].text.split('：')[1],
                     "单位登记号": "-",
                     "所属管理部编号": "-",
                     "所属管理部名称": "-",
-                    "当前余额": re.findall(r"缴存余额：(.+?)缴至月份", data)[0],
-                    "帐户状态": re.findall(r"缴存状态：(.+)", data)[0],
+                    "当前余额": data[8].text.split('：')[1],
+                    "帐户状态": data[10].text.split('：')[1],
                     "当年缴存金额": "-",
                     "当年提取金额": "-",
                     "上年结转余额": "-",
-                    "最后业务日期": re.findall(r"缴至月份：(.+?)缴存状态", data)[0],
+                    "最后业务日期": data[9].text.split('：')[1],
                     "转出金额": "-"
                 }
 
