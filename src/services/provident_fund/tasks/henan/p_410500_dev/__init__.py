@@ -6,6 +6,7 @@ from urllib import parse
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
+from services.commons import AbsFetchTask
 
 MAIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/main_menu.jsp'
 LOGIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/login_hidden.jsp'
@@ -14,30 +15,21 @@ GJJMX_URL='http://www.aygjj.com/gjjcx/zfbzgl/gjjmxcx/gjjmx_cx.jsp'
 GJJ_URL='http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/gjjmx_cxtwo.jsp'
 
 
-class Task(AbsTaskUnitSessionTask):
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
+class Task(AbsFetchTask):
+    task_info = dict(
+        city_name="安阳",
+        help="""<li></li>
+                """
+    )
 
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
+    def _get_common_headers(self):
+        return {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
+        }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_name, self._unit_login)
 
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -47,11 +39,35 @@ class Task(AbsTaskUnitSessionTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'id_num' in params, '缺少身份证号'
-        assert 'account_num' in params, '缺少职工姓名'
-        assert 'password' in params,'缺少密码'
+        assert '身份证号' in params, '缺少身份证号'
+        assert '职工姓名' in params, '缺少职工姓名'
+        assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if '职工姓名' not in params:
+                params['职工姓名'] = meta.get('职工姓名')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '身份证号' and '身份证号' in meta:
+                continue
+            elif pr['key'] == '职工姓名' and '职工姓名' in meta:
+                continue
+            elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            res.append(pr)
+        return res
 
     def _unit_login(self, params=None):
         err_msg = None
@@ -60,9 +76,9 @@ class Task(AbsTaskUnitSessionTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params['id_num']
-                account_num = params['account_num']
-                password=params['password']
+                id_num = params['身份证号']
+                account_num = params['职工姓名']
+                password=params['密码']
                 vc = params['vc']
                 data = dict(
                     cxydmc='当前年度',
@@ -97,12 +113,11 @@ class Task(AbsTaskUnitSessionTask):
                     soup2 = BeautifulSoup(resp2.content, 'html.parser')
                     self.html = str(resp2.content, 'gbk')
 
-                self.result['key'] = '%s.%s' % ('real', id_num)
-                self.result['meta'] = {
-                    'task': 'real',
-                    'id_num': id_num,
-                    'password':password,
-                    'account_num': account_num
+                self.result_key =id_num
+                self.result_meta = {
+                    '身份证号': id_num,
+                    '密码':password,
+                    '职工姓名': account_num
                 }
                 return
             except Exception as e:
@@ -110,15 +125,15 @@ class Task(AbsTaskUnitSessionTask):
 
         vc = self._new_vc()
         raise AskForParamsError([
-            dict(key='id_num', name='身份证号', cls='input'),
-            dict(key='account_num', name='职工姓名', cls='input'),
-            dict(key='password',name='密码',cls='input'),
+            dict(key='身份证号', name='身份证号', cls='input'),
+            dict(key='职工姓名', name='职工姓名', cls='input'),
+            dict(key='密码',name='密码',cls='input'),
             dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
         try:
-            data = self.result['data']
+            data = self.result_data
             # 基本信息
             resp = self.html
             soup = BeautifulSoup(resp, 'html.parser')
@@ -180,8 +195,7 @@ class Task(AbsTaskUnitSessionTask):
                             monthkeys = td.getText()
                         if i == 6:
                             data['detail']['data'].setdefault(monthkeys,dic)
-                #name = soup.select('#name')[0]['value']
-                #data['name'] = name
+
 
             return
         except PermissionError as e:
@@ -198,3 +212,4 @@ if __name__ == '__main__':
 
     client = TaskTestClient(Task())
     client.run()
+# 	410523198410033046  陈静
