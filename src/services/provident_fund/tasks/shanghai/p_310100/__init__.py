@@ -47,7 +47,7 @@ class Task(AbsFetchTask):
     def _get_common_headers(self):
         return {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'
-            }
+        }
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)

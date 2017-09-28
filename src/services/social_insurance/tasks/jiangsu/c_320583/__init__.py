@@ -1,12 +1,10 @@
-import time
-import json
 import datetime
 import requests
 from bs4 import BeautifulSoup
-from services.service import SessionData, AbsTaskUnitSessionTask
-from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
-from services.errors import InvalidParamsError, TaskNotImplementedError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError
+from services.errors import InvalidParamsError
 from services.commons import AbsFetchTask
+
 MAIN_URL = 'http://sbzx.ks.gov.cn:81/webPages/grjb.aspx'
 LOGIN_URL = 'http://sbzx.ks.gov.cn:81/webPages/grxxcxdl.aspx'
 USER_INFO_URL = "http://sbzx.ks.gov.cn:81/webPages/grjb.aspx"
@@ -16,12 +14,12 @@ DETAILED_LIST_URL = "http://sbzx.ks.gov.cn:81/webPages/"
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="昆山",
-        help="""<li></li>
-            """
+        help="""<li></li>"""
     )
-    def _get_common_headers(self):
-            return {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'}
 
+    def _get_common_headers(self):
+        return {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'}
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
@@ -35,15 +33,16 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证号' in params, '缺少身份证号'
+        assert '身份证编号' in params, '缺少身份证编号'
         assert '社保编号' in params, '缺少社保编号'
-        #assert 'vc' in params, '缺少验证码'
+        # assert 'vc' in params, '缺少验证码'
         # other check
+
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证号' not in params:
-                params['身份证号'] = meta.get('身份证号')
+            if '身份证编号' not in params:
+                params['身份证编号'] = meta.get('身份证编号')
             if '社保编号' not in params:
                 params['社保编号'] = meta.get('社保编号')
         return params
@@ -53,13 +52,12 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证号' and '身份证号' in meta:
+            if pr['key'] == '身份证编号' and '身份证编号' in meta:
                 continue
             elif pr['key'] == '社保编号' and '社保编号' in meta:
                 continue
             res.append(pr)
         return res
-
 
     def _unit_login(self, params=None):
         err_msg = None
@@ -68,7 +66,7 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
                 txtSocial = params['社保编号']
-                txtIdCard = params['身份证号']
+                txtIdCard = params['身份证编号']
                 self.s = requests.Session()
 
                 data = {
@@ -87,17 +85,17 @@ class Task(AbsFetchTask):
                 self.result_meta['身份证编号'] = txtIdCard
                 self.result_meta['社保编号'] = txtSocial
 
-                #self.result_identity['task_name'] = '昆山'
-                #self.result_identity['target_id'] = txtIdCard
+                # self.result_identity['task_name'] = '昆山'
+                # self.result_identity['target_id'] = txtIdCard
 
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
-            dict(key='社保编号', name='社保编号', cls='input')
-            #dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
+            dict(key='身份证编号', name='身份证编号', cls='input', value=params.get('身份证编号', '')),
+            dict(key='社保编号', name='社保编号', cls='input', value=params.get('社保编号', ''))
+            # dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
 
     # 获取用户基本信息
@@ -185,7 +183,8 @@ class Task(AbsFetchTask):
 
         try:
             # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED(DETAILED_LIST_URL + "yljf.aspx?pageIndex=1&id=" + data["baseInfo"]["社保编号"])
+            soup = self._unit_fetch_user_DETAILED(
+                DETAILED_LIST_URL + "yljf.aspx?pageIndex=1&id=" + data["baseInfo"]["社保编号"])
             # 获取指定div下table
             result = soup.find("div", {"id": "ctl00_ContentPlaceHolder1_showInfo"}).findAll("table")[0]
             # 拿table中的tr进行循环
