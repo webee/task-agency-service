@@ -7,6 +7,7 @@ from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
+
 LOGIN_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/indexProcess?frameControlSubmitFunction=checkLogin'
 VC_URL = 'http://szsbzx.jsszhrss.gov.cn:9900/web/website/rand.action?r='
 USER_INFO_URL = "http://szsbzx.jsszhrss.gov.cn:9900/web/website/personQuery/personQueryAction.action"
@@ -19,15 +20,15 @@ class Task(AbsFetchTask):
         help="""<li>个人编号长度为10位，参保地为市本级、姑苏区（原沧浪区、平江区、金阊区）、高新区，不足部分前面“00”补足；参保地为吴中区，不足部分前面“02”补足；参保地为相城区，不足部分前面“03”补足。</li>
             <li>如有问题请拨打12333。</li>"""
     )
-    def _get_common_headers(self):
-        return { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'}
 
+    def _get_common_headers(self):
+        return {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'}
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
-
 
     def _query(self, params: dict):
         t = params.get('t')
@@ -37,15 +38,16 @@ class Task(AbsFetchTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证号' in params, '缺少身份证号'
+        assert '身份证编号' in params, '缺少身份证编号'
         assert '个人编号' in params, '缺少个人编号'
         assert 'vc' in params, '缺少验证码'
         # other check
+
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证号' not in params:
-                params['身份证号'] = meta.get('身份证号')
+            if '身份证编号' not in params:
+                params['身份证编号'] = meta.get('身份证编号')
             if '个人编号' not in params:
                 params['个人编号'] = meta.get('个人编号')
         return params
@@ -55,7 +57,7 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证号' and '身份证号' in meta:
+            if pr['key'] == '身份证编号' and '身份证编号' in meta:
                 continue
             elif pr['key'] == '个人编号' and '个人编号' in meta:
                 continue
@@ -68,7 +70,7 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params['身份证号']
+                id_num = params['身份证编号']
                 account_num = params['个人编号']
                 vc = params['vc']
 
@@ -87,8 +89,8 @@ class Task(AbsFetchTask):
 
                 self.result_key = id_num
                 # 保存到meta
-                self.result_meta ['身份证编号']= id_num
-                self.result_meta['个人编号']=  account_num
+                self.result_meta['身份证编号'] = id_num
+                self.result_meta['个人编号'] = account_num
 
                 self.result_identity['task_name'] = '苏州'
                 self.result_identity['target_id'] = id_num
@@ -98,8 +100,8 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
-            dict(key='个人编号', name='个人编号', cls='input'),
+            dict(key='身份证编号', name='身份证编号', cls='input', value=params.get('身份证编号', '')),
+            dict(key='个人编号', name='个人编号', cls='input', value=params.get('个人编号', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
 
@@ -135,11 +137,11 @@ class Task(AbsFetchTask):
 
             # 医疗（正常数据与其他补缴信息）
             data["medical_care"] = {
-                 "data": {}
+                "data": {}
             }
             # 工伤（正常数据与其他补缴信息）
             data["injuries"] = {
-                 "data": {}
+                "data": {}
             }
             # 生育（正常数据与其他补缴信息）
             data["maternity"] = {
@@ -147,12 +149,12 @@ class Task(AbsFetchTask):
             }
             # 失业（正常数据与其他补缴信息）
             data["unemployment"] = {
-                 "data": {}
+                "data": {}
             }
 
             # 设置identity
             self.result_identity['target_name'] = name
-            self.result_identity['status']=''
+            self.result_identity['status'] = ''
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -339,7 +341,7 @@ class Task(AbsFetchTask):
                         # 定义数据结构
                         obj = {
                             "year": year,
-                            "data":{
+                            "data": {
                                 "缴费时间": month,
                                 "缴费类型": tds[7].text.strip(),
                                 "缴费基数": tds[2].text.strip(),
