@@ -31,7 +31,7 @@ class Task(AbsFetchTask):
     )
 
     def _prepare(self,data=None):
-        super()._prepare(data)
+        super()._prepare()
 
         state: dict = self.state
         self.ua = UserAgent(test_site, state.get('session'))
@@ -118,9 +118,10 @@ class Task(AbsFetchTask):
                 account_pass = params.get("密码")
                 CaptchaId = self.state['CaptchaIds']
                 vc = params.get("vc")
-                #self.ua.login(id_num, account_pass, self.ua.get_vc().replace('*',''))
+                # self.ua.get_vc().replace('*','')
+                # self.ua.login(id_num, account_pass, vc)
 
-                #self.result_data['x']=self.ua.x()
+                # self.result_data['x']=self.ua.x()
 
                 data = {
                     'username': id_num,

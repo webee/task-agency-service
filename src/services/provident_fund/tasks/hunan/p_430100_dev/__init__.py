@@ -18,7 +18,7 @@ Detail_URL=r"http://www.xzgjj.com:7001/wscx/zfbzgl/gjjmxcx/gjjmx_cx.jsp?"
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="长沙",
+        city_name="湖南省",
         help="""
             <li></li>
             """
@@ -104,22 +104,24 @@ class Task(AbsFetchTask):
                 }
 
                 resp = self.s.post("http://www.xzgjj.com:7001/wscx/zfbzgl/zfbzsq/login_hidden.jsp?cxyd=%B5%B1%C7%B0%C4%EA%B6%C8", data=data)
-                rsdata_url=BeautifulSoup(resp.text,'html.parser').findAll('script')[1].text.split('?')[1]
-                rsdata_url2=rsdata_url.replace(';','').replace('\r','').replace('\n','').replace('"','')
-                ss=self.s.get(MAIN_URL+rsdata_url2)
+                if(resp.text.find('alert')>0):
+                    raise InvalidParamsError("登录失败，请核对用户名或者密码！")
+
+                rsdata_url=resp.text.split('?')[1].split(';')[0].replace('"','')
+                ss=self.s.get(MAIN_URL+rsdata_url)
                 basedatass=BeautifulSoup(ss.text,'html.parser').find('table',{'class':'1'}).findAll('tr')
 
                 self.result_data['baseInfo'] = {
-                    '职工账号':basedatass[1].findAll("td")[3].text.strip(),
                     '姓名':basedatass[0].findAll("td")[1].text.strip(),
                     '身份证号':basedatass[1].findAll("td")[1].text.strip(),
+                    '职工账号': basedatass[1].findAll("td")[3].text.strip(),
                     '开户日期':basedatass[3].findAll("td")[1].text.strip(),
                     '月缴基数':basedatass[4].findAll("td")[1].text.strip().replace('元','').replace(',',''),
                     '单位月缴额':basedatass[6].findAll("td")[1].text.strip().replace('元',''),
                     '个人月缴额':basedatass[7].findAll("td")[1].text.strip().replace('元',''),
                     '缴至年月':basedatass[10].findAll("td")[1].text.strip(),
                     '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
-                    '城市名称': '长沙市',
+                    '城市名称': '湖南省',
                     '城市编号': '430100'
                 }
 
@@ -137,9 +139,48 @@ class Task(AbsFetchTask):
                     "转出金额": "-"
                 }
 
+
+                # 公积金明细
+                self.result_data['detail'] = {"data": {}}
+                baseDetail = self.result_data["detail"]["data"]
+                model = {}
+                resTr=[]
+                zgzh=rsdata_url.split('&')[0].split('=')[1]
+                sfzh=rsdata_url.split('&')[1].split('=')[1]
+                dwbm=rsdata_url.split('&')[3].split('=')[1]
+                paramurl="zgzh="+zgzh+"&sfzh="+sfzh+"&dwbm="+dwbm+""
                 times=time.strftime("%Y",time.localtime())
-                paramurl="&totalpages=1&yss=1&cxydone=1990-"+times+"&cxydtwo=1990-"+times+""
-                detailURL=self.s.get(Detail_URL+rsdata_url2+paramurl)
+
+                # 往年历史查询
+                for tm in range(0,5):
+                    detailURL = self.s.get(Detail_URL + paramurl + "&cxydtwo=" + str(int(times) - (tm+1)) + "-" + str(int(times)-tm) + "")
+                    trs = BeautifulSoup(detailURL.text, 'html.parser').find('table', {'class': '1'}).findAll("tr")
+                    resTr.append(trs)
+
+                # 当前年度信息查询
+                detailURLs = self.s.get(Detail_URL + paramurl + "&cxydtwo=%B5%B1%C7%B0%C4%EA%B6%C8")
+                trs2 = BeautifulSoup(detailURLs.text, 'html.parser').find('table', {'class': '1'}).findAll("tr")
+                resTr.append(trs2)
+
+                for ab in range(len(resTr)):
+                    for tr in range(len(resTr[ab])):
+                        if (resTr[ab][tr].findAll("td")[0].text!="日期" and resTr[ab][tr].findAll("td")[0].text!=''):
+                            tds = resTr[ab][tr].findAll("td")
+                            years = tds[0].text[0:4]
+                            months = tds[0].text[5:7]
+                            model = {
+                                '时间': tds[0].text,
+                                '类型': tds[5].text,
+                                '汇缴年月': tds[0].text,
+                                '收入': tds[2].text.replace(',', ''),
+                                '支出': tds[1].text.replace(',', ''),
+                                '余额': tds[3].text.replace(',', ''),
+                                '单位名称': basedatass[2].findAll("td")[1].text.strip()
+                            }
+                            baseDetail.setdefault(years, {})
+                            baseDetail[years].setdefault(months, [])
+                            baseDetail[years][months].append(model)
+
 
                 self.result_key = id_num
                 self.result_meta['身份证号'] =id_num
@@ -156,28 +197,6 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-
-            #公积金明细
-            # self.result_data['detail']={"data":{}}
-            # baseDetail = self.result_data["detail"]["data"]
-            # model={}
-            #
-            # for tr in range(len(trs)):
-            #     tds=trs[tr].findAll("td")
-            #     years=tds[0].text[0:4]
-            #     months=tds[0].text[5:7]
-            #     model = {
-            #         '时间':tds[0].text,
-            #         '类型':tds[1].text,
-            #         '汇缴年月': tds[2].text,
-            #         '收入':tds[3].text.replace(',',''),
-            #         '支出':tds[4].text.replace(',',''),
-            #         '余额': tds[5].text.replace(',',''),
-            #         '单位名称':company[1].text.split('：')[1]
-            #     }
-            #     baseDetail.setdefault(years, {})
-            #     baseDetail[years].setdefault(months, [])
-            #     baseDetail[years][months].append(model)
 
             return
         except InvalidConditionError as e:
