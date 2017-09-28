@@ -220,8 +220,13 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             s=json.loads(self.s.get(User_BaseInfo).text)   # 个人信息导航
+            s2=s[8]['url']
+            res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+s2)   # 个人基础信息
 
-            res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+s[8]['url'])   # 个人基础信息
+            if(len(BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'}))<=0):
+                raise TaskNotAvailableError("网络异常，请重新登录")
+                return
+
             redata=BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'})[0]   # 姓名等信息
             redata2 = BeautifulSoup(res.text,'html.parser').findAll('table', {'class': 'comitTable'})[1]   #民族等信息
 
@@ -435,7 +440,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '440104198710011919', '密码': 'jy794613'}
+    meta = {'账号': '360722199010034554', '密码': 'LI3003287730'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
@@ -443,6 +448,10 @@ if __name__ == '__main__':
 
     # 441225199102281010  wtz969462
 
-    # 441481198701204831', '密码': 'taifaikcoi168'
+    # 441481198701204831 '密码': taifaikcoi168
 
-    # '账号': '440104198710011919', '密码': 'jy794613'
+    # 440104198710011919 '密码': jy794613
+
+    # 522526197612020018   xiao687400
+
+    # 360722199010034554   LI3003287730

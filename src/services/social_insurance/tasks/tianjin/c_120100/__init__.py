@@ -9,11 +9,16 @@ import time
 from bs4 import BeautifulSoup
 import json
 
+from services.test.mock_site import TestSite
+from services.test.mock import UserAgent, LogRequestFilter
+
 LOGIN_PAGE_URL = 'http://public.tj.hrss.gov.cn/uaa/personlogin'
 MAIN_URL = 'http://public.tj.hrss.gov.cn/ehrss/si/person/ui/?code=gD3uyf'
 LOGIN_URL = "http://public.tj.hrss.gov.cn/uaa/api/person/idandmobile/login"
 VC_URL = "http://public.tj.hrss.gov.cn/uaa/captcha/img/"
 Detail_URL = "http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/payment/emp/"
+
+test_site = TestSite()
 
 
 class Task(AbsFetchTask):
@@ -24,6 +29,17 @@ class Task(AbsFetchTask):
         <li>如忘记密码，可在天津社保网上服务平台中的”忘记密码”中重置密码</li>
         """
     )
+
+    def _prepare(self,data=None):
+        super()._prepare(data)
+
+        state: dict = self.state
+        self.ua = UserAgent(test_site, state.get('session'))
+        self.ua.register_request_filter(LogRequestFilter())
+
+    def _update_session_data(self):
+        super()._update_session_data()
+        self.state['session'] = self.ua.session
 
     def _get_common_headers(self):
         return {
@@ -45,7 +61,7 @@ class Task(AbsFetchTask):
         vc_url = VC_URL + soup.text[7:].replace('"}', '')
         self.state['CaptchaIds'] = soup.text[7:].replace('"}', '')
         resp = self.s.get(vc_url)
-        return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
+        return dict(cls='data:image',content=resp.content,content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -102,6 +118,9 @@ class Task(AbsFetchTask):
                 account_pass = params.get("密码")
                 CaptchaId = self.state['CaptchaIds']
                 vc = params.get("vc")
+                #self.ua.login(id_num, account_pass, self.ua.get_vc().replace('*',''))
+
+                #self.result_data['x']=self.ua.x()
 
                 data = {
                     'username': id_num,

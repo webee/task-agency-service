@@ -51,7 +51,7 @@ class Task(AbsTaskUnitSessionTask):
                 username = params['username']
                 password = params['password']
                 vc = params['vc']
-                self.ua.login(username, password, vc)
+                self.ua.login(username, password,vc)
 
                 self.result['key'] = username
                 self.result['meta'] = {
