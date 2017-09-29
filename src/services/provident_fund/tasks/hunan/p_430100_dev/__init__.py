@@ -152,7 +152,7 @@ class Task(AbsFetchTask):
                 times=time.strftime("%Y",time.localtime())
 
                 # 往年历史查询
-                for tm in range(0,5):
+                for tm in range(0,10):
                     detailURL = self.s.get(Detail_URL + paramurl + "&cxydtwo=" + str(int(times) - (tm+1)) + "-" + str(int(times)-tm) + "")
                     trs = BeautifulSoup(detailURL.text, 'html.parser').find('table', {'class': '1'}).findAll("tr")
                     resTr.append(trs)
