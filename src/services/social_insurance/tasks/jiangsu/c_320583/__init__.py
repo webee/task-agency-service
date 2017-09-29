@@ -96,6 +96,8 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
+            except Exception as e:
+                err_msg = str(e)
 
         raise AskForParamsError([
             dict(key='身份证编号', name='身份证编号', cls='input', value=params.get('身份证编号', '')),
