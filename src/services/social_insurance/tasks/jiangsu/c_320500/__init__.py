@@ -323,7 +323,7 @@ class Task(AbsFetchTask):
                                 "缴费类型": tds[2].text.strip(),
                                 "缴费基数": tds[3].text.strip(),
                                 "公司缴费": tds[5].text.strip(),
-                                "个人缴费": tds[6].text.strip(),
+                                "个人缴费": int(tds[6].text.strip()) + int(tds[8].text.strip()),
                                 "缴费单位": tds[1].text.strip(),
                             }
                         }
@@ -546,8 +546,6 @@ class Task(AbsFetchTask):
 
             # 从数据集获取年份集合
             years = []
-            # 补缴费用明细数据集合
-            doubt = []
             # 正常缴费明细数据集合
             normal = []
 
