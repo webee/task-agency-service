@@ -38,7 +38,7 @@ class Task(AbsFetchTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证编号' in params, '缺少身份证编号'
+        assert '身份证号' in params, '缺少身份证号'
         assert '个人编号' in params, '缺少个人编号'
         assert 'vc' in params, '缺少验证码'
         # other check
@@ -46,8 +46,8 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证编号' not in params:
-                params['身份证编号'] = meta.get('身份证编号')
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
             if '个人编号' not in params:
                 params['个人编号'] = meta.get('个人编号')
         return params
@@ -70,7 +70,7 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params['身份证编号']
+                id_num = params['身份证号']
                 account_num = params['个人编号']
                 vc = params['vc']
 
@@ -89,7 +89,7 @@ class Task(AbsFetchTask):
 
                 self.result_key = id_num
                 # 保存到meta
-                self.result_meta['身份证编号'] = id_num
+                self.result_meta['身份证号'] = id_num
                 self.result_meta['个人编号'] = account_num
 
                 self.result_identity['task_name'] = '苏州'
@@ -102,7 +102,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证编号', name='身份证编号', cls='input', value=params.get('身份证编号', '')),
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
             dict(key='个人编号', name='个人编号', cls='input', value=params.get('个人编号', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
@@ -116,7 +116,7 @@ class Task(AbsFetchTask):
             div_table = soup.find('input', {'name': 'psMsgBar'}).attrs['value']
             name = div_table.split('td')[7][1:-2]
             personNum = self.result_meta["个人编号"]
-            sfzNum = self.result_meta["身份证编号"]
+            sfzNum = self.result_meta["身份证号"]
 
             data["baseInfo"] = {
                 "姓名": name,
