@@ -1,6 +1,6 @@
 # cff---成都--四川省省会  社保信息
 
-# 天津  社保信息
+
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError, \
