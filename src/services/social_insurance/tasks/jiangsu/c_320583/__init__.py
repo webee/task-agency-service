@@ -38,7 +38,7 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证编号' in params, '缺少身份证编号'
+        assert '身份证号' in params, '缺少身份证号'
         assert '社保编号' in params, '缺少社保编号'
         # assert 'vc' in params, '缺少验证码'
         # other check
@@ -46,8 +46,8 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证编号' not in params:
-                params['身份证编号'] = meta.get('身份证编号')
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
             if '社保编号' not in params:
                 params['社保编号'] = meta.get('社保编号')
         return params
@@ -57,7 +57,7 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证编号' and '身份证编号' in meta:
+            if pr['key'] == '身份证号' and '身份证号' in meta:
                 continue
             elif pr['key'] == '社保编号' and '社保编号' in meta:
                 continue
@@ -71,7 +71,7 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
                 txtSocial = params['社保编号']
-                txtIdCard = params['身份证编号']
+                txtIdCard = params['身份证号']
                 self.s = requests.Session()
 
                 data = {
@@ -87,7 +87,7 @@ class Task(AbsFetchTask):
 
                 self.result_key = txtIdCard
                 # 保存到meta
-                self.result_meta['身份证编号'] = txtIdCard
+                self.result_meta['身份证号'] = txtIdCard
                 self.result_meta['社保编号'] = txtSocial
 
                 # self.result_identity['task_name'] = '昆山'
@@ -100,7 +100,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证编号', name='身份证编号', cls='input', value=params.get('身份证编号', '')),
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
             dict(key='社保编号', name='社保编号', cls='input', value=params.get('社保编号', ''))
             # dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
@@ -159,7 +159,7 @@ class Task(AbsFetchTask):
             identity.update({
                 'task_name': '昆山',
                 'target_name': tds[2].text,
-                'target_id': self.result['meta']["身份证编号"],
+                'target_id': self.result['meta']["身份证号"],
                 'status': tds[12].text,
             })
 
