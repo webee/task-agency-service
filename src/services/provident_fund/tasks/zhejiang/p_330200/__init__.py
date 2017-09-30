@@ -21,7 +21,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="宁波",
         help="""
-            <li></li>
+            <li>个人公积金查询初始密码为“111111”，如果您是首次登录，需要将初始密码修改为新的密码以确保账户安全。</li>
+            <li>北仑、奉化、宁海、镇海、象山、慈溪、余姚、鄞州系统已接入宁波市本级系统，可在上述页面直接查询住房公积金个人帐户信息，查询规则与宁波市本级一致。</li>
             """
     )
 
@@ -108,15 +109,6 @@ class Task(AbsFetchTask):
                     'verify':vc,
                 }
 
-                data2 = {
-                    'tranCode': '142501',
-                    'task': '',
-                    'accnum': id_num,
-                    'certinum':'' ,
-                    'pwd': account_pass,
-                    'verify': vc,
-                }
-
                 resp=self.s.post("http://www.nbgjj.com/GJJQuery",data=data)
                 if 'msg' in resp.text:         # 判断是否登录成功
                     raise InvalidParamsError(json.loads(resp.text)['msg'])
@@ -150,6 +142,14 @@ class Task(AbsFetchTask):
                     "上年结转余额": "-",
                     "最后业务日期": resdata['lpaym'],
                     "转出金额": "-"
+                }
+
+                # identity 信息
+                self.result['identity']={
+                    "task_name": "宁波",
+                    "target_name": resdata['accname'],
+                    "target_id": id_num,
+                    "status": resdata['freeuse1']
                 }
 
                 # 缴费明细
@@ -194,28 +194,6 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-
-            #公积金明细
-            # self.result_data['detail']={"data":{}}
-            # baseDetail = self.result_data["detail"]["data"]
-            # model={}
-            #
-            # for tr in range(len(trs)):
-            #     tds=trs[tr].findAll("td")
-            #     years=tds[0].text[0:4]
-            #     months=tds[0].text[5:7]
-            #     model = {
-            #         '时间':tds[0].text,
-            #         '类型':tds[1].text,
-            #         '汇缴年月': tds[2].text,
-            #         '收入':tds[3].text.replace(',',''),
-            #         '支出':tds[4].text.replace(',',''),
-            #         '余额': tds[5].text.replace(',',''),
-            #         '单位名称':company[1].text.split('：')[1]
-            #     }
-            #     baseDetail.setdefault(years, {})
-            #     baseDetail[years].setdefault(months, [])
-            #     baseDetail[years][months].append(model)
 
             return
         except InvalidConditionError as e:
