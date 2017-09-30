@@ -313,8 +313,17 @@ class Task(AbsFetchTask):
                         if len(trs) - 3 == num:
                             self.medical_care_lately_start_data = tds[0].text
                         # 个人缴费累金额
-                        self.my_self_medical_care = self.my_self_medical_care + float(tds[6].text.strip())
+                        self.my_self_medical_care = self.my_self_medical_care + float(tds[9].text.strip())
 
+                        try:
+                            td6 = int(tds[6].text.strip())
+                        except:
+                            td6 = 0
+
+                        try:
+                            td8 = int(tds[8].text.strip())
+                        except:
+                            td8 = 0
                         # 定义数据结构
                         obj = {
                             "year": year,
@@ -323,7 +332,7 @@ class Task(AbsFetchTask):
                                 "缴费类型": tds[2].text.strip(),
                                 "缴费基数": tds[3].text.strip(),
                                 "公司缴费": tds[5].text.strip(),
-                                "个人缴费": tds[6].text.strip(),
+                                "个人缴费": td6 + td8,
                                 "缴费单位": tds[1].text.strip(),
                             }
                         }
@@ -546,8 +555,6 @@ class Task(AbsFetchTask):
 
             # 从数据集获取年份集合
             years = []
-            # 补缴费用明细数据集合
-            doubt = []
             # 正常缴费明细数据集合
             normal = []
 

@@ -96,6 +96,8 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
+            except Exception as e:
+                err_msg = str(e)
 
         raise AskForParamsError([
             dict(key='身份证编号', name='身份证编号', cls='input', value=params.get('身份证编号', '')),
@@ -119,7 +121,7 @@ class Task(AbsFetchTask):
                 "单位名称": tds[6].text,
                 "出生年月": tds[8].text,
                 "开始缴费时间": tds[10].text,
-                "人员状态": tds[12].text,
+                "当前账户状态": tds[12].text,
                 "身份证号": self.result['key'],
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                 "城市名称": '昆山',
@@ -158,7 +160,7 @@ class Task(AbsFetchTask):
                 'task_name': '昆山',
                 'target_name': tds[2].text,
                 'target_id': self.result['meta']["身份证编号"],
-                'status': "",
+                'status': tds[12].text,
             })
 
             return
@@ -281,7 +283,8 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["old_age"]["data"][str(year)] = {}
+                        if data["old_age"]["data"][str(year)] == {}:
+                            data["old_age"]["data"][str(year)] = {}
                         for month in tempDoubt:
                             try:
                                 data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -397,7 +400,8 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["medical_care"]["data"][str(year)] = {}
+                        if data["medical_care"]["data"][str(year)] == {}:
+                            data["medical_care"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -509,7 +513,8 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["injuries"]["data"][str(year)] = {}
+                        if data["injuries"]["data"][str(year)] == {}:
+                            data["injuries"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -620,7 +625,8 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["maternity"]["data"][str(year)] = {}
+                        if data["maternity"]["data"][str(year)] == {}:
+                            data["maternity"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -730,7 +736,8 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["unemployment"]["data"][str(year)] = {}
+                        if data["unemployment"]["data"][str(year)] == {}:
+                            data["unemployment"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
