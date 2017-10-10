@@ -120,7 +120,8 @@ class Task(AbsFetchTask):
                 resdata=json.loads(res.text)
                 self.result_data['baseInfo'] = {
                     '姓名':resdata['accname'],
-                    '身份证号':resdata['certinum'],
+                    '证件号':resdata['certinum'],
+                    '证件类型':'身份证',
                     '公积金账号':resdata['accnum'],
                     '缴存基数':resdata['basenum'],
                     '开户日期':resdata['begdate'],
