@@ -52,16 +52,14 @@ class Task(AbsFetchTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证号' in params, '缺少身份证号'
+        assert '账号' in params, '缺少账号'
         assert '密码' in params, '缺少密码'
         # other check
-        身份证号 = params['身份证号']
+        账号 = params['账号']
         密码 = params['密码']
 
-        if len(身份证号) == 0:
-            raise InvalidParamsError('身份证号为空，请输入身份证号')
-        elif len(身份证号) < 15:
-            raise InvalidParamsError('身份证号不正确，请重新输入')
+        if len(账号) == 0:
+            raise InvalidParamsError('账号为空，请输入账号')
 
         if len(密码) == 0:
             raise InvalidParamsError('密码为空，请输入密码！')
@@ -71,8 +69,8 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证号' not in params:
-                params['身份证号'] = meta.get('身份证号')
+            if '账号' not in params:
+                params['账号'] = meta.get('账号')
             if '密码' not in params:
                 params['密码'] = meta.get('密码')
         return params
@@ -82,7 +80,7 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证号' and '身份证号' in meta:
+            if pr['key'] == '账号' and '账号' in meta:
                 continue
             elif pr['key'] == '密码' and '密码' in meta:
                 continue
@@ -96,18 +94,30 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params.get("身份证号")
+                id_num = params.get("账号")
                 account_pass = params.get("密码")
                 vc=params.get("vc")
 
-                data={
-                    'tranCode':'142501',
-                    'task':'',
-                    'accnum':'',
-                    'certinum':id_num,
-                    'pwd':account_pass,
-                    'verify':vc,
-                }
+                if(len(id_num)==15 or len(id_num)==18):
+                    data = {
+                        'tranCode': '142501',
+                        'task': '',
+                        'accnum': '',
+                        'certinum': id_num,
+                        'pwd': account_pass,
+                        'verify': vc,
+                    }
+                    ltype="身份证号"
+                elif(len(id_num)<=12):
+                    data = {
+                        'tranCode': '142501',
+                        'task': '',
+                        'accnum': id_num,
+                        'certinum': '',
+                        'pwd': account_pass,
+                        'verify': vc,
+                    }
+                    ltype="公积金账号"
 
                 resp=self.s.post("http://www.nbgjj.com/GJJQuery",data=data)
                 if 'msg' in resp.text:         # 判断是否登录成功
@@ -180,7 +190,7 @@ class Task(AbsFetchTask):
 
 
                 self.result_key = id_num
-                self.result_meta['身份证号'] =id_num
+                self.result_meta[ltype] =id_num
                 self.result_meta['密码']=account_pass
 
                 return
@@ -188,7 +198,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
+            dict(key='账号', name='账号', cls='input'),
             dict(key='密码', name='密码', cls='input'),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
@@ -212,3 +222,5 @@ if __name__ == '__main__':
     client.run()
 
     # 330227198208247314  111111
+
+    # 0122831927 111111
