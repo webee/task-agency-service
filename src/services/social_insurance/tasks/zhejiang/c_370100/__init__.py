@@ -24,8 +24,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="济南",
         help="""
-        <li></li>
-        <li></li>
+        <li>如您未在社保网站查询过您的社保信息，请到济南社保网上服务平台完成“注册”并获取密码</li>
+        <li>如您还未获取社保卡，可向公司经办人索取，或者凭身份证到当地社保网点查询</li>
         """
     )
 
@@ -134,6 +134,106 @@ class Task(AbsFetchTask):
                     self.result_key = id_num
                     self.result_meta['身份证号'] = id_num
                     self.result_meta['密码'] = account_pass
+
+                    # 个人基本信息
+                    # res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
+                    # soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
+                    # self.result['data']['baseInfo'] = {
+                    #     '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
+                    #     '身份证号': soup[0].findAll("td")[3].find(type="text")["value"],
+                    #
+                    #     '性别': soup[1].findAll("td")[1].find(type="text")["value"],
+                    #     '出生日期': soup[1].findAll("td")[3].find(type="text")["value"],
+                    #
+                    #     '单位名称': soup[9].findAll("td")[1].find(type="text")["value"]
+                    #     # '民族':soup[2].findAll("td")[1].find(type="text")["value"],
+                    #     # '户口性质':soup[3].findAll("td")[3].find(type="text")["value"],
+                    # }
+                    #
+                    # searchYear = input("请输入需要查询的年份：")
+                    # if (searchYear == ""):
+                    #     searchYears = time.localtime()[0]
+                    # else:
+                    #     searchYears = searchYear
+                    #
+                    # # 养老缴费明细
+                    # sEI = self.s.get(
+                    #     "http://60.216.99.138/hsp/siAd.do?method=queryAgedPayHis&__usersession_uuid=" + uuid + "&year=" + str(
+                    #         searchYears) + "")
+                    # detailEI = BeautifulSoup(sEI.content, 'html.parser').find('table',
+                    #                                                           {'class': 'defaultTableClass'}).findAll(
+                    #     "tr")
+                    # for a in range(len(detailEI)):
+                    #     if ((a + 1) < len(detailEI)):
+                    #         td = detailEI[a + 1].findAll("td")
+                    #         self.result['detailEI'][td[3].find(type="text")["value"]] = {
+                    #             '缴费年月': td[0].find(type="text")["value"],
+                    #             '缴费基数': str(td[1].find(type="text")["value"]).replace(',', ''),
+                    #             '缴费金额': td[2].find(type="text")["value"],
+                    #         }
+                    #
+                    # # 医疗缴费明细
+                    # sHI = self.s.get(
+                    #     "http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid + "&year=" + str(
+                    #         searchYears) + "")
+                    # detailHI = BeautifulSoup(sHI.content, 'html.parser').find('table',
+                    #                                                           {'class': 'defaultTableClass'}).findAll(
+                    #     "tr")
+                    # for b in range(len(detailHI)):
+                    #     if ((b + 1) < len(detailHI)):
+                    #         td2 = detailHI[b + 1].findAll("td")
+                    #         self.result['detailHI'][td2[5].find(type="text")["value"]] = {
+                    #             '缴费年月': td2[0].find(type="text")["value"],
+                    #             '缴费基数': str(td2[1].find(type="text")["value"]).replace(',', ''),
+                    #             '缴费金额': td2[2].find(type="text")["value"],
+                    #         }
+                    #
+                    # # 失业缴费明细
+                    # sII = self.s.get(
+                    #     "http://60.216.99.138/hsp/siLost.do?method=queryLostPayHis&__usersession_uuid=" + uuid + "&year=" + str(
+                    #         searchYears) + "")
+                    # detailII = BeautifulSoup(sII.content, 'html.parser').find('table',
+                    #                                                           {'class': 'defaultTableClass'}).findAll(
+                    #     "tr")
+                    # for c in range(len(detailII)):
+                    #     if ((c + 1) < len(detailII)):
+                    #         td3 = detailII[c + 1].findAll("td")
+                    #         self.result['detailII'][td3[3].find(type="text")["value"]] = {
+                    #             '缴费年月': td3[0].find(type="text")["value"],
+                    #             '缴费基数': str(td3[1].find(type="text")["value"]).replace(',', ''),
+                    #             '缴费金额': td3[2].find(type="text")["value"],
+                    #         }
+                    #
+                    # # 工伤缴费明细
+                    # sCI = self.s.get(
+                    #     "http://60.216.99.138/hsp/siHarm.do?method=queryHarmPayHis&__usersession_uuid=" + uuid + "&year=" + str(
+                    #         searchYears) + "")
+                    # detailCI = BeautifulSoup(sCI.content, 'html.parser').find('table',
+                    #                                                           {'class': 'defaultTableClass'}).findAll(
+                    #     "tr")
+                    # for d in range(len(detailCI)):
+                    #     if ((d + 1) < len(detailCI)):
+                    #         td4 = detailCI[d + 1].findAll("td")
+                    #         self.result['detailCI'][td4[1].find(type="text")["value"]] = {
+                    #             '缴费年月': td4[0].find(type="text")["value"],
+                    #             '缴费状态': str(td4[2].find(type="text")["value"]).replace(',', ''),
+                    #         }
+                    #
+                    # # 生育缴费明细
+                    # sBI = self.s.get(
+                    #     "http://60.216.99.138/hsp/siBirth.do?method=queryBirthPayHis&__usersession_uuid=" + uuid + "&year=" + str(
+                    #         searchYears) + "")
+                    # detailBI = BeautifulSoup(sBI.content, 'html.parser').find('table',
+                    #                                                           {'class': 'defaultTableClass'}).findAll(
+                    #     "tr")
+                    # for f in range(len(detailBI)):
+                    #     if ((f + 1) < len(detailBI)):
+                    #         td5 = detailBI[f + 1].findAll("td")
+                    #         self.result['detailBI'][td5[1].find(type="text")["value"]] = {
+                    #             '缴费年月': td5[0].find(type="text")["value"],
+                    #             '缴费状态': str(td5[2].find(type="text")["value"]).replace(',', ''),
+                    #         }
+
                 else:
                     raise InvalidParamsError(resp.text)
                     return
