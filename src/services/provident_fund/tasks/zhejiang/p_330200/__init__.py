@@ -93,6 +93,7 @@ class Task(AbsFetchTask):
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
+                self.result_data["companyList"] = []
                 self._check_login_params(params)
                 id_num = params.get("账号")
                 account_pass = params.get("密码")
@@ -141,7 +142,7 @@ class Task(AbsFetchTask):
                 }
 
                 # 公司信息
-                self.result_data['companyList'] = {
+                self.result_data['companyList'].append({
                     "单位名称": resdata['unitaccname'],
                     "单位登记号": "",
                     "所属管理部编号": "",
@@ -153,7 +154,7 @@ class Task(AbsFetchTask):
                     "上年结转余额": "",
                     "最后业务日期": resdata['lpaym'],
                     "转出金额": ""
-                }
+                })
 
                 # identity 信息
                 self.result['identity']={
@@ -198,8 +199,8 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input'),
-            dict(key='密码', name='密码', cls='input'),
+            dict(key='账号', name='账号', cls='input', value=params.get('账号', '')),
+            dict(key='密码', name='密码', cls='input', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
