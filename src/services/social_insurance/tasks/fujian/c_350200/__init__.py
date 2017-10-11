@@ -180,6 +180,8 @@ class Task(AbsFetchTask):
                     '公司缴费': float(re.sub('\s', '', dateE[28].text)),
                     '个人缴费': float(re.sub('\s', '', dateE[32].text)),
                     '缴费单位': re.sub('\s', '', dateE[4].text),
+                    '单位划入帐户': float(re.sub('\s', '', dateE[38].text)),
+                    '个人划入帐户': float(re.sub('\s', '', dateE[40].text))
                 }
 
                 if ("已缴费" in re.sub('\s', '', dateE[0].text)):
@@ -211,6 +213,8 @@ class Task(AbsFetchTask):
                     '公司缴费': float(re.sub('\s', '', dateH[28].text)),
                     '个人缴费': float(re.sub('\s', '', dateH[32].text)),
                     '缴费单位': re.sub('\s', '', dateH[4].text),
+                    '单位划入帐户': float(re.sub('\s', '', dateH[38].text)),
+                    '个人划入帐户': float(re.sub('\s', '', dateH[40].text))
                 }
 
                 if ("已缴费" in re.sub('\s', '', dateH[0].text)):
@@ -241,6 +245,8 @@ class Task(AbsFetchTask):
                     '公司缴费': float(re.sub('\s', '', dateI[28].text)),
                     '个人缴费': float(re.sub('\s', '', dateI[32].text)),
                     '缴费单位': re.sub('\s', '', dateI[4].text),
+                    '单位划入帐户': float(re.sub('\s', '', dateI[38].text)),
+                    '个人划入帐户': float(re.sub('\s', '', dateI[40].text))
                 }
 
                 basedataI[yearI][monthI].append(modelI)
@@ -269,6 +275,8 @@ class Task(AbsFetchTask):
                     '公司缴费': float(re.sub('\s', '', dateC[28].text)),
                     '个人缴费': "-",
                     '缴费单位': re.sub('\s', '', dateC[4].text),
+                    '单位划入帐户': float(re.sub('\s', '', dateC[38].text)),
+                    '个人划入帐户': float(re.sub('\s', '', dateC[40].text))
                 }
 
                 basedataC[yearC][monthC].append(modelC)
@@ -297,10 +305,21 @@ class Task(AbsFetchTask):
                     '公司缴费': float(re.sub('\s', '', dateB[28].text)),
                     '个人缴费': "-",
                     '缴费单位': re.sub('\s', '', dateB[4].text),
+                    '单位划入帐户': float(re.sub('\s', '', dateB[38].text)),
+                    '个人划入帐户': float(re.sub('\s', '', dateB[40].text))
                 }
 
                 basedataB[yearB][monthB].append(modelB)
 
+
+            # 五险状态
+            social_type={
+                '养老':re.sub('\s','',sEI[len(sEI)-1].findAll('td')[2].text),
+                '医疗':re.sub('\s','',sEI[len(sHI)-1].findAll('td')[2].text),
+                '失业':re.sub('\s','',sEI[len(sII)-1].findAll('td')[2].text),
+                '工伤':re.sub('\s','',sEI[len(sCI)-1].findAll('td')[2].text),
+                '生育':re.sub('\s','',sEI[len(sBI)-1].findAll('td')[2].text)
+            }
 
             #  个人基本信息
             # 缴费时长
@@ -317,6 +336,7 @@ class Task(AbsFetchTask):
                 '开始缴费时间': re.sub('\s','',sEI[0].findAll("td")[3].text),
                 '个人养老累计缴费': peroldTotal,
                 '个人医疗累计缴费': permedicalTotal,
+                '五险状态': social_type,
                 '状态': self._convert_type(data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip()),
                 '工作状态': data[8].findAll('td')[1].text,
                 '社会保障卡卡号': data[2].findAll('td')[1].text,
@@ -340,6 +360,6 @@ if __name__ == '__main__':
     client = TaskTestClient(Task(SessionData()))
     client.run()
 
-    # 350524196209146816  123789
+    #  350524196209146816  123789
 
 
