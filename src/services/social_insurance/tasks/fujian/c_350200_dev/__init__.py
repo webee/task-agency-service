@@ -14,11 +14,10 @@ import ssl
 import urllib3
 import re
 
-
 MAIN_URL = r'https://app.xmhrss.gov.cn/UCenter/index_grjbxx.xhtml'
 LOGIN_URL = r"https://app.xmhrss.gov.cn/login.xhtml"
 VC_URL = r"https://app.xmhrss.gov.cn/vcode.xhtml"
-Detail_URL=r"https://app.xmhrss.gov.cn/UCenter/sbjfxxcx.xhtml"
+Detail_URL = r"https://app.xmhrss.gov.cn/UCenter/sbjfxxcx.xhtml"
 
 
 class Task(AbsFetchTask):
@@ -34,14 +33,14 @@ class Task(AbsFetchTask):
     def _get_common_headers(self):
         return {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
-            'Accept-Encoding':'gzip, deflate, sdch',
+            'Accept-Encoding': 'gzip, deflate, sdch',
             'Host': 'app.xmhrss.gov.cn',
         }
 
     def _prepare(self, data=None):
         super()._prepare()
         requests.packages.urllib3.disable_warnings()
-        self.result_data['baseInfo']={}
+        self.result_data['baseInfo'] = {}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -51,7 +50,7 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
-        resp = self.s.get(VC_URL,verify=False)
+        resp = self.s.get(VC_URL, verify=False)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
@@ -115,11 +114,11 @@ class Task(AbsFetchTask):
                     'date': str(time.time() * 1000)[0:13]
                 }
                 resp = self.s.post("https://app.xmhrss.gov.cn/login_dowith.xhtml", data=data)
-                res=json.loads(resp.text)
+                res = json.loads(resp.text)
 
-                if(res['result']==False):
+                if res['result'] == False:
                     raise InvalidParamsError(res['msg'])
-                elif (res['result']==True):
+                elif res['result'] == True:
 
                     # 保存到meta
                     self.result_key = id_num
@@ -136,12 +135,12 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
-    def _convert_type(self,num):
-        resinfo=""
-        if(num=="有效"):
-            resinfo="正常"
+    def _convert_type(self, num):
+        resinfo = ""
+        if (num == "有效"):
+            resinfo = "正常"
         else:
-            resinfo="异常"
+            resinfo = "异常"
         return resinfo
 
     def _unit_fetch(self):
@@ -157,12 +156,12 @@ class Task(AbsFetchTask):
             endTime = time.strftime("%Y%m", time.localtime())  # 查询结束时间
 
             # 社保缴费明细-----养老
-            self.result['data']["old_age"] = { "data": {}}
+            self.result['data']["old_age"] = {"data": {}}
             basedataE = self.result['data']["old_age"]["data"]
             modelE = {}
-            peroldTotal=0.0
-            detailEI = self.s.get(Detail_URL + "?xzdm00=2&zmlx00=&qsnyue="+startTime+"&jznyue="+endTime+"")
-            sEI = BeautifulSoup(detailEI.content,'html.parser').find('table',{'class':'tab5'}).findAll("tr")
+            peroldTotal = 0.0
+            detailEI = self.s.get(Detail_URL + "?xzdm00=2&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
+            sEI = BeautifulSoup(detailEI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
 
             for b in range(len(sEI)):
                 td2 = sEI[b].findAll('td')
@@ -188,11 +187,10 @@ class Task(AbsFetchTask):
                     peroldTotal += float(re.sub('\s', '', dateE[32].text))
                 basedataE[years][months].append(modelE)
 
-
             self.result['data']["medical_care"] = {"data": {}}
             basedataH = self.result['data']["medical_care"]["data"]
             modelH = {}
-            permedicalTotal=0.0
+            permedicalTotal = 0.0
             # 社保明细-----医疗
             detailHI = self.s.get(Detail_URL + "?xzdm00=1&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sHI = BeautifulSoup(detailHI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
@@ -220,7 +218,6 @@ class Task(AbsFetchTask):
                 if ("已缴费" in re.sub('\s', '', dateH[0].text)):
                     permedicalTotal += float(re.sub('\s', '', dateH[32].text))
                 basedataH[yearH][monthH].append(modelH)
-
 
             self.result['data']["unemployment"] = {"data": {}}
             basedataI = self.result['data']["unemployment"]["data"]
@@ -251,7 +248,6 @@ class Task(AbsFetchTask):
 
                 basedataI[yearI][monthI].append(modelI)
 
-
             self.result['data']["injuries"] = {"data": {}}
             basedataC = self.result['data']["injuries"]["data"]
             modelC = {}
@@ -280,7 +276,6 @@ class Task(AbsFetchTask):
                 }
 
                 basedataC[yearC][monthC].append(modelC)
-
 
             self.result['data']["maternity"] = {"data": {}}
             basedataB = self.result['data']["maternity"]["data"]
@@ -311,19 +306,18 @@ class Task(AbsFetchTask):
 
                 basedataB[yearB][monthB].append(modelB)
 
-
             # 五险状态
-            social_type={
-                '养老':re.sub('\s','',sEI[len(sEI)-1].findAll('td')[2].text),
-                '医疗':re.sub('\s','',sEI[len(sHI)-1].findAll('td')[2].text),
-                '失业':re.sub('\s','',sEI[len(sII)-1].findAll('td')[2].text),
-                '工伤':re.sub('\s','',sEI[len(sCI)-1].findAll('td')[2].text),
-                '生育':re.sub('\s','',sEI[len(sBI)-1].findAll('td')[2].text)
+            social_type = {
+                '养老': re.sub('\s', '', sEI[len(sEI) - 1].findAll('td')[2].text),
+                '医疗': re.sub('\s', '', sEI[len(sHI) - 1].findAll('td')[2].text),
+                '失业': re.sub('\s', '', sEI[len(sII) - 1].findAll('td')[2].text),
+                '工伤': re.sub('\s', '', sEI[len(sCI) - 1].findAll('td')[2].text),
+                '生育': re.sub('\s', '', sEI[len(sBI) - 1].findAll('td')[2].text)
             }
 
             #  个人基本信息
             # 缴费时长
-            moneyCount=[len(sEI),len(sHI),len(sII),len(sCI),len(sBI)]
+            moneyCount = [len(sEI), len(sHI), len(sII), len(sCI), len(sBI)]
 
             self.result_data['baseInfo'] = {
                 '姓名': data[0].findAll('td')[1].text,
@@ -332,12 +326,13 @@ class Task(AbsFetchTask):
                 '城市名称': '厦门',
                 '城市编号': '350200',
                 '缴费时长': max(moneyCount),
-                '最近缴费时间': re.sub('\s','',sEI[len(sEI)-1].findAll("td")[3].text),
-                '开始缴费时间': re.sub('\s','',sEI[0].findAll("td")[3].text),
+                '最近缴费时间': re.sub('\s', '', sEI[len(sEI) - 1].findAll("td")[3].text),
+                '开始缴费时间': re.sub('\s', '', sEI[0].findAll("td")[3].text),
                 '个人养老累计缴费': peroldTotal,
                 '个人医疗累计缴费': permedicalTotal,
                 '五险状态': social_type,
-                '状态': self._convert_type(data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip()),
+                '状态': self._convert_type(
+                    data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip()),
                 '工作状态': data[8].findAll('td')[1].text,
                 '社会保障卡卡号': data[2].findAll('td')[1].text,
             }
@@ -346,7 +341,8 @@ class Task(AbsFetchTask):
                 "task_name": "厦门",
                 "target_name": data[0].findAll('td')[1].text,
                 "target_id": self.result_meta['社会保险号'],
-                "status": self._convert_type(data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip())
+                "status": self._convert_type(
+                    data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip())
             }
 
             return
@@ -361,5 +357,3 @@ if __name__ == '__main__':
     client.run()
 
     #  350524196209146816  123789
-
-
