@@ -74,6 +74,23 @@ class TaskTestClient(object):
                         if d:
                             break
                     params[pr['key']] = d
+                elif pr['cls'] == 'data:SMS':
+                    while True:
+                        # query data
+                        query_params = pr['query']
+                        query_params["data"] = params
+                        r = self.task.query(pr['query'])
+                        if not r['ret']:
+                            print('error:', r['err_msg'])
+                            continue
+                        data = r['data']
+
+                        content = data['content']
+                        print(content)
+                        d = input('%s: ' % pr['name'])
+                        if d:
+                            break
+                    params[pr['key']] = d
             res = self.task.run(params)
 
 
