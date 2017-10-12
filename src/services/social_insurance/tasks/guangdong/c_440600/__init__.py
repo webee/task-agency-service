@@ -88,32 +88,33 @@ class Task(AbsFetchTask):
                 errormsg = soup.select('table')[1].text.replace('\n', '')
                 if errormsg:
                     if errormsg == '确 定退出系统':
+                        print('kdjfkd')
                         # vc = self._new_vc()
-                        vc_url = self.s.get(VC_URL)
-                        Image.open(io.BytesIO(vc_url.content)).show()
-                        vcts = input('验证码：')
-                        data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
-                                    GRBH=soup.find('input', {'name': 'GRBH'})["value"],
-                                    PASS=soup.find('input', {'name': 'PASS'})["value"],
-                                    CHECK=soup.find('input', {'name': 'CHECK'})["value"],
-                                    rtn=soup.find('input', {'name': 'rtn'})["value"],
-                                    imagecheck=vcts
-                                    )
-                        resp = self.s.post(VCIMAGE_URL, data)
-                        soup = BeautifulSoup(resp.content, 'html.parser')
-                        vcmsg = soup.select('table')[0].find('p').text
-                        if vcmsg:
-                            raise Exception(vcmsg)
-                        else:
-                            data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
-                                        GRBH=soup.find('input', {'name': 'GRBH'})["value"],
-                                        PASS=soup.find('input', {'name': 'PASS'})["value"],
-                                        CHECK=soup.find('input', {'name': 'CHECK'})["value"],
-                                        rtn=soup.find('input', {'name': 'rtn'})["value"]
-                                        )
-                            resp = self.s.post(MAIN_URL, data)
-                            soup = BeautifulSoup(resp.content, 'html.parser')
-                            self.html = soup
+                        # vc_url = self.s.get(VC_URL)
+                        # Image.open(io.BytesIO(vc_url.content)).show()
+                        # vcts = input('验证码：')
+                        # data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
+                        #             GRBH=soup.find('input', {'name': 'GRBH'})["value"],
+                        #             PASS=soup.find('input', {'name': 'PASS'})["value"],
+                        #             CHECK=soup.find('input', {'name': 'CHECK'})["value"],
+                        #             rtn=soup.find('input', {'name': 'rtn'})["value"],
+                        #             imagecheck=vcts
+                        #             )
+                        # resp = self.s.post(VCIMAGE_URL, data)
+                        # soup = BeautifulSoup(resp.content, 'html.parser')
+                        # vcmsg = soup.select('table')[0].find('p').text
+                        # if vcmsg:
+                        #     raise Exception(vcmsg)
+                        # else:
+                        #     data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
+                        #                 GRBH=soup.find('input', {'name': 'GRBH'})["value"],
+                        #                 PASS=soup.find('input', {'name': 'PASS'})["value"],
+                        #                 CHECK=soup.find('input', {'name': 'CHECK'})["value"],
+                        #                 rtn=soup.find('input', {'name': 'rtn'})["value"]
+                        #                 )
+                        #     resp = self.s.post(MAIN_URL, data)
+                        #     soup = BeautifulSoup(resp.content, 'html.parser')
+                        #     self.html = soup
 
                     else:
                         raise Exception(errormsg)
