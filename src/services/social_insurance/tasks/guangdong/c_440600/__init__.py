@@ -148,7 +148,8 @@ class Task(AbsFetchTask):
             data['baseInfo'] = {
                 '城市名称': '佛山',
                 '城市编号': '440600',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '身份证号':self.result_meta['身份证号']
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
@@ -156,7 +157,7 @@ class Task(AbsFetchTask):
                 if cell[0] == '姓名':
                     self.result_identity['target_name'] = cell[1].replace(' ', '')
                 if cell[0] == '养老 实际缴费月数':
-                    data['baseInfo'].setdefault('缴费时长', cell[1].replace(' ', ''))
+                    data['baseInfo'].setdefault('缴费时长', (int)(cell[1].replace(' ', '')))
                 if (len(cell) > 3):
                     if cell[2] == '个人社保号':
                         data['baseInfo'].setdefault('社保编号', cell[3].replace(' ', ''))
@@ -200,27 +201,27 @@ class Task(AbsFetchTask):
                     monthkeys = ''
                     monthcount = 0
                     for td in tr.findAll('td'):
-                        values = td.getText()
+                        values = td.getText().replace(' ', '')
                         if i == 0:
-                            monthkeyslist = td.getText().split('-')
+                            monthkeyslist = td.getText().replace(' ', '').split('-')
                             if len(monthkeyslist) > 1:
                                 values = monthkeyslist[0]
                                 arrtime.append(monthkeyslist[0])
                         if i == 7:
-                            monthcount = int(td.getText())
+                            monthcount = int(td.getText().replace(' ', ''))
                             values = monthcount / monthcount
                         if i == 8:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                             if v == 'old_age':
-                                grylsum = grylsum + float(td.getText())
+                                grylsum = grylsum + float(td.getText().replace(' ', ''))
                             if v == 'medical_care':
-                                gryilsum = gryilsum + float(td.getText())
+                                gryilsum = gryilsum + float(td.getText().replace(' ', ''))
                         if i == 9:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                         if i == 10:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                         if i == 11:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                         dic.setdefault(titkeys[i], values)
                         if i == 11 or len(titkeys) == i + 1:
                             for y in range(-1, monthcount - 1):
@@ -229,7 +230,7 @@ class Task(AbsFetchTask):
                                 months = ''
                                 statatime = monthkeyslist[0]
                                 endtime = monthkeyslist[1]
-                                nowtime = datetime.date(int(statatime[:5]) + (int(statatime[-2:]) + y) // 12,
+                                nowtime = datetime.date(int(statatime[:4]) + (int(statatime[-2:]) + y) // 12,
                                                         (int(statatime[-2:]) + y) % 12 + 1, 1).strftime('%Y-%m-%d')
                                 strtimemonth = nowtime[:7].replace('-', '')
                                 monthkeys = strtimemonth
