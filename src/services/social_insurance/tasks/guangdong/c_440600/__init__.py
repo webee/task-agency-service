@@ -145,25 +145,25 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             table_text = soup.select('.dataTable')[1]
             rows = table_text.find_all('tr')
-            data['baseinfo'] = {
+            data['baseInfo'] = {
                 '城市名称': '佛山',
                 '城市编号': '440600',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseinfo'].setdefault(cell[0], cell[1])
+                data['baseInfo'].setdefault(cell[0], cell[1])
                 if cell[0] == '姓名':
                     self.result_identity['target_name'] = cell[1]
                 if cell[0] == '养老 实际缴费月数':
-                    data['baseinfo'].setdefault('缴费时长', cell[1])
+                    data['baseInfo'].setdefault('缴费时长', cell[1])
                 if (len(cell) > 3):
                     if cell[2] == '个人社保号':
-                        data['baseinfo'].setdefault('社保编号', cell[3])
+                        data['baseInfo'].setdefault('社保编号', cell[3])
                     else:
-                        data['baseinfo'].setdefault(cell[2], cell[3])  # .replace('\xa0', '')
+                        data['baseInfo'].setdefault(cell[2], cell[3])  # .replace('\xa0', '')
                 if len(cell) > 5:
-                    data['baseinfo'].setdefault(cell[4], cell[5])
+                    data['baseInfo'].setdefault(cell[4], cell[5])
             self.result_identity['status'] = ''
 
             arrtime = []
@@ -251,12 +251,12 @@ class Task(AbsFetchTask):
                                     data[v]['data'][yearkeys].setdefault(monthkeys[-2:], arr)
                         i = i + 1
                 if v == 'old_age':
-                    data['baseinfo'].setdefault('个人养老累计缴费', grylsum)
+                    data['baseInfo'].setdefault('个人养老累计缴费', grylsum)
                 if v == 'medical_care':
-                    data['baseinfo'].setdefault('个人医疗累计缴费', gryilsum)
+                    data['baseInfo'].setdefault('个人医疗累计缴费', gryilsum)
 
-            data['baseinfo'].setdefault('最近缴费时间', max(arrtime))
-            data['baseinfo'].setdefault('开始缴费时间', min(arrtime))
+            data['baseInfo'].setdefault('最近缴费时间', max(arrtime))
+            data['baseInfo'].setdefault('开始缴费时间', min(arrtime))
 
             return
         except PermissionError as e:
