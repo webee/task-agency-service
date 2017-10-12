@@ -152,18 +152,18 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseInfo'].setdefault(cell[0], cell[1])
+                data['baseInfo'].setdefault(cell[0].replace(' ', ''), cell[1].replace(' ', ''))
                 if cell[0] == '姓名':
-                    self.result_identity['target_name'] = cell[1]
+                    self.result_identity['target_name'] = cell[1].replace(' ', '')
                 if cell[0] == '养老 实际缴费月数':
-                    data['baseInfo'].setdefault('缴费时长', cell[1])
+                    data['baseInfo'].setdefault('缴费时长', cell[1].replace(' ', ''))
                 if (len(cell) > 3):
                     if cell[2] == '个人社保号':
-                        data['baseInfo'].setdefault('社保编号', cell[3])
+                        data['baseInfo'].setdefault('社保编号', cell[3].replace(' ', ''))
                     else:
-                        data['baseInfo'].setdefault(cell[2], cell[3])  # .replace('\xa0', '')
+                        data['baseInfo'].setdefault(cell[2].replace(' ', ''), cell[3].replace(' ', ''))  # .replace('\xa0', '')
                 if len(cell) > 5:
-                    data['baseInfo'].setdefault(cell[4], cell[5])
+                    data['baseInfo'].setdefault(cell[4].replace(' ', ''), cell[5].replace(' ', ''))
             self.result_identity['status'] = ''
 
             arrtime = []
@@ -255,8 +255,8 @@ class Task(AbsFetchTask):
                 if v == 'medical_care':
                     data['baseInfo'].setdefault('个人医疗累计缴费', gryilsum)
 
-            data['baseInfo'].setdefault('最近缴费时间', max(arrtime))
-            data['baseInfo'].setdefault('开始缴费时间', min(arrtime))
+            data['baseInfo'].setdefault('最近缴费时间', max(arrtime).replace(' ', ''))
+            data['baseInfo'].setdefault('开始缴费时间', min(arrtime).replace(' ', ''))
 
             return
         except PermissionError as e:
