@@ -140,7 +140,7 @@ class Task(AbsFetchTask):
             dict(key='j_username', name='身份证号', cls='input', tabCode="1", value=params.get('j_username', '')),
             dict(key='j_password', name='密码', cls='input:password', tabCode="1", value=params.get('j_password', '')),
             dict(key='safecode', name='附加码', cls='data:image', query={'t': 'vc'}, tabCode="1", value=params.get('safecode', '')),
-            dict(key='i_phone', name='短信验证码', cls='data:SMS', query={'t': 'SMS'}, tabCode="1", value=''),
+            dict(key='i_phone', name='验证码', cls='data:SMS', query={'t': 'SMS'}, tabCode="1", value=''),
         ], err_msg)
 
     # 获取用户基础信息
