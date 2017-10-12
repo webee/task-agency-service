@@ -128,31 +128,8 @@ class Task(AbsFetchTask):
                 _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='1.0.60'/><s dlfs='undefined'/></p>"
 
                 resp = self.s.post("http://60.216.99.138/hsp/logon.do?method=doLogon&_xmlString=" + _xmlString)
-                if('true' in resp.text):
-                    uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
-                    # 保存到meta
-                    self.result_key = id_num
-                    self.result_meta['身份证号'] = id_num
-                    self.result_meta['密码'] = account_pass
-
-                    # 个人基本信息
-                    res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
-                    soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
-                    self.result_data['baseInfo'] = {
-                        '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
-                        '身份证号': soup[0].findAll("td")[3].find(type="text")["value"],
-                        '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                        '城市名称': '济南',
-                        '城市编号': '370100',
-                        '缴费时长': 0,
-                        '最近缴费时间': '',
-                        '开始缴费时间': '',
-                        '个人养老累计缴费': 0,
-                        '个人医疗累计缴费': 0,
-                        '状态': '',
-                        '出生日期':soup[1].findAll("td")[3].find(type="text")["value"],
-                        '单位名称':soup[9].findAll("td")[1].find(type="text")["value"]
-                    }
+                if('true' not in resp.text):
+                    raise InvalidParamsError(resp.text)
                     #
                     # searchYear = input("请输入需要查询的年份：")
                     # if (searchYear == ""):
@@ -237,9 +214,32 @@ class Task(AbsFetchTask):
                     #             '缴费年月': td5[0].find(type="text")["value"],
                     #             '缴费状态': str(td5[2].find(type="text")["value"]).replace(',', ''),
                     #         }
-
                 else:
-                    raise InvalidParamsError(resp.text)
+                    uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
+                    # 保存到meta
+                    self.result_key = id_num
+                    self.result_meta['身份证号'] = id_num
+                    self.result_meta['密码'] = account_pass
+
+                    # 个人基本信息
+                    res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
+                    soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
+                    self.result_data['baseInfo'] = {
+                        '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
+                        '身份证号': id_num,
+                        '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                        '城市名称': '济南',
+                        '城市编号': '370100',
+                        '缴费时长': 0,
+                        '最近缴费时间': '',
+                        '开始缴费时间': '',
+                        '个人养老累计缴费': 0,
+                        '个人医疗累计缴费': 0,
+                        '状态': '',
+                        '出生日期': soup[1].findAll("td")[3].find(type="text")["value"],
+                        '单位名称': soup[9].findAll("td")[1].find(type="text")["value"]
+                    }
+
                     return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
