@@ -1,7 +1,7 @@
-import base64
+
 import time
 import random
-import json
+import json,requests
 from PIL import Image
 import io
 import datetime
@@ -29,10 +29,9 @@ class value_is_number(object):
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
 
 MAIN_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/index.jsp'
-LOGIN_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/rzxt/nbhrssLogin.action'
 INFO_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-grxx.jsp'
 VC_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/comm/yzm.jsp?r='
-CHECK_VC_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/comm/checkYzm.jsp'
+YL_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-ylbx.jsp'
 
 
 class Task(AbsFetchTask):
@@ -141,12 +140,13 @@ class Task(AbsFetchTask):
             # 提交
             submit_btn.click()
             time.sleep(2)
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             if driver.current_url == INFO_URL:
                 print('登录成功')
                 # 保存登录后的页面内容供抓取单元解析使用
                 login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
                 self.s.soup = BeautifulSoup(login_page_html, 'html.parser')
+
 
                 #realname=soup.select('#xm')[0].text
             else:
@@ -158,6 +158,17 @@ class Task(AbsFetchTask):
                     # alert.accept()
                 finally:
                     raise InvalidParamsError(err_msg)
+   def _ceshi(self):
+       with self.dsc.get_driver_ctx() as driver:
+           driver.get(YL_URL)
+           #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+           htmls = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+           soupyl = BeautifulSoup(htmls, 'html.parser')
+           mingxitable = soupyl.select('.mingxi')
+           tableinfo = soupyl.select('mytable')[0]
+           self.result_data['medical_treatment'] = {'姓名': soupyl.select('#xm')[0].text,
+                                                    '单位名称': mingxitable[0].find('table').text}
+
 
    def _unit_fetch_name(self):
        """用户信息"""
@@ -182,6 +193,20 @@ class Task(AbsFetchTask):
            }
            self.result_identity['target_name'] = soup.select('#xm')[0].text
            #self.result_data["baseInfo"].setdefault()
+
+           self._ceshi()
+
+
+           #resp=self.s.get(YL_URL)
+
+           #token=resp.request._cookies['__rz__k']
+           #datas=json.dumps({'api':'91S001','AAB301':'aab301'})
+           #r=requests.post('https://app.nbhrss.gov.cn/nbykt/rest/commapi',datas,token)
+           #print(r.json())
+
+
+
+
 
 
            return
