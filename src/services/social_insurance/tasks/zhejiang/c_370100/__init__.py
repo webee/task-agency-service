@@ -136,19 +136,23 @@ class Task(AbsFetchTask):
                     self.result_meta['密码'] = account_pass
 
                     # 个人基本信息
-                    # res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
-                    # soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
-                    # self.result['data']['baseInfo'] = {
-                    #     '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
-                    #     '身份证号': soup[0].findAll("td")[3].find(type="text")["value"],
-                    #
-                    #     '性别': soup[1].findAll("td")[1].find(type="text")["value"],
-                    #     '出生日期': soup[1].findAll("td")[3].find(type="text")["value"],
-                    #
-                    #     '单位名称': soup[9].findAll("td")[1].find(type="text")["value"]
-                    #     # '民族':soup[2].findAll("td")[1].find(type="text")["value"],
-                    #     # '户口性质':soup[3].findAll("td")[3].find(type="text")["value"],
-                    # }
+                    res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
+                    soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
+                    self.result_data['baseInfo'] = {
+                        '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
+                        '身份证号': soup[0].findAll("td")[3].find(type="text")["value"],
+                        '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                        '城市名称': '济南',
+                        '城市编号': '370100',
+                        '缴费时长': 0,
+                        '最近缴费时间': '',
+                        '开始缴费时间': '',
+                        '个人养老累计缴费': 0,
+                        '个人医疗累计缴费': 0,
+                        '状态': '',
+                        '出生日期':soup[1].findAll("td")[3].find(type="text")["value"],
+                        '单位名称':soup[9].findAll("td")[1].find(type="text")["value"]
+                    }
                     #
                     # searchYear = input("请输入需要查询的年份：")
                     # if (searchYear == ""):
