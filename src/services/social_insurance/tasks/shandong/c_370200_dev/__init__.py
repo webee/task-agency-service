@@ -113,7 +113,7 @@ class Task(AbsFetchTask):
         vc = self._new_vc()
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('pwd', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
