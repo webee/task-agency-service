@@ -36,18 +36,18 @@ class Task(AbsFetchTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证号' in params, '缺少身份证号'
+        assert 'parentid' in params, '缺少身份证号'
         #assert 'account_num' in params, '缺少职工姓名'
-        assert '密码' in params,'缺少密码'
+        assert 'psw' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证号' not in params:
-                params['身份证号'] = meta.get('身份证号')
-            if '密码' not in params:
-                params['密码'] = meta.get('密码')
+            if 'parentid' not in params:
+                params['parentid'] = meta.get('parentid')
+            if 'pwd' not in params:
+                params['pwd'] = meta.get('pwd')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -55,9 +55,9 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证号' and '身份证号' in meta:
+            if pr['key'] == 'parentid' and '身份证号' in meta:
                 continue
-            elif pr['key'] == '密码' and '密码' in meta:
+            elif pr['key'] == 'pwd' and '密码' in meta:
                 continue
             res.append(pr)
         return res
@@ -68,9 +68,9 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params['身份证号']
+                id_num = params['parentid']
                 #account_num = params['account_num']
-                password=params['密码']
+                password=params['pwd']
                 vc = params['vc']
                 resp=self.s.post(LOGINONE_URL,data=dict(
                      aac147=id_num
@@ -111,9 +111,9 @@ class Task(AbsFetchTask):
 
         vc = self._new_vc()
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
-            dict(key='密码',name='密码',cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='parentid', name='身份证号', cls='input', value=params.get('parentid', '')),
+            dict(key='psw', name='密码', cls='input:password', value=params.get('psw', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
     def _unit_fetch_name(self):
@@ -123,7 +123,7 @@ class Task(AbsFetchTask):
             resp=self.s.get(BASEINFO_URl)
             soup=BeautifulSoup(resp.content,'html.parser')
             zkindex=soup.select('select')[0]['value']
-            data['baseinfo']={
+            data['baseInfo']={
                 '社保编号' : soup.select('input')[0]['value'],
                 '姓名:': soup.select('input')[1]['value'],
                 '身份证号': soup.select('input')[2]['value'],
@@ -199,10 +199,10 @@ class Task(AbsFetchTask):
                             else:
                                 arrtime.append(monthkeys)
                                 data['old_age']['data'][yearkeys].setdefault(monthkeys[-2:],arr)
-            data['baseinfo'].setdefault('缴费时长',str(len(arrtime)))
-            data['baseinfo'].setdefault('最近缴费时间',max(arrtime))
-            data['baseinfo'].setdefault('开始缴费时间',min(arrtime))
-            data['baseinfo'].setdefault('个人养老累计缴费', oldsum)
+            data['baseInfo'].setdefault('缴费时长',str(len(arrtime)))
+            data['baseInfo'].setdefault('最近缴费时间',max(arrtime))
+            data['baseInfo'].setdefault('开始缴费时间',min(arrtime))
+            data['baseInfo'].setdefault('个人养老累计缴费', oldsum)
             #医疗明细信息
             data['medical_care'] = {}
             data['medical_care']['data'] = {}
@@ -254,7 +254,7 @@ class Task(AbsFetchTask):
                                 data['medical_care']['data'][yearkeys][months] = arr
                             else:
                                 data['medical_care']['data'][yearkeys].setdefault(monthkeys[-2:], arr)
-            data['baseinfo'].setdefault('个人医疗累计缴费', yilsum)
+            data['baseInfo'].setdefault('个人医疗累计缴费', yilsum)
             #失业明细信息
 
             data['unemployment'] = {}
