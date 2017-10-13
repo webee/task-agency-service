@@ -36,18 +36,18 @@ class Task(AbsFetchTask):
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'parentid' in params, '缺少身份证号'
+        assert '身份证号' in params, '缺少身份证号'
         #assert 'account_num' in params, '缺少职工姓名'
-        assert 'pwd' in params,'缺少密码'
+        assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if 'parentid' not in params:
-                params['parentid'] = meta.get('parentid')
-            if 'pwd' not in params:
-                params['pwd'] = meta.get('pwd')
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -55,9 +55,9 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == 'parentid' and '身份证号' in meta:
+            if pr['key'] == '身份证号' and '身份证号' in meta:
                 continue
-            elif pr['key'] == 'pwd' and '密码' in meta:
+            elif pr['key'] == '密码' and '密码' in meta:
                 continue
             res.append(pr)
         return res
@@ -68,9 +68,9 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                id_num = params['parentid']
+                id_num = params['身份证号']
                 #account_num = params['account_num']
-                password=params['pwd']
+                password=params['密码']
                 vc = params['vc']
                 resp=self.s.post(LOGINONE_URL,data=dict(
                      aac147=id_num
@@ -111,8 +111,8 @@ class Task(AbsFetchTask):
 
         vc = self._new_vc()
         raise AskForParamsError([
-            dict(key='parentid', name='身份证号', cls='input', value=params.get('parentid', '')),
-            dict(key='pwd', name='密码', cls='input:password', value=params.get('pwd', '')),
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('pwd', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
