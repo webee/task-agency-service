@@ -111,9 +111,9 @@ class Task(AbsFetchTask):
 
         vc = self._new_vc()
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
-            dict(key='密码',name='密码',cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('pwd', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
     def _unit_fetch_name(self):
@@ -123,7 +123,7 @@ class Task(AbsFetchTask):
             resp=self.s.get(BASEINFO_URl)
             soup=BeautifulSoup(resp.content,'html.parser')
             zkindex=soup.select('select')[0]['value']
-            data['baseinfo']={
+            data['baseInfo']={
                 '社保编号' : soup.select('input')[0]['value'],
                 '姓名:': soup.select('input')[1]['value'],
                 '身份证号': soup.select('input')[2]['value'],
@@ -162,7 +162,7 @@ class Task(AbsFetchTask):
                 tab=soup.select('.main-table')[0]
                 titkeys=[]
                 for th in tab.findAll('th'):
-                    titlename = th.getText()
+                    titlename = th.getText().replace(' ', '')
                     if titlename == '缴费年月':
                         titlename = '缴费时间'
                     if titlename == '个人基数':
@@ -199,10 +199,10 @@ class Task(AbsFetchTask):
                             else:
                                 arrtime.append(monthkeys)
                                 data['old_age']['data'][yearkeys].setdefault(monthkeys[-2:],arr)
-            data['baseinfo'].setdefault('缴费时长',str(len(arrtime)))
-            data['baseinfo'].setdefault('最近缴费时间',max(arrtime))
-            data['baseinfo'].setdefault('开始缴费时间',min(arrtime))
-            data['baseinfo'].setdefault('个人养老累计缴费', oldsum)
+            data['baseInfo'].setdefault('缴费时长',str(len(arrtime)))
+            data['baseInfo'].setdefault('最近缴费时间',max(arrtime))
+            data['baseInfo'].setdefault('开始缴费时间',min(arrtime))
+            data['baseInfo'].setdefault('个人养老累计缴费', oldsum)
             #医疗明细信息
             data['medical_care'] = {}
             data['medical_care']['data'] = {}
@@ -218,7 +218,7 @@ class Task(AbsFetchTask):
                 tab = soup.select('.main-table')[0]
                 titkeys =[]
                 for th in tab.findAll('th'):
-                    titlename = th.getText()
+                    titlename = th.getText().replace(' ', '')
                     if titlename == '缴费年月':
                         titlename = '缴费时间'
                     if titlename == '个人基数':
@@ -254,7 +254,7 @@ class Task(AbsFetchTask):
                                 data['medical_care']['data'][yearkeys][months] = arr
                             else:
                                 data['medical_care']['data'][yearkeys].setdefault(monthkeys[-2:], arr)
-            data['baseinfo'].setdefault('个人医疗累计缴费', yilsum)
+            data['baseInfo'].setdefault('个人医疗累计缴费', yilsum)
             #失业明细信息
 
             data['unemployment'] = {}
@@ -271,7 +271,7 @@ class Task(AbsFetchTask):
                 tab = soup.select('.main-table')[0]
                 titkeys =[]
                 for th in tab.findAll('th'):
-                    titlename = th.getText()
+                    titlename = th.getText().replace(' ', '')
                     if titlename == '缴费年月':
                         titlename = '缴费时间'
                     if titlename == '个人基数':
