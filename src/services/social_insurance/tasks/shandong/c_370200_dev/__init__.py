@@ -125,7 +125,7 @@ class Task(AbsFetchTask):
             zkindex=soup.select('select')[0]['value']
             data['baseInfo']={
                 '社保编号' : soup.select('input')[0]['value'],
-                '姓名:': soup.select('input')[1]['value'],
+                '姓名': soup.select('input')[1]['value'],
                 '身份证号': soup.select('input')[2]['value'],
                 '性别':soup.select('input')[3]['value'],
                 '参加工作日期': soup.select('input')[4]['value'],
