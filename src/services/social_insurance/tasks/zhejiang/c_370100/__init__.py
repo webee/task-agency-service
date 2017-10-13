@@ -73,11 +73,11 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证号' in params, '缺少身份证号'
-        assert '密码' in params, '缺少密码'
+        assert 'idCard' in params, '缺少身份证号'
+        assert 'pass' in params, 'pass'
         # other check
-        身份证号 = params['身份证号']
-        密码 = params['密码']
+        身份证号 = params['idCard']
+        密码 = params['pass']
 
         if len(身份证号) == 0:
             raise InvalidParamsError('身份证号为空，请输入身份证号')
@@ -92,10 +92,10 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '身份证号' not in params:
-                params['身份证号'] = meta.get('身份证号')
-            if '密码' not in params:
-                params['密码'] = meta.get('密码')
+            if 'idCard' not in params:
+                params['idCard'] = meta.get('idCard')
+            if 'pass' not in params:
+                params['pass'] = meta.get('pass')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -103,9 +103,9 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证号' and '身份证号' in meta:
+            if pr['key'] == 'idCard' and 'idCard' in meta:
                 continue
-            elif pr['key'] == '密码' and '密码' in meta:
+            elif pr['key'] == 'pass' and 'pass' in meta:
                 continue
             res.append(pr)
         return res
@@ -116,8 +116,8 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
 
-                id_num = params.get("身份证号")
-                account_pass = params.get("密码")
+                id_num = params.get("idCard")
+                account_pass = params.get("pass")
                 m = hashlib.md5()
                 m.update(str(account_pass).encode(encoding="utf-8"))
                 pw = m.hexdigest()
@@ -216,14 +216,48 @@ class Task(AbsFetchTask):
                     #         }
                 else:
                     uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
-                    # 保存到meta
-                    self.result_key = id_num
-                    self.result_meta['身份证号'] = id_num
-                    self.result_meta['密码'] = account_pass
-
-                    # 个人基本信息
                     res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
                     soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
+
+                    # 保存到meta
+                    self.result_key = id_num
+                    self.result_meta['idCard'] = id_num
+                    self.result_meta['pass'] = account_pass
+
+
+                    # 养老保险缴费明细
+                    self.result['data']["old_age"] = {"data": {}}
+                    basedataE = self.result['data']["old_age"]["data"]
+                    modelE = {}
+                    oldresp=self.s.get("http://60.216.99.138/hsp/siAd.do?method=queryAgedPayHis&__usersession_uuid=" + uuid )
+                    oldData=BeautifulSoup(oldresp.text,'html.parser')
+                    oldCount=oldData.findAll('font',{'class':'font'})[0].text   # 养老累积缴费月数
+                    oldTotal=oldData.findAll('font',{'class':'font'})[1].text   # 养老累积缴费金额
+                    oldStart=oldData.findAll('p')[2].text.split(':')[1].replace('\n','')[0:4]   # 养老开始日期
+                    oldEnd=oldData.findAll('p')[3].text.split(':')[1].replace('\n','')[0:4]   # 养老结束日期
+
+                    for yr in range(int(oldStart),int(oldEnd)+1):
+                        detailEI=self.s.get("http://60.216.99.138/hsp/siAd.do?method=queryAgedPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr) + "")
+                        sEI = BeautifulSoup(detailEI.content, 'html.parser').find('table',{'class': 'defaultTableClass'}).findAll("tr")
+                        for a in range(1,len(sEI)+1):
+                            td = sEI[a].findAll("td")
+                            years=td[0].find(type="text")["value"][0:4]
+                            months=td[0].find(type="text")["value"][5:7]
+                            basedataE.setdefault(years, {})
+                            basedataE[years].setdefault(months, [])
+
+                            modelE = {
+                                '缴费时间': td[0].find(type="text")["value"],
+                                '缴费类型':'',
+                                '缴费基数': str(td[1].find(type="text")["value"]).replace(',', ''),
+                                '公司缴费':'-',
+                                '个人缴费': td[2].find(type="text")["value"],
+                                '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
+                            }
+                            basedataE[years][months].append(modelE)
+
+
+                    # 个人基本信息
                     self.result_data['baseInfo'] = {
                         '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
                         '身份证号': id_num,
@@ -236,8 +270,7 @@ class Task(AbsFetchTask):
                         '个人养老累计缴费': 0,
                         '个人医疗累计缴费': 0,
                         '状态': '',
-                        '出生日期': soup[1].findAll("td")[3].find(type="text")["value"],
-                        '单位名称': soup[9].findAll("td")[1].find(type="text")["value"]
+                        '出生日期': soup[1].findAll("td")[3].find(type="text")["value"]
                     }
 
                     return
@@ -245,8 +278,8 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='idCard', name='身份证号', cls='input', placeholder='身份证号', value=params.get('idCard', '')),
+            dict(key='pass', name='密码', cls='input:password', value=params.get('pass', '')),
         ], err_msg)
 
     def _convert_type(self,num):
@@ -459,7 +492,7 @@ class Task(AbsFetchTask):
     #         self.result['identity'] = {
     #             "task_name": "厦门",
     #             "target_name": data[0].findAll('td')[1].text,
-    #             "target_id": self.result_meta['社会保险号'],
+    #             "target_id": self.result_meta['idCard'],
     #             "status": self._convert_type(data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip())
     #         }
     #
