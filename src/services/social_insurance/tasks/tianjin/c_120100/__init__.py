@@ -30,16 +30,16 @@ class Task(AbsFetchTask):
         """
     )
 
-    def _prepare(self,data=None):
-        super()._prepare()
-
-        state: dict = self.state
-        self.ua = UserAgent(test_site, state.get('session'))
-        self.ua.register_request_filter(LogRequestFilter())
+    # def _prepare(self,data=None):
+    #     super()._prepare()
+    #
+    #     state: dict = self.state
+    #     self.ua = UserAgent(test_site, state.get('session'))
+    #     self.ua.register_request_filter(LogRequestFilter())
 
     def _update_session_data(self):
         super()._update_session_data()
-        self.state['session'] = self.ua.session
+        # self.state['session'] = self.ua.session
 
     def _get_common_headers(self):
         return {
