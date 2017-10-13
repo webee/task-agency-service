@@ -139,7 +139,7 @@ class Task(AbsFetchTask):
             vc_input.send_keys(vc)
             # 提交
             submit_btn.click()
-            time.sleep(2)
+            time.sleep(3)
             #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             if driver.current_url == INFO_URL:
                 print('登录成功')
@@ -161,13 +161,22 @@ class Task(AbsFetchTask):
    def _ceshi(self):
        with self.dsc.get_driver_ctx() as driver:
            driver.get(YL_URL)
-           #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+           time.sleep(2)
            htmls = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
            soupyl = BeautifulSoup(htmls, 'html.parser')
-           mingxitable = soupyl.select('.mingxi')
-           tableinfo = soupyl.select('mytable')[0]
-           self.result_data['medical_treatment'] = {'姓名': soupyl.select('#xm')[0].text,
-                                                    '单位名称': mingxitable[0].find('table').text}
+           mingxitable = soupyl.select('#content')
+           tableinfo = mingxitable[0].find_all('tr')
+           arrstr=[]
+           for row in tableinfo:
+               cell = [i.text for i in row.find_all('td')]
+               if len(cell)<3:
+                   arrstr.extend(cell)
+               else:
+                   print(cell)
+           print(arrstr)
+
+           #self.result_data['medical_treatment'] = {'姓名': soupyl.select('#xm')[0].text,
+                                                   # '单位名称': mingxitable[0].find('table').text}
 
 
    def _unit_fetch_name(self):
