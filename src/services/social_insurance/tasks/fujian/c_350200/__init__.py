@@ -60,11 +60,11 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '社会保险号' in params, '缺少社会保险号'
-        assert '密码' in params, '缺少密码'
+        assert 'idCard' in params, '缺少社保号'
+        assert 'pass' in params, '缺少密码'
         # other check
-        用户名 = params['社会保险号']
-        密码 = params['密码']
+        用户名 = params['idCard']
+        密码 = params['pass']
 
         if len(用户名) == 0:
             raise InvalidParamsError('社会保险号为空，请输入社会保险号')
@@ -79,10 +79,10 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '社会保险号' not in params:
-                params['社会保险号'] = meta.get('社会保险号')
-            if '密码' not in params:
-                params['密码'] = meta.get('密码')
+            if 'idCard' not in params:
+                params['idCard'] = meta.get('idCard')
+            if 'pass' not in params:
+                params['pass'] = meta.get('pass')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -90,9 +90,9 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '社会保险号' and '社会保险号' in meta:
+            if pr['key'] == 'idCard' and 'idCard' in meta:
                 continue
-            elif pr['key'] == '密码' and '密码' in meta:
+            elif pr['key'] == 'pass' and 'pass' in meta:
                 continue
             res.append(pr)
         return res
@@ -103,8 +103,8 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
 
-                id_num = params.get("社会保险号")
-                account_pass = params.get("密码")
+                id_num = params.get("idCard")
+                account_pass = params.get("pass")
                 vc = params.get("vc")
 
                 data = {
@@ -122,8 +122,8 @@ class Task(AbsFetchTask):
 
                     # 保存到meta
                     self.result_key = id_num
-                    self.result_meta['社会保险号'] = id_num
-                    self.result_meta['密码'] = account_pass
+                    self.result_meta['idCard'] = id_num
+                    self.result_meta['pass'] = account_pass
 
                     return
             except (AssertionError, InvalidParamsError) as e:
@@ -132,8 +132,8 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='社会保险号', name='社会保险号', cls='input', placeholder='请输入社会保险号', value=params.get('社会保险号', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='idCard', name='社保号', cls='input', placeholder='请输入社保号', value=params.get('idCard', '')),
+            dict(key='pass', name='密码', cls='input:password', value=params.get('pass', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
@@ -342,9 +342,8 @@ class Task(AbsFetchTask):
             self.result['identity'] = {
                 "task_name": "厦门",
                 "target_name": data[0].findAll('td')[1].text,
-                "target_id": self.result_meta['社会保险号'],
-                "status": self._convert_type(
-                    data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip())
+                "target_id": self.result_meta['idCard'],
+                "status": self._convert_type(data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip())
             }
 
             return

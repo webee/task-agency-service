@@ -96,7 +96,7 @@ class Task(AbsFetchTask):
                 data = {
                     'userid': id_num,
                     'userpw': account_pass,
-                    'userjym': vc
+                    'userjym': vc.encode('gbk')
                 }
                 resp = self.s.post("http://www.12333sh.gov.cn/sbsjb/wzb/dologin.jsp", data=data)
                 # 检查是否登录成功
