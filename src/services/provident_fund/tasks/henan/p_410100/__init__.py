@@ -20,7 +20,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="郑州",
         help="""
-            <li></li>
+            <li>初始密码是111111</li>
+            <li>可向公司人事或者经办人索取公积金账号</li>
             """
     )
 

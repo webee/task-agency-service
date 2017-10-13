@@ -73,11 +73,11 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'idCard' in params, '缺少身份证号'
-        assert 'pass' in params, 'pass'
+        assert '身份证号' in params, '缺少身份证号'
+        assert '密码' in params, '密码'
         # other check
-        身份证号 = params['idCard']
-        密码 = params['pass']
+        身份证号 = params['身份证号']
+        密码 = params['密码']
 
         if len(身份证号) == 0:
             raise InvalidParamsError('身份证号为空，请输入身份证号')
@@ -92,10 +92,10 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if 'idCard' not in params:
-                params['idCard'] = meta.get('idCard')
-            if 'pass' not in params:
-                params['pass'] = meta.get('pass')
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -103,9 +103,9 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == 'idCard' and 'idCard' in meta:
+            if pr['key'] == '身份证号' and '身份证号' in meta:
                 continue
-            elif pr['key'] == 'pass' and 'pass' in meta:
+            elif pr['key'] == '密码' and '密码' in meta:
                 continue
             res.append(pr)
         return res
@@ -116,8 +116,8 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
 
-                id_num = params.get("idCard")
-                account_pass = params.get("pass")
+                id_num = params.get("身份证号")
+                account_pass = params.get("密码")
                 m = hashlib.md5()
                 m.update(str(account_pass).encode(encoding="utf-8"))
                 pw = m.hexdigest()
@@ -221,8 +221,8 @@ class Task(AbsFetchTask):
 
                     # 保存到meta
                     self.result_key = id_num
-                    self.result_meta['idCard'] = id_num
-                    self.result_meta['pass'] = account_pass
+                    self.result_meta['身份证号'] = id_num
+                    self.result_meta['密码'] = account_pass
 
 
                     # 养老保险缴费明细
@@ -278,8 +278,8 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='idCard', name='身份证号', cls='input', placeholder='身份证号', value=params.get('idCard', '')),
-            dict(key='pass', name='密码', cls='input:password', value=params.get('pass', '')),
+            dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
     def _convert_type(self,num):
