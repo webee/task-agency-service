@@ -15,6 +15,7 @@ BASEINFO_URl='http://221.215.38.136/grcx/work/m01/f1121/show.action'
 OLDQuery_URL='http://221.215.38.136/grcx/work/m01/f1203/oldQuery.action'
 medicalQuery_URL='http://221.215.38.136/grcx/work/m01/f1204/medicalQuery.action'
 unemployQuery_URL='http://221.215.38.136/grcx/work/m01/f1205/unemployQuery.action'
+STATUS_URL='http://221.215.38.136/grcx/work/m01/f1102/insuranceQuery.action'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="青岛",
@@ -143,8 +144,24 @@ class Task(AbsFetchTask):
                 '城市名称': '青岛',
                 '城市编号': '370200'
             }
+
+            resp = self.s.get(STATUS_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            tabs = soup.select('.main-table')[0]
+            arrstatus={}
+            idstatus='停缴'
+            for tr in tabs.findAll('tr'):
+                cell = [i.text for i in tr.find_all('td')]
+                if len(cell)>2:
+                    strss='停缴'
+                    if cell[3]=='参保缴费':
+                        idstatus='正常参保'
+                        strss='正常参保'
+                    arrstatus.setdefault(cell[2].replace('保险', '').replace('企业', '').replace('基本', ''),strss)
+
+            data['baseInfo'].setdefault('五险状态', arrstatus)
             self.result_identity['target_name']=soup.select('input')[1]['value']
-            self.result_identity['status']=''
+            self.result_identity['status']=idstatus
             #养老明细信息
             data['old_age']={}
             data['old_age']['data']={}
@@ -239,9 +256,8 @@ class Task(AbsFetchTask):
                             if yearkeys!=monthkeys[:4] or yearkeys=='':
                                 yearkeys=monthkeys[:4]
                                 data['medical_care']['data'][yearkeys] = {}
-                        if i == 7:
-                            yilsum+=float(td.getText())
                         if i == 10:
+                            yilsum+=float(td.getText())
                             arr = []
                             months = ''
                             for (key, value) in data['medical_care']['data'][yearkeys].items():
