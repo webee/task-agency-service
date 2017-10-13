@@ -164,7 +164,7 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
             dict(key='用户姓名', name='用户姓名', cls='input', value=params.get('用户姓名', '')),
-            dict(key='密码', name='密码', cls='input', value=params.get('密码', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
     def _unit_fetch(self):

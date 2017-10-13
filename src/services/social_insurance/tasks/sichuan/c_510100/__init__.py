@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 import json
 
 MAIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/personal/personalHomeAction!query.do"
-LOGIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/netHallLoginAction!personalLogin.do"
+LOGIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/plogin4Action!login.do"       # https://gr.cdhrss.gov.cn:442/cdwsjb/  # netHallLoginAction!personalLogin.do
 VC_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/CaptchaImg"
 Detail_URL=r"https://gr.cdhrss.gov.cn:442/cdwsjb/personal/query/queryPersonPaymentInfoAction!queryPayment.do"
 
@@ -29,10 +29,12 @@ class Task(AbsFetchTask):
 
     def _get_common_headers(self):
         return {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
-            'Accept-Encoding':'gzip, deflate, sdch',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.79 Safari/537.36',
+            'Accept-Encoding':'gzip, deflate, br',
             'Host': 'gr.cdhrss.gov.cn:442',
             'X-Requested-With':'XMLHttpRequest',
+            'Accept':'application/json, text/javascript, */*; q=0.01',
+            'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6'
         }
 
     # def _prepare(self, data=None):
