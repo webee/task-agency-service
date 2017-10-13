@@ -131,28 +131,6 @@ class Task(AbsFetchTask):
                 if('true' not in resp.text):
                     raise InvalidParamsError(resp.text)
                     #
-                    # searchYear = input("请输入需要查询的年份：")
-                    # if (searchYear == ""):
-                    #     searchYears = time.localtime()[0]
-                    # else:
-                    #     searchYears = searchYear
-                    #
-                    # # 养老缴费明细
-                    # sEI = self.s.get(
-                    #     "http://60.216.99.138/hsp/siAd.do?method=queryAgedPayHis&__usersession_uuid=" + uuid + "&year=" + str(
-                    #         searchYears) + "")
-                    # detailEI = BeautifulSoup(sEI.content, 'html.parser').find('table',
-                    #                                                           {'class': 'defaultTableClass'}).findAll(
-                    #     "tr")
-                    # for a in range(len(detailEI)):
-                    #     if ((a + 1) < len(detailEI)):
-                    #         td = detailEI[a + 1].findAll("td")
-                    #         self.result['detailEI'][td[3].find(type="text")["value"]] = {
-                    #             '缴费年月': td[0].find(type="text")["value"],
-                    #             '缴费基数': str(td[1].find(type="text")["value"]).replace(',', ''),
-                    #             '缴费金额': td[2].find(type="text")["value"],
-                    #         }
-                    #
                     # # 医疗缴费明细
                     # sHI = self.s.get(
                     #     "http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid + "&year=" + str(
@@ -239,7 +217,7 @@ class Task(AbsFetchTask):
                     for yr in range(int(oldStart),int(oldEnd)+1):
                         detailEI=self.s.get("http://60.216.99.138/hsp/siAd.do?method=queryAgedPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr) + "")
                         sEI = BeautifulSoup(detailEI.content, 'html.parser').find('table',{'class': 'defaultTableClass'}).findAll("tr")
-                        for a in range(1,len(sEI)+1):
+                        for a in range(1,len(sEI)):
                             td = sEI[a].findAll("td")
                             years=td[0].find(type="text")["value"][0:4]
                             months=td[0].find(type="text")["value"][5:7]
@@ -255,6 +233,37 @@ class Task(AbsFetchTask):
                                 '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                             }
                             basedataE[years][months].append(modelE)
+
+                    # 医疗保险缴费明细
+                    self.result['data']["medical_care"] = {"data": {}}
+                    basedataH = self.result['data']["medical_care"]["data"]
+                    modelH = {}
+                    permedicalTotal = 0.0
+                    medresp = self.s.get("http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid)
+                    medData = BeautifulSoup(medresp.text, 'html.parser')
+                    medCount = medData.findAll('font', {'class': 'font'})[0].text  # 养老累积缴费月数
+                    medStart = medData.findAll('p')[2].text.split(':')[1].replace('\n', '')[0:4]  # 养老开始日期
+                    medEnd = medData.findAll('p')[3].text.split(':')[1].replace('\n', '')[0:4]  # 养老结束日期
+
+                    for yr2 in range(int(medStart),int(medEnd)+1):
+                        detailHI=self.s.get("http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr2) + "")
+                        sHI = BeautifulSoup(detailHI.content, 'html.parser').find('table',{'class': 'defaultTableClass'}).findAll("tr")
+                        for b in range(1,len(sHI)):
+                            td2 = sHI[b].findAll("td")
+                            yearH=td2[0].find(type="text")["value"][0:4]
+                            monthH=td2[0].find(type="text")["value"][5:7]
+                            basedataH.setdefault(yearH, {})
+                            basedataH[yearH].setdefault(monthH, [])
+
+                            modelH = {
+                                '缴费时间': td2[0].find(type="text")["value"],
+                                '缴费类型':'',
+                                '缴费基数': str(td2[1].find(type="text")["value"]).replace(',', ''),
+                                '公司缴费':'-',
+                                '个人缴费': td2[2].find(type="text")["value"],
+                                '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
+                            }
+                            basedataH[yearH][monthH].append(modelH)
 
 
                     # 个人基本信息
@@ -272,6 +281,13 @@ class Task(AbsFetchTask):
                         '状态': '',
                         '出生日期': soup[1].findAll("td")[3].find(type="text")["value"]
                     }
+
+                    self.result_identity.update({
+                        "task_name": "济南",
+                        "target_name": soup[0].findAll("td")[1].find(type="text")["value"],
+                        "target_id": self.result_meta['身份证号'],
+                        "status": ""
+                    })
 
                     return
             except (AssertionError, InvalidParamsError) as e:

@@ -125,6 +125,7 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
+            self.result_data['companyList']=[]
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             datas = soup.select('.table-content')
@@ -188,7 +189,7 @@ class Task(AbsFetchTask):
                 baseDetail[years].setdefault(months, [])
                 baseDetail[years][months].append(model)
 
-            self.result_data['companyList'] = {
+            self.result_data['companyList'].append({
                 "单位名称": company[1].text.split('：')[1],
                 "单位登记号": company[0].text.split("：")[1],
                 "所属管理部编号": "-",
@@ -200,7 +201,7 @@ class Task(AbsFetchTask):
                 "上年结转余额": "-",
                 "最后业务日期": datas[7].findAll("td")[5].text,
                 "转出金额": "-"
-            }
+            })
 
             # identity 信息
             self.result['identity'] = {
