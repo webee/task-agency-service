@@ -38,7 +38,7 @@ class Task(AbsFetchTask):
         assert params is not None, '缺少参数'
         assert 'parentid' in params, '缺少身份证号'
         #assert 'account_num' in params, '缺少职工姓名'
-        assert 'psw' in params,'缺少密码'
+        assert 'pwd' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
     def _params_handler(self, params: dict):
@@ -112,7 +112,7 @@ class Task(AbsFetchTask):
         vc = self._new_vc()
         raise AskForParamsError([
             dict(key='parentid', name='身份证号', cls='input', value=params.get('parentid', '')),
-            dict(key='psw', name='密码', cls='input:password', value=params.get('psw', '')),
+            dict(key='pwd', name='密码', cls='input:password', value=params.get('pwd', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
@@ -162,7 +162,7 @@ class Task(AbsFetchTask):
                 tab=soup.select('.main-table')[0]
                 titkeys=[]
                 for th in tab.findAll('th'):
-                    titlename = th.getText()
+                    titlename = th.getText().replace(' ', '')
                     if titlename == '缴费年月':
                         titlename = '缴费时间'
                     if titlename == '个人基数':
@@ -218,7 +218,7 @@ class Task(AbsFetchTask):
                 tab = soup.select('.main-table')[0]
                 titkeys =[]
                 for th in tab.findAll('th'):
-                    titlename = th.getText()
+                    titlename = th.getText().replace(' ', '')
                     if titlename == '缴费年月':
                         titlename = '缴费时间'
                     if titlename == '个人基数':
@@ -271,7 +271,7 @@ class Task(AbsFetchTask):
                 tab = soup.select('.main-table')[0]
                 titkeys =[]
                 for th in tab.findAll('th'):
-                    titlename = th.getText()
+                    titlename = th.getText().replace(' ', '')
                     if titlename == '缴费年月':
                         titlename = '缴费时间'
                     if titlename == '个人基数':
