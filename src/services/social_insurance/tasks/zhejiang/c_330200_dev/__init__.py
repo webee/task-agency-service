@@ -172,11 +172,12 @@ class Task(AbsFetchTask):
                if len(cell)<3:
                    arrstr.extend(cell)
                else:
+
                    print(cell)
            print(arrstr)
 
-           #self.result_data['medical_treatment'] = {'姓名': soupyl.select('#xm')[0].text,
-                                                   # '单位名称': mingxitable[0].find('table').text}
+
+
 
 
    def _unit_fetch_name(self):
