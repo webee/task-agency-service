@@ -20,7 +20,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="郑州",
         help="""
-            <li></li>
+            <li>初始密码是111111</li>
+            <li>可向公司人事或者经办人索取公积金账号</li>
             """
     )
 
@@ -31,10 +32,6 @@ class Task(AbsFetchTask):
             'Host': 'wx.zzgjj.com',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-        self.result_data['companyList']={}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -48,13 +45,13 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'idCard' in params, '缺少身份证号'
-        assert 'fullname' in params, '缺少用户姓名'
-        assert 'pass' in params, '缺少密码'
+        assert '身份证号' in params, '缺少身份证号'
+        assert '用户姓名' in params, '缺少用户姓名'
+        assert '密码' in params, '缺少密码'
         # other check
-        身份证号 = params['idCard']
-        用户姓名 = params['fullname']
-        密码 = params['pass']
+        身份证号 = params['身份证号']
+        用户姓名 = params['用户姓名']
+        密码 = params['密码']
 
         if len(身份证号) == 0:
             raise InvalidParamsError('身份证号为空，请输入身份证号')
@@ -72,12 +69,12 @@ class Task(AbsFetchTask):
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if 'idCard' not in params:
-                params['idCard'] = meta.get('idCard')
-            if 'fullname' not in params:
-                params['fullname'] = meta.get('fullname')
-            if 'pass' not in params:
-                params['pass'] = meta.get('pass')
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if '用户姓名' not in params:
+                params['用户姓名'] = meta.get('用户姓名')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -85,11 +82,11 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == 'idCard' and 'idCard' in meta:
+            if pr['key'] == '身份证号' and '身份证号' in meta:
                 continue
-            elif pr['key'] == 'fullname' and 'fullname' in meta:
+            elif pr['key'] == '用户姓名' and '用户姓名' in meta:
                 continue
-            elif pr['key'] == 'pass' and 'pass' in meta:
+            elif pr['key'] == '密码' and '密码' in meta:
                 continue
             res.append(pr)
         return res
@@ -102,9 +99,9 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
                 self.result_data['companyList']=[]
-                id_num = params.get("idCard")
-                account_name = params.get("fullname")
-                account_pass = params.get("pass")
+                id_num = params.get("身份证号")
+                account_name = params.get("用户姓名")
+                account_pass = params.get("密码")
 
                 data = {
                     'name': account_name,
@@ -116,7 +113,7 @@ class Task(AbsFetchTask):
                 self.result_key = id_num
                 self.result_meta['身份证号'] =id_num
                 self.result_meta['用户姓名'] = account_name
-                self.result_meta['登录密码']=account_pass
+                self.result_meta['密码']=account_pass
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 datas = soup.findAll('div', {'class': 'cx'})[0]
@@ -165,9 +162,9 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='idCard', name='身份证号', cls='input', value=params.get('idCard', '')),
-            dict(key='fullname', name='用户姓名', cls='input', value=params.get('fullname', '')),
-            dict(key='pass', name='密码', cls='input', value=params.get('pass', '')),
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
+            dict(key='用户姓名', name='用户姓名', cls='input', value=params.get('用户姓名', '')),
+            dict(key='密码', name='密码', cls='input', value=params.get('密码', '')),
         ], err_msg)
 
     def _unit_fetch(self):
