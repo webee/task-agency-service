@@ -130,68 +130,6 @@ class Task(AbsFetchTask):
                 resp = self.s.post("http://60.216.99.138/hsp/logon.do?method=doLogon&_xmlString=" + _xmlString)
                 if('true' not in resp.text):
                     raise InvalidParamsError(resp.text)
-                    #
-                    # # 医疗缴费明细
-                    # sHI = self.s.get(
-                    #     "http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid + "&year=" + str(
-                    #         searchYears) + "")
-                    # detailHI = BeautifulSoup(sHI.content, 'html.parser').find('table',
-                    #                                                           {'class': 'defaultTableClass'}).findAll(
-                    #     "tr")
-                    # for b in range(len(detailHI)):
-                    #     if ((b + 1) < len(detailHI)):
-                    #         td2 = detailHI[b + 1].findAll("td")
-                    #         self.result['detailHI'][td2[5].find(type="text")["value"]] = {
-                    #             '缴费年月': td2[0].find(type="text")["value"],
-                    #             '缴费基数': str(td2[1].find(type="text")["value"]).replace(',', ''),
-                    #             '缴费金额': td2[2].find(type="text")["value"],
-                    #         }
-                    #
-                    # # 失业缴费明细
-                    # sII = self.s.get(
-                    #     "http://60.216.99.138/hsp/siLost.do?method=queryLostPayHis&__usersession_uuid=" + uuid + "&year=" + str(
-                    #         searchYears) + "")
-                    # detailII = BeautifulSoup(sII.content, 'html.parser').find('table',
-                    #                                                           {'class': 'defaultTableClass'}).findAll(
-                    #     "tr")
-                    # for c in range(len(detailII)):
-                    #     if ((c + 1) < len(detailII)):
-                    #         td3 = detailII[c + 1].findAll("td")
-                    #         self.result['detailII'][td3[3].find(type="text")["value"]] = {
-                    #             '缴费年月': td3[0].find(type="text")["value"],
-                    #             '缴费基数': str(td3[1].find(type="text")["value"]).replace(',', ''),
-                    #             '缴费金额': td3[2].find(type="text")["value"],
-                    #         }
-                    #
-                    # # 工伤缴费明细
-                    # sCI = self.s.get(
-                    #     "http://60.216.99.138/hsp/siHarm.do?method=queryHarmPayHis&__usersession_uuid=" + uuid + "&year=" + str(
-                    #         searchYears) + "")
-                    # detailCI = BeautifulSoup(sCI.content, 'html.parser').find('table',
-                    #                                                           {'class': 'defaultTableClass'}).findAll(
-                    #     "tr")
-                    # for d in range(len(detailCI)):
-                    #     if ((d + 1) < len(detailCI)):
-                    #         td4 = detailCI[d + 1].findAll("td")
-                    #         self.result['detailCI'][td4[1].find(type="text")["value"]] = {
-                    #             '缴费年月': td4[0].find(type="text")["value"],
-                    #             '缴费状态': str(td4[2].find(type="text")["value"]).replace(',', ''),
-                    #         }
-                    #
-                    # # 生育缴费明细
-                    # sBI = self.s.get(
-                    #     "http://60.216.99.138/hsp/siBirth.do?method=queryBirthPayHis&__usersession_uuid=" + uuid + "&year=" + str(
-                    #         searchYears) + "")
-                    # detailBI = BeautifulSoup(sBI.content, 'html.parser').find('table',
-                    #                                                           {'class': 'defaultTableClass'}).findAll(
-                    #     "tr")
-                    # for f in range(len(detailBI)):
-                    #     if ((f + 1) < len(detailBI)):
-                    #         td5 = detailBI[f + 1].findAll("td")
-                    #         self.result['detailBI'][td5[1].find(type="text")["value"]] = {
-                    #             '缴费年月': td5[0].find(type="text")["value"],
-                    #             '缴费状态': str(td5[2].find(type="text")["value"]).replace(',', ''),
-                    #         }
                 else:
                     uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
                     res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
@@ -241,9 +179,9 @@ class Task(AbsFetchTask):
                     permedicalTotal = 0.0
                     medresp = self.s.get("http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid)
                     medData = BeautifulSoup(medresp.text, 'html.parser')
-                    medCount = medData.findAll('font', {'class': 'font'})[0].text  # 养老累积缴费月数
-                    medStart = medData.findAll('p')[2].text.split(':')[1].replace('\n', '')[0:4]  # 养老开始日期
-                    medEnd = medData.findAll('p')[3].text.split(':')[1].replace('\n', '')[0:4]  # 养老结束日期
+                    medCount = medData.findAll('font', {'class': 'font'})[0].text  # 医疗累积缴费月数
+                    medStart = medData.findAll('p')[2].text.split(':')[1].replace('\n', '')[0:4]  # 医疗开始日期
+                    medEnd = medData.findAll('p')[3].text.split(':')[1].replace('\n', '')[0:4]  # 医疗结束日期
 
                     for yr2 in range(int(medStart),int(medEnd)+1):
                         detailHI=self.s.get("http://60.216.99.138/hsp/siMedi.do?method=queryMediPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr2) + "")
@@ -265,20 +203,117 @@ class Task(AbsFetchTask):
                             }
                             basedataH[yearH][monthH].append(modelH)
 
+                    # 失业保险缴费明细
+                    self.result['data']["unemployment"] = {"data": {}}
+                    basedataI = self.result['data']["unemployment"]["data"]
+                    modelI = {}
+                    uplresp = self.s.get("http://60.216.99.138/hsp/siLost.do?method=queryLostPayHis&__usersession_uuid=" + uuid)
+                    uplData = BeautifulSoup(uplresp.text, 'html.parser')
+                    uplCount = uplData.findAll('font', {'class': 'font'})[0].text  # 失业累积缴费月数
+                    uplStart = uplData.findAll('p')[1].text.split(':')[1].replace('\n', '')[0:4]  # 失业开始日期
+                    uplEnd = uplData.findAll('p')[2].text.split(':')[1].replace('\n', '')[0:4]  # 失业结束日期
+
+                    for yr3 in range(int(uplStart), int(uplEnd) + 1):
+                        detailII = self.s.get("http://60.216.99.138/hsp/siLost.do?method=queryLostPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr3) + "")
+                        sII = BeautifulSoup(detailII.content, 'html.parser').find('table', {'class': 'defaultTableClass'}).findAll("tr")
+                        for c in range(1, len(sII)):
+                            td3 = sII[c].findAll("td")
+                            yearI = td3[0].find(type="text")["value"][0:4]
+                            monthI = td3[0].find(type="text")["value"][5:7]
+                            basedataI.setdefault(yearI, {})
+                            basedataI[yearI].setdefault(monthI, [])
+
+                            modelI = {
+                                '缴费时间': td3[0].find(type="text")["value"],
+                                '缴费类型': td3[4].find(type="text")["value"],
+                                '缴费基数': str(td3[1].find(type="text")["value"]).replace(',', ''),
+                                '公司缴费': '-',
+                                '个人缴费': td3[2].find(type="text")["value"],
+                                '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
+                            }
+                            basedataI[yearI][monthI].append(modelI)
+
+                    # 工伤保险缴费明细
+                    self.result['data']["injuries"] = {"data": {}}
+                    basedataC = self.result['data']["injuries"]["data"]
+                    modelC = {}
+                    injresp = self.s.get("http://60.216.99.138/hsp/siHarm.do?method=queryHarmPayHis&__usersession_uuid=" + uuid)
+                    injData = BeautifulSoup(injresp.text, 'html.parser')
+                    injCount = injData.findAll('font', {'class': 'font'})[0].text  # 失业累积缴费月数
+                    injStart = injData.findAll('p')[1].text.split(':')[1].replace('\n', '')[0:4]  # 失业开始日期
+                    injEnd = injData.findAll('p')[2].text.split(':')[1].replace('\n', '')[0:4]  # 失业结束日期
+
+                    for yr4 in range(int(injStart), int(injEnd) + 1):
+                        detailCI = self.s.get("http://60.216.99.138/hsp/siHarm.do?method=queryHarmPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr4) + "")
+                        sCI = BeautifulSoup(detailCI.content, 'html.parser').find('table', {'class': 'defaultTableClass'}).findAll("tr")
+                        for d in range(1, len(sCI)):
+                            td4 = sCI[d].findAll("td")
+                            yearC = td4[0].find(type="text")["value"][0:4]
+                            monthC = td4[0].find(type="text")["value"][5:7]
+                            basedataC.setdefault(yearC, {})
+                            basedataC[yearC].setdefault(monthC, [])
+
+                            modelC = {
+                                '缴费时间': td4[0].find(type="text")["value"],
+                                '缴费类型': td4[2].find(type="text")["value"],
+                                '缴费基数': '-',
+                                '公司缴费': '-',
+                                '个人缴费': '-',
+                                '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
+                            }
+                            basedataC[yearC][monthC].append(modelC)
+
+                    # 生育保险缴费明细
+                    self.result['data']["maternity"] = {"data": {}}
+                    basedataB = self.result['data']["maternity"]["data"]
+                    modelB = {}
+                    matnresp = self.s.get("http://60.216.99.138/hsp/siBirth.do?method=queryBirthPayHis&__usersession_uuid=" + uuid)
+                    matnData = BeautifulSoup(matnresp.text, 'html.parser')
+                    matnCount = matnData.findAll('font', {'class': 'font'})[0].text  # 失业累积缴费月数
+                    matnStart = matnData.findAll('p')[1].text.split(':')[1].replace('\n', '')[0:4]  # 失业开始日期
+                    matnEnd = matnData.findAll('p')[2].text.split(':')[1].replace('\n', '')[0:4]  # 失业结束日期
+
+                    for yr5 in range(int(matnStart), int(matnEnd) + 1):
+                        detailBI = self.s.get("http://60.216.99.138/hsp/siBirth.do?method=queryBirthPayHis&__usersession_uuid=" + uuid + "&year=" + str(yr5) + "")
+                        sBI = BeautifulSoup(detailBI.content, 'html.parser').find('table', {'class': 'defaultTableClass'}).findAll("tr")
+                        for f in range(1, len(sBI)):
+                            td5 = sBI[f].findAll("td")
+                            yearB = td5[0].find(type="text")["value"][0:4]
+                            monthB = td5[0].find(type="text")["value"][5:7]
+                            basedataB.setdefault(yearB, {})
+                            basedataB[yearB].setdefault(monthB, [])
+
+                            modelB = {
+                                '缴费时间': td5[0].find(type="text")["value"],
+                                '缴费类型': td5[2].find(type="text")["value"],
+                                '缴费基数': '-',
+                                '公司缴费': '-',
+                                '个人缴费': '-',
+                                '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
+                            }
+                            basedataB[yearB][monthB].append(modelB)
+
+
+                    # 状态
+                    status=""
+                    if(sCI[len(sCI)-1].findAll("td")[2].find(type="text")["value"]=="正常缴费"):
+                        status="正常"
+                    else:
+                        status="异常"
 
                     # 个人基本信息
                     self.result_data['baseInfo'] = {
                         '姓名': soup[0].findAll("td")[1].find(type="text")["value"],
-                        '身份证号': id_num,
+                        '身份证号': self.result_meta['身份证号'],
                         '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
                         '城市名称': '济南',
                         '城市编号': '370100',
-                        '缴费时长': 0,
-                        '最近缴费时间': '',
-                        '开始缴费时间': '',
-                        '个人养老累计缴费': 0,
-                        '个人医疗累计缴费': 0,
-                        '状态': '',
+                        '缴费时长': int(oldCount),
+                        '最近缴费时间': oldData.findAll('p')[3].text.split(':')[1].replace('\n',''),
+                        '开始缴费时间': oldData.findAll('p')[2].text.split(':')[1].replace('\n',''),
+                        '个人养老累计缴费': float(oldTotal.replace(',','')),
+                        '个人医疗累计缴费': '',
+                        '状态': status,
                         '出生日期': soup[1].findAll("td")[3].find(type="text")["value"]
                     }
 
@@ -286,10 +321,10 @@ class Task(AbsFetchTask):
                         "task_name": "济南",
                         "target_name": soup[0].findAll("td")[1].find(type="text")["value"],
                         "target_id": self.result_meta['身份证号'],
-                        "status": ""
+                        "status": status
                     })
 
-                    return
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
