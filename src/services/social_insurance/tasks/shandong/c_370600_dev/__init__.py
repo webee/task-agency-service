@@ -7,15 +7,18 @@ import random
 import json
 import io
 import base64
+import datetime
 from PIL import Image
 from bs4 import BeautifulSoup
-from services.service import AskForParamsError, PreconditionNotSatisfiedError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
+from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
 
-MAIN_URL = 'http://ytrsj.gov.cn:8081/hsp/mainFrame.jsp?&__usersession_uuid=USERSESSION_e78066c6_ba4e_44a1_99e2_803f9e1fcebf&_width=960&_height=769'
+MAIN_URL = 'http://ytrsj.gov.cn:8081/hsp/mainFrame.jsp'
 LOGIN_URL = 'http://ytrsj.gov.cn:8081/hsp/logon.do'
 VC_URL = 'http://ytrsj.gov.cn:8081/hsp/genAuthCode?_='
+INFO_URL='http://ytrsj.gov.cn:8081/hsp/systemOSP.do'
 
 
 class Task(AbsFetchTask):
@@ -44,7 +47,7 @@ class Task(AbsFetchTask):
         assert params is not None, '缺少参数'
         assert '身份证号' in params, '缺少身份证号'
         assert '密码' in params,'缺少密码'
-        assert 'vc' in params, '缺少验证码'
+        #assert 'vc' in params, '缺少验证码'
         # other check
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -72,6 +75,8 @@ class Task(AbsFetchTask):
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
+                self._new_vc()
+                vc=input('验证码：')
                 self._check_login_params(params)
                 id_num = params['身份证号']
                 password = params['密码']
@@ -79,52 +84,83 @@ class Task(AbsFetchTask):
                 m.update(str(password).encode(encoding="utf-8"))
                 pw = m.hexdigest()
 
-                self._new_vc()
-                vc = input("请输入运算后的结果：")
-
-                xmlstr='< ?xml version = "1.0" encoding = "UTF-8"? > < p > < s tempmm = "'+pw+'" / > < / p >'
+                xmlstr='<?xml version = "1.0" encoding = "UTF-8"?><p><s tempmm = "'+password+'"/></p>'
                 resp = self.s.post(LOGIN_URL, data=dict(
                     method='writeMM2Temp',
                     _xmlString=xmlstr,
                     _random=random.random()
-                ),header={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'})
+                ),headers={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
-                xmlstr = '< ?xml version = "1.0" encoding = "UTF-8"? > < p > < s userid = "'+id_num+'" / > < usermm = "'+password+'" / > < s authcode = "5" / > < s yxzjlx = "A" / > < s appversion = "1.0.63" / > < s dlfs = "" / > < / p >'
+                xmlstr = '<?xml version="1.0" encoding="UTF-8"?><p> <s userid ="'+id_num+'"/> <s usermm="'+pw+'"/><s authcode="'+vc+'"/><s yxzjlx="A"/><s appversion="81002198533703667231184339811848228729"/><s dlfs=""/></p>'
                 resp = self.s.post(LOGIN_URL, data=dict(
                     method='doLogon',
                     _xmlString=xmlstr,
                     _random=random.random()
-                ), header={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
                            'X-Requested-With': 'XMLHttpRequest'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 errormsg = soup.text
                 if errormsg:
-                    raise Exception(errormsg)
+                    if len(errormsg)>20:
+                        dicts=eval(errormsg.replace('true','"true"'))
+                        self.g.usersession_uuid=dicts['__usersession_uuid']
+                    else:
+                        raise Exception(errormsg)
 
+                    self.result_key=id_num
                     # 保存到meta
-                    self.result_meta['用户名'] = username
+                    self.result_meta['用户名'] = id_num
                     self.result_meta['密码'] = password
 
                     self.result_identity['task_name'] = '烟台'
+                    self.result_identity['target_id'] = id_num
+
                 return
             except Exception as e:
                 err_msg = str(e)
-
-
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
-            #dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
+            #dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
         try:
-            data = self.result['data']
-            resp = self.s.get(MAIN_URL)
+            data = self.result_data
+            resp = self.s.post(INFO_URL, data=dict(
+                    method='returnMain',
+                    __usersession_uuid=self.g.usersession_uuid,
+                    _random=random.random()
+                ),headers={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'})
             soup = BeautifulSoup(resp.content, 'html.parser')
-            #name = soup.select('#name')[0]['value']
-            #data['name'] = name
+            arrcbsj=[soup.findAll('input')[6].attrs['value'],soup.findAll('input')[10].attrs['value'],soup.findAll('input')[14].attrs['value'],soup.findAll('input')[18].attrs['value'],soup.findAll('input')[22].attrs['value'],soup.findAll('input')[26].attrs['value']]
+            baseinfoarr={'养老':'正常参保' if soup.findAll('input')[7].attrs['value']=='参保缴费' else '停缴',
+                         '医疗': '正常参保' if soup.findAll('input')[11].attrs['value'] == '参保缴费' else '停缴',
+                         '失业': '正常参保' if soup.findAll('input')[15].attrs['value'] == '参保缴费' else '停缴',
+                         '工伤': '正常参保' if soup.findAll('input')[19].attrs['value'] == '参保缴费' else '停缴',
+                         '生育': '正常参保' if soup.findAll('input')[23].attrs['value'] == '参保缴费' else '停缴',
+                         soup.findAll('input')[25].attrs['value']: '正常参保' if soup.findAll('input')[27].attrs['value'] == '参保缴费' else '停缴'}
+            data['baseInfo']={
+                '姓名':soup.findAll('input')[0].attrs['value'],
+                '身份证号': soup.findAll('input')[1].attrs['value'],
+                '手机号码': soup.findAll('input')[2].attrs['value'],
+                '家庭住址': soup.findAll('input')[3].attrs['value'],
+                '通讯地址': soup.findAll('input')[4].attrs['value'],
+                '五险状态': baseinfoarr,
+                '开始缴费时间': min(baseinfoarr),
+                "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
+                '城市名称': '烟台',
+                '城市编号': '370600'
+            }
+            self.result_identity['target_name'] = soup.findAll('input')[0].attrs['value']
+            idtstatus='停缴'
+            if '正常参保' == baseinfoarr.values():
+                idtstatus='正常参保'
+            self.result_identity['status'] = idtstatus
+
+            #养老
+
 
             return
         except PermissionError as e:
@@ -151,6 +187,6 @@ class Task(AbsFetchTask):
         toImage.show()
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}
-    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
+    #meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}prepare_data=dict(meta=meta)
+    client = TaskTestClient(Task())
     client.run()
