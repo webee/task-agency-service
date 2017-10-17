@@ -160,7 +160,7 @@ class Task(AbsFetchTask):
                     arrstatus.setdefault(cell[2].replace('保险', '').replace('企业', '').replace('基本', ''),strss)
 
             data['baseInfo'].setdefault('五险状态', arrstatus)
-            self.result_identity['target_name']=soup.select('input')[1]['value']
+            self.result_identity['target_name']=data['baseInfo']['姓名']
             self.result_identity['status']=idstatus
             #养老明细信息
             data['old_age']={}
