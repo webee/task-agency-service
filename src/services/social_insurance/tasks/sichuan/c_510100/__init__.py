@@ -54,15 +54,10 @@ class Task(AbsFetchTask):
             'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6'
         }
 
-<<<<<<< HEAD
+
     def _prepare(self, data=None):
         super()._prepare(data)
         self.result_data['baseInfo']={}
-=======
-    # def _prepare(self, data=None):
-    #     super()._prepare()
-    #     self.result_data['baseInfo']={}
->>>>>>> origin/master
 
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
