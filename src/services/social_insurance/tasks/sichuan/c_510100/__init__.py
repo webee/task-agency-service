@@ -259,10 +259,10 @@ class Task(AbsFetchTask):
                         '缴费类型': '',
                         '缴费基数': sHI[b]['yac004'],
                         '公司缴费': sHI[b]['dwjfje'],
-                        '个人缴费': sHI[b]['grjfje'],
+                        '个人缴费': sHI[b]['hrzhje'],
                         #'缴费合计': sHI[b]['jfjezh']
                     }
-                    permedicalTotal += float(sHI[b]['grjfje'])
+                    permedicalTotal += float(sHI[b]['hrzhje'])
                     basedataH[yearH][monthH].append(modelH)
 
 
@@ -337,14 +337,37 @@ class Task(AbsFetchTask):
                     }
                     basedataB[yearB][monthB].append(modelB)
 
+                # 大病缴费明细
+                self.result['data']["serious_illness"] = {"data": {}}
+                basedataS = self.result['data']["serious_illness"]["data"]
+                modelS = {}
+                detailSI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=330")
+                sSI = json.loads(detailSI.text)['lists']['dg_payment']['list']
+                for q in range(len(sSI)):
+                    yearQ = str(sSI[q]['aae002'])[0:4]
+                    monthQ = str(sSI[q]['aae002'])[4:6]
+                    basedataS.setdefault(yearQ, {})
+                    basedataS[yearQ].setdefault(monthQ, [])
 
-                # 五险状态
+                    modelS = {
+                        '缴费单位': sSI[q]['aab004'],
+                        '缴费时间': sSI[q]['aae002'],
+                        '缴费类型': '',
+                        '缴费基数': sSI[q]['yac004'],
+                        '公司缴费': sSI[q]['dwjfje'],
+                        '个人缴费': '-'
+                    }
+                    basedataS[yearQ][monthQ].append(modelS)
+
+
+                # 六险状态
                 stype =self.s.get("https://gr.cdhrss.gov.cn:442/cdwsjb/personal/query/queryCZInsuranceInfoAction.do")
                 stypes=BeautifulSoup(stype.text,'html.parser').find('div',{'id':'SeInfo'})
                 stype2=json.loads(stypes.text.split('data')[40].split(';')[0].replace('=',''))['list']
                 social_Type = {
                     '养老': self._convert_type(stype2[0]['aac031']),
                     '医疗': self._convert_type(stype2[2]['aac031']),
+                    '大病': self._convert_type(stype2[3]['aac031']),
                     '失业': self._convert_type(stype2[1]['aac031']),
                     '工伤': self._convert_type(stype2[4]['aac031']),
                     '生育': self._convert_type(stype2[5]['aac031'])
