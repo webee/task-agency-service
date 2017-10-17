@@ -1,10 +1,9 @@
-import time
-import json
 import datetime
 import requests
 from bs4 import BeautifulSoup
-from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
+from services.errors import InvalidParamsError
+from services.commons import AbsFetchTask
 
 MAIN_URL = 'http://sbzx.ks.gov.cn:81/webPages/grjb.aspx'
 LOGIN_URL = 'http://sbzx.ks.gov.cn:81/webPages/grxxcxdl.aspx'
@@ -12,45 +11,56 @@ USER_INFO_URL = "http://sbzx.ks.gov.cn:81/webPages/grjb.aspx"
 DETAILED_LIST_URL = "http://sbzx.ks.gov.cn:81/webPages/"
 
 
-class Task(AbsTaskUnitSessionTask):
-    # noinspection PyAttributeOutsideInit
-    def _prepare(self):
-        state: dict = self.state
-        self.s = requests.Session()
-        cookies = state.get('cookies')
-        if cookies:
-            self.s.cookies = cookies
-        self.s.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
-        })
+class Task(AbsFetchTask):
+    task_info = dict(
+        city_name="昆山",
+        help="""<li>医保病例手册（2005年11月后发放）首页“个人编号”。</li>
+        <li>由定点医院或药店出具发票上的8位数字的“社会保障号码”、“保险号”。</li>
+        <li>“职工社会保险个人权益记录单”及“社会保险参保证明”上的社保编号。</li>
+        <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>"""
+    )
 
-        # result
-        result: dict = self.result
-        result.setdefault('meta', {})
-        result.setdefault('data', {})
-        result.setdefault('identity', {})
+    def _get_common_headers(self):
+        return {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'}
 
     def _setup_task_units(self):
         self._add_unit(self._unit_login)
         self._add_unit(self._unit_fetch_user_info, self._unit_login)
         self._add_unit(self._unit_get_payment_details, self._unit_login)
 
-
-    def _update_session_data(self):
-        super()._update_session_data()
-        self.state['cookies'] = self.s.cookies
-
     def _query(self, params: dict):
         t = params.get('t')
         if t == 'vc':
             return self._new_vc()
 
-    # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert 'txtSocial' in params, '缺少社保编号'
-        assert 'txtIdCard' in params, '缺少身份证号'
+        assert '身份证号' in params, '缺少身份证号'
+        assert '社保编号' in params, '缺少社保编号'
+        # assert 'vc' in params, '缺少验证码'
         # other check
+
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '身份证号' not in params:
+                params['身份证号'] = meta.get('身份证号')
+            if '社保编号' not in params:
+                params['社保编号'] = meta.get('社保编号')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '身份证号' and '身份证号' in meta:
+                continue
+            elif pr['key'] == '社保编号' and '社保编号' in meta:
+                continue
+            res.append(pr)
+        return res
 
     def _unit_login(self, params=None):
         err_msg = None
@@ -58,8 +68,8 @@ class Task(AbsTaskUnitSessionTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
-                txtSocial = params['txtSocial']
-                txtIdCard = params['txtIdCard']
+                txtSocial = params['社保编号']
+                txtIdCard = params['身份证号']
                 self.s = requests.Session()
 
                 data = {
@@ -73,26 +83,30 @@ class Task(AbsTaskUnitSessionTask):
                 if resp.url != MAIN_URL:
                     raise Exception("登录失败！请重新登录")
 
-                self.result['key'] = txtIdCard
-                self.result['meta'] = {
-                    '身份证编号': txtIdCard,
-                    '社保编号': txtSocial
-                }
+                self.result_key = txtIdCard
+                # 保存到meta
+                self.result_meta['身份证号'] = txtIdCard
+                self.result_meta['社保编号'] = txtSocial
+
+                # self.result_identity['task_name'] = '昆山'
+                # self.result_identity['target_id'] = txtIdCard
+
                 return
+            except (AssertionError, InvalidParamsError) as e:
+                err_msg = str(e)
             except Exception as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='txtIdCard', name='身份证号', cls='input'),
-            dict(key='txtSocial', name='社保编号', cls='input'),
-            dict(key='cityName', name='城市Code', cls='input:hidden', value='昆山市'),
-            dict(key='cityCode', name='城市名称', cls='input:hidden', value='320583')
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
+            dict(key='社保编号', name='社保编号', cls='input', value=params.get('社保编号', ''))
+            # dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
 
     # 获取用户基本信息
     def _unit_fetch_user_info(self):
         try:
-            data = self.result['data']
+            data = self.result_data
             resp = self.s.post(USER_INFO_URL)
             soup = BeautifulSoup(str(resp.content, 'utf-8'), 'html.parser')
             result = soup.findAll('table')
@@ -105,10 +119,10 @@ class Task(AbsTaskUnitSessionTask):
                 "单位名称": tds[6].text,
                 "出生年月": tds[8].text,
                 "开始缴费时间": tds[10].text,
-                "人员状态": tds[12].text,
+                "当前账户状态": tds[12].text,
                 "身份证号": self.result['key'],
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
-                "城市名称": '昆山市',
+                "城市名称": '昆山',
                 "城市编号": '320583',
                 "缴费时长": '',
                 "最近缴费时间": '',
@@ -139,12 +153,12 @@ class Task(AbsTaskUnitSessionTask):
             }
 
             # 设置identity
-            identity = self.result['identity']
+            identity = self.result_identity
             identity.update({
-                'task_name': '昆山市',
+                'task_name': '昆山',
                 'target_name': tds[2].text,
-                'target_id': self.result['meta']["身份证编号"],
-                'status': "",
+                'target_id': self.result['meta']["身份证号"],
+                'status': tds[12].text,
             })
 
             return
@@ -162,7 +176,7 @@ class Task(AbsTaskUnitSessionTask):
 
     # 养老
     def _unit_fetch_user_old_age(self):
-        data = self.result['data']
+        data = self.result_data
         # 统计养老实际缴费月数
         self.old_age_month = 0
         # 统计个人缴费养老金额
@@ -174,7 +188,8 @@ class Task(AbsTaskUnitSessionTask):
 
         try:
             # 根据类型获取解析后的页面
-            soup = self._unit_fetch_user_DETAILED(DETAILED_LIST_URL + "yljf.aspx?pageIndex=1&id=" + data["baseInfo"]["社保编号"])
+            soup = self._unit_fetch_user_DETAILED(
+                DETAILED_LIST_URL + "yljf.aspx?pageIndex=1&id=" + data["baseInfo"]["社保编号"])
             # 获取指定div下table
             result = soup.find("div", {"id": "ctl00_ContentPlaceHolder1_showInfo"}).findAll("table")[0]
             # 拿table中的tr进行循环
@@ -266,7 +281,8 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["old_age"]["data"][str(year)] = {}
+                        if data["old_age"]["data"][str(year)] == {}:
+                            data["old_age"]["data"][str(year)] = {}
                         for month in tempDoubt:
                             try:
                                 data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -382,7 +398,8 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["medical_care"]["data"][str(year)] = {}
+                        if data["medical_care"]["data"][str(year)] == {}:
+                            data["medical_care"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -494,7 +511,8 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["injuries"]["data"][str(year)] = {}
+                        if data["injuries"]["data"][str(year)] == {}:
+                            data["injuries"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -605,7 +623,8 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["maternity"]["data"][str(year)] = {}
+                        if data["maternity"]["data"][str(year)] == {}:
+                            data["maternity"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
@@ -715,7 +734,8 @@ class Task(AbsTaskUnitSessionTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        data["unemployment"]["data"][str(year)] = {}
+                        if data["unemployment"]["data"][str(year)] == {}:
+                            data["unemployment"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
                                 data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)

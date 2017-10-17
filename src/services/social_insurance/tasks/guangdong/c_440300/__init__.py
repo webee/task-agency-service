@@ -266,7 +266,7 @@ class Task(AbsFetchTask):
                     if k=='身份证号':
                         self.result_identity['target_id'] =v
                     if k == '参保状态':
-                        if v=='参加':
+                        if v=='正常':
                             self.result_identity['status'] = '正常缴纳'
                         else:
                             self.result_identity['status'] = '停缴'
@@ -369,6 +369,7 @@ class Task(AbsFetchTask):
                         self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                     mx=json.loads(resp.text)["datas"]
                     for i in range(0,len(mx[arrmingxi[ii]]['dataset'])):
+                        arr=[]
                         if v=='old_age'or v=='medical_care':
                             personjfsum=personjfsum+float(mx[arrmingxi[ii]]['dataset'][i]['个人缴'])
                             #enterjfsum=enterjfsum+float(mx['dataset'][i]['单位缴'])
@@ -403,7 +404,8 @@ class Task(AbsFetchTask):
                             '缴费合计': mx[arrmingxi[ii]]['dataset'][i]['缴费合计'],
                             '备注': mx[arrmingxi[ii]]['dataset'][i]['备注']
                         }
-                        self.result_data[v]['data'][years][months]=mxdic
+                        arr.append(mxdic)
+                        self.result_data[v]['data'][years][months] = arr
                 ii=ii+1
                 if v == 'old_age':
                     self.result_data["baseInfo"].setdefault('个人养老累计缴费', personjfsum)
@@ -423,7 +425,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'keguangping', '密码': 'Kegp850907'}
+    meta = {'用户名': 'gaoyingen', '密码': 'Gao1831850'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

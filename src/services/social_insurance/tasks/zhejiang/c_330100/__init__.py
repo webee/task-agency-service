@@ -72,8 +72,6 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['账号'] = params.get('账号')
                 self.result_meta['密码'] = params.get('密码')
-
-                raise TaskNotImplementedError('查询服务维护中')
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
