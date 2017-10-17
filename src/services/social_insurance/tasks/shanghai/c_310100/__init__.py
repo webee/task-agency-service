@@ -93,7 +93,7 @@ class Task(AbsFetchTask):
                 account_pass = params.get("密码")
                 vc = params.get("vc")
 
-                start=self.s.get("www.12333sh.gov.cn/sbsjb/wzb/529.jsp")
+                start=self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp")
                 zxcv=""
 
                 data = {
