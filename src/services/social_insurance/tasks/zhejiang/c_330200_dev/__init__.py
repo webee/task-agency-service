@@ -32,7 +32,7 @@ MAIN_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/index.jsp'
 INFO_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-grxx.jsp'
 VC_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/comm/yzm.jsp?r='
 YL_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-ylbx.jsp'
-
+YIL_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-yilbx.jsp'
 
 class Task(AbsFetchTask):
    task_info = dict(
@@ -158,7 +158,7 @@ class Task(AbsFetchTask):
                     # alert.accept()
                 finally:
                     raise InvalidParamsError(err_msg)
-   def _ceshi(self):
+   def _yanglao(self):
        with self.dsc.get_driver_ctx() as driver:
            driver.get(YL_URL)
            time.sleep(2)
@@ -166,19 +166,104 @@ class Task(AbsFetchTask):
            soupyl = BeautifulSoup(htmls, 'html.parser')
            mingxitable = soupyl.select('#content')
            tableinfo = mingxitable[0].find_all('tr')
+           self.result_data['old_age'] = {}
+           self.result_data['old_age']['data'] = {}
            arrstr=[]
+           years = ''
+           months = ''
            for row in tableinfo:
+               arr = []
                cell = [i.text for i in row.find_all('td')]
                if len(cell)<3:
                    arrstr.extend(cell)
-               else:
-
-                   print(cell)
+               elif len(cell)==4:
+                   yearmonth =cell[0]
+                   if years == '' or years != yearmonth[:4]:
+                       years = yearmonth[:4]
+                       self.result_data['old_age']['data'][years] = {}
+                       if len(months) > 0:
+                           if months == yearmonth[-2:]:
+                               self.result_data['old_age']['data'][years][months] = {}
+                   if months == '' or months != yearmonth[-2:]:
+                       months = yearmonth[-2:]
+                       self.result_data['old_age']['data'][years][months] = {}
+                   dicts={
+                       '缴费时间':cell[0],
+                       '缴费类型': '',
+                       '缴费基数': cell[1],
+                       '公司缴费': '',
+                       '个人缴费': cell[2],
+                       '缴费单位': '',
+                       '到账情况': cell[3]
+                   }
+                   arr.append(dicts)
+                   self.result_data['old_age']['data'][years][months] = arr
            print(arrstr)
+           nowyears= time.strftime("%Y", time.localtime())
+           jfscolder=int(arrstr[10].replace('至本年末实际缴费月数：', ''))
+           ljjfolder=float(arrstr[9].replace('至本年末账户累计储存额：', ''))
+           for k,v in self.result_data['old_age']['data'][nowyears].items():
+               jfscolder=jfscolder+1
+               ljjfolder=ljjfolder+float(v[0]['个人缴费'])
+           self.result_data["baseInfo"].setdefault('缴费时长',jfscolder)
+           self.result_data["baseInfo"].setdefault('个人养老累计缴费', ljjfolder)
+           self.result_data["baseInfo"].setdefault('最近缴费时间', nowyears+max(self.result_data['old_age']['data'][nowyears]))
+           ksjfsj=min(self.result_data['old_age']['data'])
+           self.result_data["baseInfo"].setdefault('开始缴费时间',ksjfsj+min(self.result_data['old_age']['data'][ksjfsj]))
+           cbzt=arrstr[3].replace('参保状态：', '')
+           if cbzt=='参保缴费':
+               cbzt='正常参保'
+           else:
+               cbzt = '停缴'
+           self.result_identity['status'] = cbzt
 
 
-
-
+   def _yiliao(self):
+       with self.dsc.get_driver_ctx() as driver:
+           driver.get(YIL_URL)
+           time.sleep(2)
+           htmls = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+           soupyl = BeautifulSoup(htmls, 'html.parser')
+           mingxitable = soupyl.select('#content')
+           tableinfo = mingxitable[0].find_all('tr')
+           self.result_data['medical_care'] = {}
+           self.result_data['medical_care']['data'] = {}
+           arrstr=[]
+           years = ''
+           months = ''
+           for row in tableinfo:
+               arr = []
+               cell = [i.text for i in row.find_all('td')]
+               if len(cell)<3:
+                   arrstr.extend(cell)
+               elif len(cell)==4:
+                   yearmonth =cell[0]
+                   if years == '' or years != yearmonth[:4]:
+                       years = yearmonth[:4]
+                       self.result_data['medical_care']['data'][years] = {}
+                       if len(months) > 0:
+                           if months == yearmonth[-2:]:
+                               self.result_data['medical_care']['data'][years][months] = {}
+                   if months == '' or months != yearmonth[-2:]:
+                       months = yearmonth[-2:]
+                       self.result_data['medical_care']['data'][years][months] = {}
+                   dicts={
+                       '缴费时间':cell[0],
+                       '缴费类型': '',
+                       '缴费基数': cell[1],
+                       '公司缴费': '',
+                       '个人缴费': cell[2],
+                       '缴费单位': '',
+                       '到账情况': cell[3]
+                   }
+                   arr.append(dicts)
+                   self.result_data['medical_care']['data'][years][months] = arr
+           print(arrstr)
+           nowyears = time.strftime("%Y", time.localtime())
+           ljjfolder = float(arrstr[11].replace('个人账户余额：', ''))
+           for k, v in self.result_data['old_age']['data'][nowyears].items():
+               ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+           self.result_data["baseInfo"].setdefault('个人医疗累计缴费', ljjfolder)
 
    def _unit_fetch_name(self):
        """用户信息"""
@@ -204,7 +289,8 @@ class Task(AbsFetchTask):
            self.result_identity['target_name'] = soup.select('#xm')[0].text
            #self.result_data["baseInfo"].setdefault()
 
-           self._ceshi()
+           self._yanglao()
+           self._yiliao()
 
 
            #resp=self.s.get(YL_URL)
