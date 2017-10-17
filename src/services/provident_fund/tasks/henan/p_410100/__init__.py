@@ -98,6 +98,8 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
+                self.result['data']['baseInfo']={}
+                self.result_data['detail'] = {"data": {}}
                 self.result_data['companyList']=[]
                 id_num = params.get("身份证号")
                 account_name = params.get("用户姓名")
