@@ -33,12 +33,6 @@ class Task(AbsFetchTask):
             'Host': 'www.nbgjj.com',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-        self.result_data['detail'] = {}
-        self.result_data['companyList']={}
-
     def _setup_task_units(self):
         """设置任务执行单元"""
         self._add_unit(self._unit_login)
@@ -191,7 +185,7 @@ class Task(AbsFetchTask):
 
 
                 self.result_key = id_num
-                self.result_meta[ltype] =id_num
+                self.result_meta['账号'] =id_num
                 self.result_meta['密码']=account_pass
 
                 return

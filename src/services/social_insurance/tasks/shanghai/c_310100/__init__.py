@@ -7,7 +7,7 @@ from services.commons import AbsFetchTask
 import time
 from bs4 import BeautifulSoup
 
-LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/129.jsp"
+LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
 LOGIN_SUCCESS_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0"
 VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist.jsp"
 
@@ -93,10 +93,14 @@ class Task(AbsFetchTask):
                 account_pass = params.get("密码")
                 vc = params.get("vc")
 
+                start=self.s.get("www.12333sh.gov.cn/sbsjb/wzb/529.jsp")
+                zxcv=""
+
                 data = {
                     'userid': id_num,
                     'userpw': account_pass,
-                    'userjym': vc.encode('gbk')
+                    'userjym': vc.encode('gbk'),
+                    'zxcv':zxcv
                 }
                 resp = self.s.post("http://www.12333sh.gov.cn/sbsjb/wzb/dologin.jsp", data=data)
                 # 检查是否登录成功
