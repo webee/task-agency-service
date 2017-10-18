@@ -15,12 +15,18 @@ MAIN_URL = 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp'
 USER_INFO_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indNewInfoSearchAction"
 DETAILED_LIST_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indPaySearchAction!"
 MEDICAL_TREATMENT_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/search/ind/indMedicalSearchAction!queryMedicalInfo"
+SMS_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/passwordSetAction!getTelSafeCode"
 
 
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="北京",
-        help="""<li>如您未在社保网站查询过您的社保信息，请到北京社保网上服务平台完成“注册账号”，激活身份证及获取密码。</li><li>如您忘记密码，请拨打12333。</li>
+        expect_time=10,
+        sms_time=120,
+        help="""
+        <li>若您尚未登录过请登录北京社保官网点击新用户注册，按新用户帮助其中的步骤完成登录密码的设置。</li>
+        <li>注册时填写的手机号信息，方便您在登录时收取短信验证码。</li>
+        <li>若您无法正常登录，可以查看相关帮助，或者拨打96102。</li>
         """
     )
 
@@ -39,6 +45,8 @@ class Task(AbsFetchTask):
         t = params.get('t')
         if t == 'vc':
             return self._new_vc()
+        elif t == 'SMS':
+            return self._new_SMS(params["data"])
 
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
@@ -46,6 +54,14 @@ class Task(AbsFetchTask):
         assert 'j_username' in params, '缺少身份证号'
         assert 'j_password' in params, '缺少密码'
         assert 'safecode' in params, '缺少验证码'
+        assert 'i_phone' in params, '缺少短信验证码'
+
+        j_username_re = r'(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)'
+        assert re.findall(j_username_re, params['j_username']), '请输入有效的身份证编号'
+        assert 8 <= len(params['j_password']) <= 20, '请输入不少于8位的合法登录密码'
+        assert len(params['safecode']) >= 4, '请重新输入附加码'
+        assert len(params['i_phone']) >= 4, '请输入短信验证码'
+
         # other check
 
     def _params_handler(self, params: dict):
@@ -68,6 +84,8 @@ class Task(AbsFetchTask):
                 continue
             elif pr['key'] == 'other':
                 continue
+            # if pr['key'] == 'other':
+            #     continue
             res.append(pr)
         return res
 
@@ -90,13 +108,15 @@ class Task(AbsFetchTask):
                 j_username = params['j_username']
                 j_password = params['j_password']
                 safecode = params['safecode']
+                i_phone = params['i_phone']
 
                 resp = self.s.post(LOGIN_URL, data=dict(
                     j_username=j_username,
                     j_password=j_password,
                     safecode=safecode,
                     type=1,
-                    flag=3
+                    flag=3,
+                    i_phone=i_phone
                 ))
                 if resp.url != 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp':
                     data = BeautifulSoup(resp.content, "html.parser")
@@ -119,7 +139,8 @@ class Task(AbsFetchTask):
             dict(key='other', name='[{"tabName":"城市职工","tabCode":"1","isEnable":"1"},{"tabName":"城市居民","tabCode":"2","isEnable":"0"}]', cls='tab'),
             dict(key='j_username', name='身份证号', cls='input', tabCode="1", value=params.get('j_username', '')),
             dict(key='j_password', name='密码', cls='input:password', tabCode="1", value=params.get('j_password', '')),
-            dict(key='safecode', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="1", value=params.get('safecode', '')),
+            dict(key='safecode', name='附加码', cls='data:image', query={'t': 'vc'}, tabCode="1", value=params.get('safecode', '')),
+            dict(key='i_phone', name='短信验证码', cls='data:SMS', query={'t': 'SMS'}, tabCode="1", value=''),
         ], err_msg)
 
     # 获取用户基础信息
@@ -134,9 +155,21 @@ class Task(AbsFetchTask):
             table2 = result.findAll("table")[1]
 
             td0 = re.sub('\s', '', table1.text)
-            companyName = re.findall(r"单位名称：(.+?)组织机构代码：", td0)[0]
-            companyCode = re.findall(r"组织机构代码：(.+?)社会保险登记证编号：", td0)[0]
-            socialCode = re.findall(r"社会保险登记证编号：(.+?)所属区县：", td0)[0]
+            companyName = re.findall(r"单位名称：(.+?)统一社会信用代码（组织机构代码）：", td0)
+            if len(companyName) > 0:
+                companyName = companyName[0]
+            else:
+                companyName = ''
+            companyCode = re.findall(r"统一社会信用代码（组织机构代码）：(.+?)社会保险登记号：", td0)
+            if len(companyCode) > 0:
+                companyCode = companyCode[0]
+            else:
+                companyCode = ''
+            socialCode = re.findall(r"社会保险登记号：(.+?)所属区县：", td0)
+            if len(socialCode) > 0:
+                socialCode = socialCode[0]
+            else:
+                socialCode = ''
             fromCity = td0[td0.find("所属区县：")+5:]
 
             td1 = table2.findAll("td")
@@ -150,6 +183,10 @@ class Task(AbsFetchTask):
             }
 
             data["baseInfo"] = {
+                "缴费单位名称": companyName,
+                "组织机构代码": companyCode,
+                "社会保险登记证编号": socialCode,
+                "所属区县": fromCity,
                 "姓名": td1[4].text,
                 "身份证号": td1[6].text,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
@@ -647,10 +684,26 @@ class Task(AbsFetchTask):
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
-    # 验证码
+    # （图片）验证码
     def _new_vc(self):
         resp = self.s.get(VC_URL)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
+
+    # （短信）验证码
+    def _new_SMS(self, params):
+        if self.prepared_meta:
+            j_username = self.prepared_meta["身份证编号"]
+            j_password = self.prepared_meta["密码"]
+        else:
+            j_username = ''
+            j_password = ''
+
+        resp = self.s.post(SMS_URL, data=dict(
+            idCode=params.get('j_username', j_username),
+            logPass=params.get('j_password', j_password),
+            safeCode=params.get('safecode', '')
+        ))
+        return dict(cls='data:SMS', content=resp.text)
 
 
 if __name__ == '__main__':

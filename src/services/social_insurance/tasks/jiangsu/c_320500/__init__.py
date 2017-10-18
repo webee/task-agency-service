@@ -57,7 +57,7 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '身份证编号' and '身份证编号' in meta:
+            if pr['key'] == '身份证号' and '身份证号' in meta:
                 continue
             elif pr['key'] == '个人编号' and '个人编号' in meta:
                 continue

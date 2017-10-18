@@ -130,19 +130,16 @@ class Task(AbsFetchTask):
             datas = soup.select('.table-content')
 
             self.result_data['baseInfo']={
-                '公积金帐号':datas[0].findAll("td")[1].text,
                 '姓名':datas[0].findAll("td")[3].text,
                 '身份证号':datas[0].findAll("td")[5].text,
-
+                '公积金帐号': datas[0].findAll("td")[1].text,
                 '性别':datas[1].findAll("td")[1].text,
                 '手机号':datas[1].findAll("td")[3].text,
                 '卡号':datas[1].findAll("td")[5].text,
 
                 '工资基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
-
                 '单位缴存比例':datas[4].findAll("td")[1].text,
                 '职工缴存比例':datas[4].findAll("td")[3].text,
-
                 '单位月应缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
                 '职工月应缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
 
@@ -203,6 +200,14 @@ class Task(AbsFetchTask):
                 "上年结转余额": "-",
                 "最后业务日期": datas[7].findAll("td")[5].text,
                 "转出金额": "-"
+            }
+
+            # identity 信息
+            self.result['identity'] = {
+                "task_name": "贵阳",
+                "target_name": datas[0].findAll("td")[3].text,
+                "target_id": self.result_meta['身份证号'],
+                "status": datas[8].findAll("td")[1].text
             }
 
             return
