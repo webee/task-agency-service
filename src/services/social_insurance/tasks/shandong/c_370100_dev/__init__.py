@@ -63,8 +63,8 @@ class Task(AbsFetchTask):
                 fromImge.convert("RGB")
             loc = (i * 22 + 15, 10)
             toImage.paste(fromImge, loc)
-
         toImage.show()
+
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -124,6 +124,7 @@ class Task(AbsFetchTask):
 
                 self._new_vc()
                 vc = input("请输入运算后的结果：")
+                dict(key='验证码', name='验证码', value=vc)
 
                 _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='1.0.60'/><s dlfs='undefined'/></p>"
 
