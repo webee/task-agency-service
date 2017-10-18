@@ -19,7 +19,11 @@ MAIN_URL = 'http://ytrsj.gov.cn:8081/hsp/mainFrame.jsp'
 LOGIN_URL = 'http://ytrsj.gov.cn:8081/hsp/logon.do'
 VC_URL = 'http://ytrsj.gov.cn:8081/hsp/genAuthCode?_='
 INFO_URL='http://ytrsj.gov.cn:8081/hsp/systemOSP.do'
-
+YL_URL='http://ytrsj.gov.cn:8081/hsp/siAd.do'
+YIL_URL='http://ytrsj.gov.cn:8081/hsp/siMedi.do'
+GS_URL='http://ytrsj.gov.cn:8081/hsp/siHarm.do'
+SHY_URL='http://ytrsj.gov.cn:8081/hsp/siBirth.do'
+SY_URL='http://ytrsj.gov.cn:8081/hsp/siLost.do'
 
 class Task(AbsFetchTask):
     # noinspection PyAttributeOutsideInit
@@ -148,18 +152,25 @@ class Task(AbsFetchTask):
                 '家庭住址': soup.findAll('input')[3].attrs['value'],
                 '通讯地址': soup.findAll('input')[4].attrs['value'],
                 '五险状态': baseinfoarr,
-                '开始缴费时间': min(baseinfoarr),
+                '开始缴费时间': min(arrcbsj),
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                 '城市名称': '烟台',
                 '城市编号': '370600'
             }
             self.result_identity['target_name'] = soup.findAll('input')[0].attrs['value']
             idtstatus='停缴'
-            if '正常参保' == baseinfoarr.values():
+            if '正常参保' in baseinfoarr.values():
                 idtstatus='正常参保'
             self.result_identity['status'] = idtstatus
 
             #养老
+            resp = self.s.post(YL_URL, data=dict(
+                method='queryAgedPayHis',
+                __usersession_uuid=self.g.usersession_uuid,
+                _random=random.random()
+            ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'})
+            soup = BeautifulSoup(resp.content, 'html.parser')
 
 
             return
