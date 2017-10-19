@@ -51,7 +51,7 @@ class Task(AbsFetchTask):
         assert params is not None, '缺少参数'
         assert '身份证号' in params, '缺少身份证号'
         assert '密码' in params,'缺少密码'
-        #assert 'vc' in params, '缺少验证码'
+        assert 'vc' in params, '缺少验证码'
         # other check
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -79,8 +79,8 @@ class Task(AbsFetchTask):
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
-                self._new_vc()
-                vc=input('验证码：')
+                #self._new_vc()
+                #vc=input('验证码：')
                 self._check_login_params(params)
                 id_num = params['身份证号']
                 password = params['密码']
@@ -171,8 +171,265 @@ class Task(AbsFetchTask):
             ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
                         'X-Requested-With': 'XMLHttpRequest'})
             soup = BeautifulSoup(resp.content, 'html.parser')
+            spantext = soup.findAll('span')[1].text.split('，')
+            data['baseInfo']['缴费时长']=int(spantext[0].replace('共缴费','').replace('个月',''))
+            data['baseInfo']['最近缴费时间'] = spantext[3].replace('缴费年月为', '').replace('。','')
+            #data['baseInfo']['开始缴费时间'] = spantext[2].replace('最早缴费年月为', '')
+            selecttext=soup.findAll('option')
+            ylsum=0.00
+            for i in range(1,len(selecttext)):
+                print(selecttext[i].text)
+
+                self.result_data['old_age'] = {}
+                self.result_data['old_age']['data'] = {}
+                years = ''
+                months = ''
+                trinfo=soup.findAll('table')[1]
+                for tr in trinfo.findAll('tr'):
+                    arr = []
+                    cell = [i.text for i in tr.find_all('td')]
+                    if cell[0]=='':
+                        cell=[i.attrs['value'] for i in tr.find_all('input')]
+                        yearmonth = cell[1]
+                        ylsum=ylsum+float(cell[4])
+                        if years == '' or years != yearmonth[:4]:
+                            years = yearmonth[:4]
+                            self.result_data['old_age']['data'][years] = {}
+                            if len(months) > 0:
+                                if months == yearmonth[-2:]:
+                                    self.result_data['old_age']['data'][years][months] = {}
+                        if months == '' or months != yearmonth[-2:]:
+                            months = yearmonth[-2:]
+                            self.result_data['old_age']['data'][years][months] = {}
+                        dicts={'险种': cell[0],
+                                 '缴费时间': cell[1],
+                               '缴费类型':'',
+                               '缴费基数': cell[2],
+                               '公司缴费': cell[3],
+                               '个人缴费': cell[4],
+                               '单位编号':cell[5],
+                               '缴费单位': cell[6]}
+                        arr.append(dicts)
+                        self.result_data['old_age']['data'][years][months] = arr
+                data['baseInfo']['个人养老缴费'] =ylsum
 
 
+            #医疗
+            resp = self.s.post(YIL_URL, data=dict(
+                method='queryMediPayHis',
+                __usersession_uuid=self.g.usersession_uuid,
+                _random=random.random()
+            ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'})
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            selecttext = soup.findAll('option')
+            yilsum = 0.00
+            for i in range(1, len(selecttext)):
+                print(selecttext[i].text)
+
+                self.result_data['medical_care'] = {}
+                self.result_data['medical_care']['data'] = {}
+                years = ''
+                months = ''
+                trinfo = soup.findAll('table')[1]
+                for tr in trinfo.findAll('tr'):
+                    arr = []
+                    cell = [i.text for i in tr.find_all('td')]
+                    if cell[0] == '':
+                        cell = [i.attrs['value'] for i in tr.find_all('input')]
+                        yearmonth = cell[1]
+                        yilsum = yilsum + float(cell[4])
+                        if years == '' or years != yearmonth[:4]:
+                            years = yearmonth[:4]
+                            self.result_data['medical_care']['data'][years] = {}
+                            if len(months) > 0:
+                                if months == yearmonth[-2:]:
+                                    self.result_data['medical_care']['data'][years][months] = {}
+                        if months == '' or months != yearmonth[-2:]:
+                            months = yearmonth[-2:]
+                            self.result_data['medical_care']['data'][years][months] = {}
+                        dicts = {'险种': cell[0],
+                                 '缴费时间': cell[1],
+                                 '缴费类型': '',
+                                 '缴费基数': cell[2],
+                                 '公司缴费': cell[3],
+                                 '个人缴费': cell[4],
+                                 '单位编号': cell[5],
+                                 '缴费单位': cell[6]}
+                        arr.append(dicts)
+                        self.result_data['medical_care']['data'][years][months] = arr
+                data['baseInfo']['个人医疗缴费'] = yilsum
+
+            # 工商
+            resp = self.s.post(GS_URL, data=dict(
+                method='queryHarmPayHis',
+                __usersession_uuid=self.g.usersession_uuid,
+                _random=random.random()
+            ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'})
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            selecttext = soup.findAll('option')
+            for i in range(1, len(selecttext)):
+                    print(selecttext[i].text)
+
+                    self.result_data['injuries'] = {}
+                    self.result_data['injuries']['data'] = {}
+                    years = ''
+                    months = ''
+                    trinfo = soup.findAll('table')[1]
+                    for tr in trinfo.findAll('tr'):
+                        arr = []
+                        cell = [i.text for i in tr.find_all('td')]
+                        if cell[0] == '':
+                            cell = [i.attrs['value'] for i in tr.find_all('input')]
+                            yearmonth = cell[1]
+                            if years == '' or years != yearmonth[:4]:
+                                years = yearmonth[:4]
+                                self.result_data['injuries']['data'][years] = {}
+                                if len(months) > 0:
+                                    if months == yearmonth[-2:]:
+                                        self.result_data['injuries']['data'][years][months] = {}
+                            if months == '' or months != yearmonth[-2:]:
+                                months = yearmonth[-2:]
+                                self.result_data['injuries']['data'][years][months] = {}
+                            dicts = {'险种': cell[0],
+                                 '缴费时间': cell[1],
+                                     '缴费类型': '',
+                                     '缴费基数': cell[2],
+                                     '公司缴费': cell[3],
+                                     '个人缴费': cell[4],
+                                     '单位编号': cell[5],
+                                     '缴费单位': cell[6]}
+                            arr.append(dicts)
+                            self.result_data['injuries']['data'][years][months] = arr
+
+            # 生育
+            resp = self.s.post(SHY_URL, data=dict(
+                method='queryBirthPayHis',
+                __usersession_uuid=self.g.usersession_uuid,
+                _random=random.random()
+            ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'})
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            selecttext = soup.findAll('option')
+            for i in range(1, len(selecttext)):
+                print(selecttext[i].text)
+
+                self.result_data['maternity'] = {}
+                self.result_data['maternity']['data'] = {}
+                years = ''
+                months = ''
+                trinfo = soup.findAll('table')[1]
+                for tr in trinfo.findAll('tr'):
+                    arr = []
+                    cell = [i.text for i in tr.find_all('td')]
+                    if cell[0] == '':
+                        cell = [i.attrs['value'] for i in tr.find_all('input')]
+                        yearmonth = cell[1]
+                        if years == '' or years != yearmonth[:4]:
+                            years = yearmonth[:4]
+                            self.result_data['maternity']['data'][years] = {}
+                            if len(months) > 0:
+                                if months == yearmonth[-2:]:
+                                    self.result_data['maternity']['data'][years][months] = {}
+                        if months == '' or months != yearmonth[-2:]:
+                            months = yearmonth[-2:]
+                            self.result_data['maternity']['data'][years][months] = {}
+                        dicts = {'险种': cell[0],
+                                 '缴费时间': cell[1],
+                                 '缴费类型': '',
+                                 '缴费基数': cell[2],
+                                 '公司缴费': cell[3],
+                                 '个人缴费': cell[4],
+                                 '单位编号': cell[5],
+                                 '缴费单位': cell[6]}
+                        arr.append(dicts)
+                        self.result_data['maternity']['data'][years][months] = arr
+
+            # 失业
+            resp = self.s.post(SY_URL, data=dict(
+                method='queryLostPayHis',
+                __usersession_uuid=self.g.usersession_uuid,
+                _random=random.random()
+            ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'})
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            selecttext = soup.findAll('option')
+            for i in range(1, len(selecttext)):
+                print(selecttext[i].text)
+
+                self.result_data['unemployment'] = {}
+                self.result_data['unemployment']['data'] = {}
+                years = ''
+                months = ''
+                trinfo = soup.findAll('table')[1]
+                for tr in trinfo.findAll('tr'):
+                    arr = []
+                    cell = [i.text for i in tr.find_all('td')]
+                    if cell[0] == '':
+                        cell = [i.attrs['value'] for i in tr.find_all('input')]
+                        yearmonth = cell[1]
+                        if years == '' or years != yearmonth[:4]:
+                            years = yearmonth[:4]
+                            self.result_data['unemployment']['data'][years] = {}
+                            if len(months) > 0:
+                                if months == yearmonth[-2:]:
+                                    self.result_data['unemployment']['data'][years][months] = {}
+                        if months == '' or months != yearmonth[-2:]:
+                            months = yearmonth[-2:]
+                            self.result_data['unemployment']['data'][years][months] = {}
+                        dicts = {'险种': cell[0],
+                                 '缴费时间': cell[1],
+                                 '缴费类型': '',
+                                 '缴费基数': cell[2],
+                                 '公司缴费': cell[3],
+                                 '个人缴费': cell[4],
+                                 '单位编号': cell[5],
+                                 '缴费单位': cell[6]}
+                        arr.append(dicts)
+                        self.result_data['unemployment']['data'][years][months] = arr
+            # 大病
+            resp = self.s.post(YIL_URL, data=dict(
+                method='queryEmpJfxxZzCxDe',
+                __usersession_uuid=self.g.usersession_uuid,
+                _random=random.random()
+            ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'})
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            selecttext = soup.findAll('option')
+            for i in range(1, len(selecttext)):
+                print(selecttext[i].text)
+
+                self.result_data['serious_illness'] = {}
+                self.result_data['serious_illness']['data'] = {}
+                years = ''
+                months = ''
+                trinfo = soup.findAll('table')[1]
+                for tr in trinfo.findAll('tr'):
+                    arr = []
+                    cell = [i.text for i in tr.find_all('td')]
+                    if cell[0] == '':
+                        cell = [i.attrs['value'] for i in tr.find_all('input')]
+                        yearmonth = cell[1]
+                        if years == '' or years != yearmonth[:4]:
+                            years = yearmonth[:4]
+                            self.result_data['serious_illness']['data'][years] = {}
+                            if len(months) > 0:
+                                if months == yearmonth[-2:]:
+                                    self.result_data['unemployment']['data'][years][months] = {}
+                        if months == '' or months != yearmonth[-2:]:
+                            months = yearmonth[-2:]
+                            self.result_data['serious_illness']['data'][years][months] = {}
+                        dicts = {'险种': cell[0],
+                                 '缴费时间': cell[1],
+                                 '缴费类型': cell[6],
+                                 '缴费基数': cell[2],
+                                 '公司缴费': '',
+                                 '个人缴费': cell[3],
+                                 '单位编号': cell[4],
+                                 '缴费单位': cell[5]}
+                        arr.append(dicts)
+                        self.result_data['serious_illness']['data'][years][months] = arr
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
