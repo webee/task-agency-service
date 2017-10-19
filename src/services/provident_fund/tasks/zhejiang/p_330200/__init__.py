@@ -29,15 +29,9 @@ class Task(AbsFetchTask):
     def _get_common_headers(self):
         return {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.79 Safari/537.36',
-            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Encoding':'gzip, deflate',
             'Host': 'www.nbgjj.com',
         }
-
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo'] = {}
-        self.result_data['detail'] = {}
-        self.result_data['companyList'] = {}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -87,6 +81,7 @@ class Task(AbsFetchTask):
             res.append(pr)
         return res
 
+
     def _unit_login(self, params=None):
         err_msg = None
         if not self.is_start or params:
@@ -96,9 +91,9 @@ class Task(AbsFetchTask):
                 self._check_login_params(params)
                 id_num = params.get("账号")
                 account_pass = params.get("密码")
-                vc = params.get("vc")
+                vc=params.get("vc")
 
-                if (len(id_num) == 15 or len(id_num) == 18):
+                if(len(id_num)==15 or len(id_num)==18):
                     data = {
                         'tranCode': '142501',
                         'task': '',
@@ -107,8 +102,8 @@ class Task(AbsFetchTask):
                         'pwd': account_pass,
                         'verify': vc,
                     }
-                    ltype = "身份证号"
-                elif (len(id_num) <= 12):
+                    ltype="身份证号"
+                elif(len(id_num)<=12):
                     data = {
                         'tranCode': '142501',
                         'task': '',
@@ -117,26 +112,27 @@ class Task(AbsFetchTask):
                         'pwd': account_pass,
                         'verify': vc,
                     }
-                    ltype = "公积金账号"
+                    ltype="公积金账号"
 
-                resp = self.s.post("http://www.nbgjj.com/GJJQuery", data=data)
-                if 'msg' in resp.text:  # 判断是否登录成功
+                resp=self.s.post("http://www.nbgjj.com/GJJQuery",data=data)
+                if 'msg' in resp.text:         # 判断是否登录成功
                     raise InvalidParamsError(json.loads(resp.text)['msg'])
 
+
                 # 个人基本信息
-                accnum = resp.cookies['gjjaccnum']
-                res = self.s.get(MAIN_URL + "tranCode=142503&task=&accnum=" + accnum)
-                resdata = json.loads(res.text)
+                accnum=resp.cookies['gjjaccnum']
+                res=self.s.get(MAIN_URL+"tranCode=142503&task=&accnum="+accnum)
+                resdata=json.loads(res.text)
                 self.result_data['baseInfo'] = {
-                    '姓名': resdata['accname'],
-                    '证件号': resdata['certinum'],
-                    '证件类型': '身份证',
-                    '公积金账号': resdata['accnum'],
-                    '缴存基数': resdata['basenum'],
-                    '开户日期': resdata['begdate'],
-                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                    '城市名称': '宁波市',
-                    '城市编号': '330200'
+                    '姓名':resdata['accname'],
+                    '证件号':resdata['certinum'],
+                    '证件类型':'身份证',
+                    '公积金账号':resdata['accnum'],
+                    '缴存基数':resdata['basenum'],
+                    '开户日期':resdata['begdate'],
+                    '更新时间':time.strftime("%Y-%m-%d",time.localtime()),
+                    '城市名称':'宁波市',
+                    '城市编号':'330200'
                 }
 
                 # 公司信息
@@ -155,7 +151,7 @@ class Task(AbsFetchTask):
                 })
 
                 # identity 信息
-                self.result['identity'] = {
+                self.result['identity']={
                     "task_name": "宁波",
                     "target_name": resdata['accname'],
                     "target_id": id_num,
@@ -163,34 +159,34 @@ class Task(AbsFetchTask):
                 }
 
                 # 缴费明细
-                starttime = str(datetime.datetime.now() - datetime.timedelta(days=365 * 3))[0:10]  # 开始时间
-                endtime = str(datetime.datetime.now())[0:10]  # 结束时间
-                detailurl = self.s.get(
-                    MAIN_URL + "tranCode=142504&task=ftp&indiacctype=1&accnum=" + accnum + "&begdate=" + starttime + "&enddate=" + endtime)
-                detailData = json.loads(detailurl.text)
+                starttime=str(datetime.datetime.now()-datetime.timedelta(days=365*3))[0:10]    # 开始时间
+                endtime=str(datetime.datetime.now())[0:10]                                      # 结束时间
+                detailurl=self.s.get(MAIN_URL+"tranCode=142504&task=ftp&indiacctype=1&accnum="+accnum+"&begdate="+starttime+"&enddate="+endtime)
+                detailData=json.loads(detailurl.text)
                 self.result_data['detail'] = {"data": {}}
                 baseDetail = self.result_data["detail"]["data"]
                 model = {}
                 for aa in range(len(detailData)):
-                    years = detailData[aa]["trandate"][0:4]
-                    months = detailData[aa]["trandate"][5:7]
-                    model = {
-                        '时间': detailData[aa]["trandate"],
-                        '类型': detailData[aa]["ywtype"].strip(),
+                    years=detailData[aa]["trandate"][0:4]
+                    months=detailData[aa]["trandate"][5:7]
+                    model={
+                        '时间':detailData[aa]["trandate"],
+                        '类型':detailData[aa]["ywtype"].strip(),
                         '汇缴年月': '',
-                        '收入': detailData[aa]["amt"],
-                        '支出': "-",
+                        '收入':detailData[aa]["amt"],
+                        '支出':"-",
                         '余额': detailData[aa]["bal"],
-                        '单位名称': detailData[aa]["unitaccname"].strip()
+                        '单位名称':detailData[aa]["unitaccname"].strip()
                     }
 
                     baseDetail.setdefault(years, {})
                     baseDetail[years].setdefault(months, [])
                     baseDetail[years][months].append(model)
 
+
                 self.result_key = id_num
-                self.result_meta[ltype] = id_num
-                self.result_meta['密码'] = account_pass
+                self.result_meta['账号'] =id_num
+                self.result_meta['密码']=account_pass
 
                 return
             except (AssertionError, InvalidParamsError) as e:
