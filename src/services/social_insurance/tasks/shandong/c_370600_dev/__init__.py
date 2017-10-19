@@ -5,7 +5,7 @@
 import hashlib
 import random
 import json
-import io
+import io,sys
 import base64
 import datetime
 from PIL import Image
@@ -87,6 +87,7 @@ class Task(AbsFetchTask):
                 m = hashlib.md5()
                 m.update(str(password).encode(encoding="utf-8"))
                 pw = m.hexdigest()
+                vc=params['vc']
 
                 xmlstr='<?xml version = "1.0" encoding = "UTF-8"?><p><s tempmm = "'+password+'"/></p>'
                 resp = self.s.post(LOGIN_URL, data=dict(
@@ -126,7 +127,7 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
-            #dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
@@ -451,8 +452,12 @@ class Task(AbsFetchTask):
                 fromImge.convert("RGB")
             loc = (i * 22 + 15, 10)
             toImage.paste(fromImge, loc)
+        #toImage.show()
+        toImage.save("newImg.png","PNG")
 
-        toImage.show()
+        img = open(r'newImg.png','rb')
+        resp = img.read()#base64.b64encode(img.read())
+        return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
     #meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}prepare_data=dict(meta=meta)
