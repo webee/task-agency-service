@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
 LOGIN_SUCCESS_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0"
-VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist.jsp"
+VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist12.jsp"
 USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 
 
@@ -51,7 +51,7 @@ class Task(AbsFetchTask):
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/wzb\/Bmblist.jpg/g')
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/sbsjb\wzb\/Bmblist12.jpg/g')
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('"http://www.12333sh.gov.cn/xxxx')
         return driver
@@ -64,6 +64,7 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
+        ress=self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp")
         resp = self.s.get(VC_URL)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
@@ -162,14 +163,10 @@ class Task(AbsFetchTask):
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
             driver.get(LOGIN_URL)
-            driver.switchTo().frame("iFrame2")
-            driver.findElement(By.name("userid"))
-            driver.switchTo().defaultContent()
+            driver.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp")
 
-
-            # driver.find_element_by_xpath('//*[@id="pic"]').click()
-            username_input = driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td[2]/input')
-            password_input = driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[3]/td[2]/input')
+            username_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td[2]/input')
+            password_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr[3]/td[2]/input')
             vc_input = driver.find_element_by_xpath('//*[@id="userjym"]')
 
             # 用户名
@@ -185,10 +182,10 @@ class Task(AbsFetchTask):
             vc_input.send_keys(vc)
 
             # 登录
-            driver.find_element_by_xpath('//*[@id="pic"]').click()
-            # time.sleep(5)
+            driver.find_element_by_xpath('/html/body/form/table/tbody/tr[6]/td[2]').click()
+            # time.sleep(3)
 
-            if driver.current_url.startswith('https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp'):
+            if driver.current_url!="http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0":
                 raise InvalidParamsError('登录失败，请重新登录！')
 
 
@@ -196,7 +193,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
 
-            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx.jsp")
+            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp")
             soup = BeautifulSoup(resp.content, 'html.parser')
             #years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
@@ -206,18 +203,6 @@ class Task(AbsFetchTask):
             else:
                 moneyTime=len(details)
 
-            self.result_data['baseInfo'] = {
-                '姓名': soup.find('xm').text,
-                '身份证号': self.result_meta['用户名'],
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                '城市名称': '上海市',
-                '城市编号': '310100',
-                '缴费时长': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text,
-                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
-                '开始缴费时间': details[0].find('jsjs1').text,
-                '个人养老累计缴费': soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs3').text,
-                '个人医疗累计缴费': ''
-            }
 
             # 社保缴费明细
             # 养老
@@ -300,14 +285,7 @@ class Task(AbsFetchTask):
 
             # 工伤
             self.result_data['injuries'] = {
-                "data": {
-                    # '缴费时间': '-',
-                    # '缴费单位': '-',
-                    # '缴费基数': '-',
-                    # '缴费类型': '-',
-                    # '公司缴费': '-',
-                    # '个人缴费': '-',
-                }
+                "data": {}
             }
 
             # 生育
@@ -337,8 +315,10 @@ class Task(AbsFetchTask):
                 '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
                 '开始缴费时间': details[0].find('jsjs1').text,
                 '个人养老累计缴费': personOldMoney,
-                '个人医疗累计缴费': ''
+                '个人医疗累计缴费': '',
+                '状态':''
             }
+
 
             return
         except InvalidConditionError as e:
