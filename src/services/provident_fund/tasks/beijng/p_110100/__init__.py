@@ -1,6 +1,8 @@
 import re
 import bs4
 import time
+import io
+from PIL import Image
 import json
 import datetime
 from urllib import parse
@@ -11,8 +13,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0'
-LOGIN_PAGE_URL = 'http://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
-VC_IMAGE_URL = 'http://www.bjgjj.gov.cn/wsyw/servlet/PicCheckCode1?v='
+LOGIN_PAGE_URL = 'https://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
+VC_IMAGE_URL = 'https://www.bjgjj.gov.cn/wsyw/servlet/PicCheckCode1?v='
+LOGINED_URL = "https://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-choice.jsp"
 
 
 class value_is_number(object):
@@ -72,7 +75,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_IMAGE_URL + str(int(time.time()) * 1000)
-        resp = self.s.get(vc_url)
+        resp = self.s.get(vc_url, verify=False)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
     def _params_handler(self, params: dict):
@@ -213,7 +216,10 @@ class Task(AbsFetchTask):
             # 提交
             submit_btn.click()
 
-            if not driver.current_url == "http://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-choice.jsp":
+            # for test
+            # img = Image.open(io.BytesIO(driver.get_screenshot_as_png()))
+            # img.show()
+            if not driver.current_url == LOGINED_URL:
                 raise InvalidParamsError('登录失败，请检查输入')
 
             # 登录成功
@@ -244,7 +250,7 @@ class Task(AbsFetchTask):
                         a = tds[1].findAll("a")[0]
                         link = a.attrs['onclick'].split('"')[1]
                         link = parse.urljoin(self.g.current_url, link)
-                        resp = self.s.get(link)
+                        resp = self.s.get(link, verify=False)
                         try:
                             result = bs4.BeautifulSoup(resp.text, 'html.parser')
                             if result:
@@ -283,7 +289,7 @@ class Task(AbsFetchTask):
                                     detail_a = detail_tag[1].findAll("a")[0]
                                     detail_link = detail_a.attrs['onclick'].split("'")[1]
                                     detail_link = parse.urljoin(self.g.current_url, detail_link)
-                                    detail_resp = self.s.get(detail_link)
+                                    detail_resp = self.s.get(detail_link, verify=False)
                                     detail_result = bs4.BeautifulSoup(detail_resp.content, 'html.parser')
                                     detail_table = detail_result.find("table", {"id": "new-mytable3"})
                                     if detail_table:

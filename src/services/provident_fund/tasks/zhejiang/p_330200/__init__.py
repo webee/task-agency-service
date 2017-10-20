@@ -87,6 +87,7 @@ class Task(AbsFetchTask):
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
+                self.result_data['baseInfo']={}
                 self.result_data["companyList"] = []
                 self._check_login_params(params)
                 id_num = params.get("账号")
@@ -221,3 +222,4 @@ if __name__ == '__main__':
     # 0122831927 111111
 
     #
+

@@ -54,7 +54,6 @@ class Task(AbsFetchTask):
             'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6'
         }
 
-
     def _prepare(self, data=None):
         super()._prepare(data)
         self.result_data['baseInfo']={}

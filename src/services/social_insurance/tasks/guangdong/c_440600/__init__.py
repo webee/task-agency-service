@@ -88,32 +88,33 @@ class Task(AbsFetchTask):
                 errormsg = soup.select('table')[1].text.replace('\n', '')
                 if errormsg:
                     if errormsg == '确 定退出系统':
+                        print('kdjfkd')
                         # vc = self._new_vc()
-                        vc_url = self.s.get(VC_URL)
-                        Image.open(io.BytesIO(vc_url.content)).show()
-                        vcts = input('验证码：')
-                        data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
-                                    GRBH=soup.find('input', {'name': 'GRBH'})["value"],
-                                    PASS=soup.find('input', {'name': 'PASS'})["value"],
-                                    CHECK=soup.find('input', {'name': 'CHECK'})["value"],
-                                    rtn=soup.find('input', {'name': 'rtn'})["value"],
-                                    imagecheck=vcts
-                                    )
-                        resp = self.s.post(VCIMAGE_URL, data)
-                        soup = BeautifulSoup(resp.content, 'html.parser')
-                        vcmsg = soup.select('table')[0].find('p').text
-                        if vcmsg:
-                            raise Exception(vcmsg)
-                        else:
-                            data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
-                                        GRBH=soup.find('input', {'name': 'GRBH'})["value"],
-                                        PASS=soup.find('input', {'name': 'PASS'})["value"],
-                                        CHECK=soup.find('input', {'name': 'CHECK'})["value"],
-                                        rtn=soup.find('input', {'name': 'rtn'})["value"]
-                                        )
-                            resp = self.s.post(MAIN_URL, data)
-                            soup = BeautifulSoup(resp.content, 'html.parser')
-                            self.html = soup
+                        # vc_url = self.s.get(VC_URL)
+                        # Image.open(io.BytesIO(vc_url.content)).show()
+                        # vcts = input('验证码：')
+                        # data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
+                        #             GRBH=soup.find('input', {'name': 'GRBH'})["value"],
+                        #             PASS=soup.find('input', {'name': 'PASS'})["value"],
+                        #             CHECK=soup.find('input', {'name': 'CHECK'})["value"],
+                        #             rtn=soup.find('input', {'name': 'rtn'})["value"],
+                        #             imagecheck=vcts
+                        #             )
+                        # resp = self.s.post(VCIMAGE_URL, data)
+                        # soup = BeautifulSoup(resp.content, 'html.parser')
+                        # vcmsg = soup.select('table')[0].find('p').text
+                        # if vcmsg:
+                        #     raise Exception(vcmsg)
+                        # else:
+                        #     data = dict(UserID=soup.find('input', {'name': 'UserID'})["value"],
+                        #                 GRBH=soup.find('input', {'name': 'GRBH'})["value"],
+                        #                 PASS=soup.find('input', {'name': 'PASS'})["value"],
+                        #                 CHECK=soup.find('input', {'name': 'CHECK'})["value"],
+                        #                 rtn=soup.find('input', {'name': 'rtn'})["value"]
+                        #                 )
+                        #     resp = self.s.post(MAIN_URL, data)
+                        #     soup = BeautifulSoup(resp.content, 'html.parser')
+                        #     self.html = soup
 
                     else:
                         raise Exception(errormsg)
@@ -144,25 +145,26 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             table_text = soup.select('.dataTable')[1]
             rows = table_text.find_all('tr')
-            data['baseinfo'] = {
+            data['baseInfo'] = {
                 '城市名称': '佛山',
                 '城市编号': '440600',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '身份证号':self.result_meta['身份证号']
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseinfo'].setdefault(cell[0], cell[1])
+                data['baseInfo'].setdefault(cell[0].replace(' ', ''), cell[1].replace(' ', ''))
                 if cell[0] == '姓名':
-                    self.result_identity['target_name'] = cell[1]
+                    self.result_identity['target_name'] = cell[1].replace(' ', '')
                 if cell[0] == '养老 实际缴费月数':
-                    data['baseinfo'].setdefault('缴费时长', cell[1])
+                    data['baseInfo'].setdefault('缴费时长', (int)(cell[1].replace(' ', '')))
                 if (len(cell) > 3):
                     if cell[2] == '个人社保号':
-                        data['baseinfo'].setdefault('社保编号', cell[3])
+                        data['baseInfo'].setdefault('社保编号', cell[3].replace(' ', ''))
                     else:
-                        data['baseinfo'].setdefault(cell[2], cell[3])  # .replace('\xa0', '')
+                        data['baseInfo'].setdefault(cell[2].replace(' ', ''), cell[3].replace(' ', ''))  # .replace('\xa0', '')
                 if len(cell) > 5:
-                    data['baseinfo'].setdefault(cell[4], cell[5])
+                    data['baseInfo'].setdefault(cell[4].replace(' ', ''), cell[5].replace(' ', ''))
             self.result_identity['status'] = ''
 
             arrtime = []
@@ -199,27 +201,27 @@ class Task(AbsFetchTask):
                     monthkeys = ''
                     monthcount = 0
                     for td in tr.findAll('td'):
-                        values = td.getText()
+                        values = td.getText().replace(' ', '')
                         if i == 0:
-                            monthkeyslist = td.getText().split('-')
+                            monthkeyslist = td.getText().replace(' ', '').split('-')
                             if len(monthkeyslist) > 1:
                                 values = monthkeyslist[0]
                                 arrtime.append(monthkeyslist[0])
                         if i == 7:
-                            monthcount = int(td.getText())
+                            monthcount = int(td.getText().replace(' ', ''))
                             values = monthcount / monthcount
                         if i == 8:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                             if v == 'old_age':
-                                grylsum = grylsum + float(td.getText())
+                                grylsum = grylsum + float(td.getText().replace(' ', ''))
                             if v == 'medical_care':
-                                gryilsum = gryilsum + float(td.getText())
+                                gryilsum = gryilsum + float(td.getText().replace(' ', ''))
                         if i == 9:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                         if i == 10:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                         if i == 11:
-                            values = float(td.getText()) / monthcount
+                            values = float(td.getText().replace(' ', '')) / monthcount
                         dic.setdefault(titkeys[i], values)
                         if i == 11 or len(titkeys) == i + 1:
                             for y in range(-1, monthcount - 1):
@@ -228,7 +230,7 @@ class Task(AbsFetchTask):
                                 months = ''
                                 statatime = monthkeyslist[0]
                                 endtime = monthkeyslist[1]
-                                nowtime = datetime.date(int(statatime[:5]) + (int(statatime[-2:]) + y) // 12,
+                                nowtime = datetime.date(int(statatime[:4]) + (int(statatime[-2:]) + y) // 12,
                                                         (int(statatime[-2:]) + y) % 12 + 1, 1).strftime('%Y-%m-%d')
                                 strtimemonth = nowtime[:7].replace('-', '')
                                 monthkeys = strtimemonth
@@ -250,12 +252,12 @@ class Task(AbsFetchTask):
                                     data[v]['data'][yearkeys].setdefault(monthkeys[-2:], arr)
                         i = i + 1
                 if v == 'old_age':
-                    data['baseinfo'].setdefault('个人养老累计缴费', grylsum)
+                    data['baseInfo'].setdefault('个人养老累计缴费', grylsum)
                 if v == 'medical_care':
-                    data['baseinfo'].setdefault('个人医疗累计缴费', gryilsum)
+                    data['baseInfo'].setdefault('个人医疗累计缴费', gryilsum)
 
-            data['baseinfo'].setdefault('最近缴费时间', max(arrtime))
-            data['baseinfo'].setdefault('开始缴费时间', min(arrtime))
+            data['baseInfo'].setdefault('最近缴费时间', max(arrtime).replace(' ', ''))
+            data['baseInfo'].setdefault('开始缴费时间', min(arrtime).replace(' ', ''))
 
             return
         except PermissionError as e:
