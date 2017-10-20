@@ -127,8 +127,7 @@ class Task(AbsFetchTask):
                 pw = m.hexdigest()
 
                 #self._new_vc()
-                vc = params.get("验证码") #input("请输入运算后的结果：")
-                # dict(key='验证码', name='验证码', value=vc)
+                vc = params.get("验证码")
 
                 _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='1.0.60'/><s dlfs='undefined'/></p>"
 
@@ -361,7 +360,5 @@ if __name__ == '__main__':
 
     # 371402199708176125  1314.bing
 
-    #                         for aa in range(len(content)):
-                            #Image.open(io.BytesIO(content[aa])).show()
 
 
