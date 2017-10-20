@@ -167,7 +167,6 @@ class Task(AbsFetchTask):
             driver.switchTo().defaultContent()
 
 
-
             # driver.find_element_by_xpath('//*[@id="pic"]').click()
             username_input = driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td[2]/input')
             password_input = driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[3]/td[2]/input')

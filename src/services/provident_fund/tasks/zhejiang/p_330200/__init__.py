@@ -194,7 +194,7 @@ class Task(AbsFetchTask):
 
         raise AskForParamsError([
             dict(key='账号', name='账号', cls='input', value=params.get('账号', '')),
-            dict(key='密码', name='密码', cls='input', value=params.get('密码', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 

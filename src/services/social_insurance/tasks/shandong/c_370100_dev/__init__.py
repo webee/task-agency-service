@@ -41,6 +41,7 @@ class Task(AbsFetchTask):
         super()._prepare()
         self.result_data['baseInfo']={}
 
+
     def _query(self, params: dict):
         """任务状态查询"""
         t = params.get('t')
@@ -64,6 +65,9 @@ class Task(AbsFetchTask):
             loc = (i * 22 + 15, 10)
             toImage.paste(fromImge, loc)
         toImage.show()
+
+        # contents=[base64.b64decode(firstNum),base64.b64decode(oprate),base64.b64decode(lastNum),base64.b64decode(equla)]
+        # return dict(cls='data:image', content=contents, content_type='image/png')
 
 
     def _setup_task_units(self):
@@ -122,9 +126,9 @@ class Task(AbsFetchTask):
                 m.update(str(account_pass).encode(encoding="utf-8"))
                 pw = m.hexdigest()
 
-                self._new_vc()
-                vc = input("请输入运算后的结果：")
-                dict(key='验证码', name='验证码', value=vc)
+                #self._new_vc()
+                vc = params.get("验证码") #input("请输入运算后的结果：")
+                # dict(key='验证码', name='验证码', value=vc)
 
                 _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='1.0.60'/><s dlfs='undefined'/></p>"
 
@@ -332,6 +336,7 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='验证码', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _convert_type(self,num):
@@ -355,5 +360,8 @@ if __name__ == '__main__':
     client.run()
 
     # 371402199708176125  1314.bing
+
+    #                         for aa in range(len(content)):
+                            #Image.open(io.BytesIO(content[aa])).show()
 
 
