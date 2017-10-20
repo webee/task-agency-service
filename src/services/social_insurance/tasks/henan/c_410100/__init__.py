@@ -75,7 +75,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
+            dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号或护照', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
