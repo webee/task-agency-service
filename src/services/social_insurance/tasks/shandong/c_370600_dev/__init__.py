@@ -205,14 +205,14 @@ class Task(AbsFetchTask):
                         dicts={'险种': cell[0],
                                  '缴费时间': cell[1],
                                '缴费类型':'',
-                               '缴费基数': cell[2],
+                               '缴费基数': cell[2].replace(',',''),
                                '公司缴费': cell[3],
                                '个人缴费': cell[4],
                                '单位编号':cell[5],
                                '缴费单位': cell[6]}
                         arr.append(dicts)
                         self.result_data['old_age']['data'][years][months] = arr
-                data['baseInfo']['个人养老缴费'] =ylsum
+                data['baseInfo']['个人养老累计缴费'] =ylsum
 
 
             #医疗
@@ -252,14 +252,14 @@ class Task(AbsFetchTask):
                         dicts = {'险种': cell[0],
                                  '缴费时间': cell[1],
                                  '缴费类型': '',
-                                 '缴费基数': cell[2],
+                                 '缴费基数': cell[2].replace(',',''),
                                  '公司缴费': cell[3],
                                  '个人缴费': cell[4],
                                  '单位编号': cell[5],
                                  '缴费单位': cell[6]}
                         arr.append(dicts)
                         self.result_data['medical_care']['data'][years][months] = arr
-                data['baseInfo']['个人医疗缴费'] = yilsum
+                data['baseInfo']['个人医疗累计缴费'] = yilsum
 
             # 工商
             resp = self.s.post(GS_URL, data=dict(
@@ -296,7 +296,7 @@ class Task(AbsFetchTask):
                             dicts = {'险种': cell[0],
                                  '缴费时间': cell[1],
                                      '缴费类型': '',
-                                     '缴费基数': cell[2],
+                                     '缴费基数': cell[2].replace(',',''),
                                      '公司缴费': cell[3],
                                      '个人缴费': cell[4],
                                      '单位编号': cell[5],
@@ -339,7 +339,7 @@ class Task(AbsFetchTask):
                         dicts = {'险种': cell[0],
                                  '缴费时间': cell[1],
                                  '缴费类型': '',
-                                 '缴费基数': cell[2],
+                                 '缴费基数': cell[2].replace(',',''),
                                  '公司缴费': cell[3],
                                  '个人缴费': cell[4],
                                  '单位编号': cell[5],
@@ -382,7 +382,7 @@ class Task(AbsFetchTask):
                         dicts = {'险种': cell[0],
                                  '缴费时间': cell[1],
                                  '缴费类型': '',
-                                 '缴费基数': cell[2],
+                                 '缴费基数': cell[2].replace(',',''),
                                  '公司缴费': cell[3],
                                  '个人缴费': cell[4],
                                  '单位编号': cell[5],
@@ -424,7 +424,7 @@ class Task(AbsFetchTask):
                         dicts = {'险种': cell[0],
                                  '缴费时间': cell[1],
                                  '缴费类型': cell[6],
-                                 '缴费基数': cell[2],
+                                 '缴费基数': cell[2].replace(',',''),
                                  '公司缴费': '',
                                  '个人缴费': cell[3],
                                  '单位编号': cell[4],

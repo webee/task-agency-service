@@ -139,7 +139,7 @@ class Task(AbsFetchTask):
             vc_input.send_keys(vc)
             # 提交
             submit_btn.click()
-            time.sleep(3)
+            time.sleep(5)
             #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             if driver.current_url == INFO_URL:
                 print('登录成功')
