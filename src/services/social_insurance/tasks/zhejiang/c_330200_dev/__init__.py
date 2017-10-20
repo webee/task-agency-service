@@ -198,7 +198,8 @@ class Task(AbsFetchTask):
                    }
                    arr.append(dicts)
                    self.result_data['old_age']['data'][years][months] = arr
-           print(arrstr)
+           #print(arrstr)
+           self.result_data["baseInfo"].setdefault('单位名称', arrstr[2].replace('单位名称：',''))
            nowyears= time.strftime("%Y", time.localtime())
            jfscolder=int(arrstr[10].replace('至本年末实际缴费月数：', ''))
            ljjfolder=float(arrstr[9].replace('至本年末账户累计储存额：', ''))
@@ -258,7 +259,7 @@ class Task(AbsFetchTask):
                    }
                    arr.append(dicts)
                    self.result_data['medical_care']['data'][years][months] = arr
-           print(arrstr)
+           #print(arrstr)
            nowyears = time.strftime("%Y", time.localtime())
            ljjfolder = float(arrstr[11].replace('个人账户余额：', ''))
            for k, v in self.result_data['old_age']['data'][nowyears].items():
