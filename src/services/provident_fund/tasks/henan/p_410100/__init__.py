@@ -20,7 +20,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="郑州",
         help="""
-            <li></li>
+            <li>初始密码是111111</li>
+            <li>可向公司人事或者经办人索取公积金账号</li>
             """
     )
 
@@ -31,10 +32,6 @@ class Task(AbsFetchTask):
             'Host': 'wx.zzgjj.com',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-        self.result_data['companyList']={}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -101,6 +98,9 @@ class Task(AbsFetchTask):
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
+                self.result['data']['baseInfo']={}
+                self.result_data['detail'] = {"data": {}}
+                self.result_data['companyList']=[]
                 id_num = params.get("身份证号")
                 account_name = params.get("用户姓名")
                 account_pass = params.get("密码")
@@ -123,30 +123,40 @@ class Task(AbsFetchTask):
 
                 self.result['data']['baseInfo'] = {
                     '姓名': data[3].text.split('：')[1],
-                    '身份证号': self.result_meta['身份证号'],
+                    '证件号': self.result_meta['身份证号'],
+                    '证件类型':'身份证',
                     '公积金账号': data[0].text.split('：')[1],
                     '开户日期': data[2].text.split('：')[1],
                     '缴存基数': data[4].text.split('：')[1],
                     '月缴额': data[5].text.split('：')[1],
                     '个人缴存比例': data[6].text.split('：')[1],
                     '单位缴存比例': data[7].text.split('：')[1],
-                    '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
+                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
                     '城市名称': '郑州市',
                     '城市编号': '410100'
                 }
 
-                self.result_data['companyList'] = {
+                self.result_data['companyList'].append({
                     "单位名称": data[1].text.split('：')[1],
                     "单位登记号": "-",
                     "所属管理部编号": "-",
                     "所属管理部名称": "-",
-                    "当前余额": data[8].text.split('：')[1],
+                    "当前余额": float(data[8].text.split('：')[1]),
                     "帐户状态": data[10].text.split('：')[1],
                     "当年缴存金额": "-",
                     "当年提取金额": "-",
                     "上年结转余额": "-",
                     "最后业务日期": data[9].text.split('：')[1],
                     "转出金额": "-"
+                })
+
+
+                # identity 信息
+                self.result['identity'] = {
+                    "task_name": "郑州",
+                    "target_name": self.result_meta['用户姓名'],
+                    "target_id": self.result_meta['身份证号'],
+                    "status":  data[10].text.split('：')[1]
                 }
 
                 return
@@ -154,9 +164,9 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
-            dict(key='用户姓名', name='用户姓名', cls='input'),
-            dict(key='密码', name='密码', cls='input'),
+            dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
+            dict(key='用户姓名', name='用户姓名', cls='input', value=params.get('用户姓名', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
     def _unit_fetch(self):

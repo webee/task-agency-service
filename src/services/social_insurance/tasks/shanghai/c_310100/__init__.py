@@ -7,9 +7,26 @@ from services.commons import AbsFetchTask
 import time
 from bs4 import BeautifulSoup
 
-LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/129.jsp"
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
 LOGIN_SUCCESS_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0"
 VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist.jsp"
+USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
+
+
+class value_is_number(object):
+
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        element = driver.find_element(*self.locator)
+        val = element.get_attribute('value')
+        return val and val.isnumeric()
 
 
 class Task(AbsFetchTask):
@@ -27,6 +44,17 @@ class Task(AbsFetchTask):
             'Accept-Encoding': 'gzip, deflate',
             'Host': 'www.12333sh.gov.cn',
         }
+
+    def _prepare(self, data=None):
+        super()._prepare(data)
+        self.result_data['baseInfo']={}
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+
+    def _create_driver(self):
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/wzb\/Bmblist.jpg/g')
+        # 随便访问一个相同host的地址，方便之后设置cookie
+        driver.get('"http://www.12333sh.gov.cn/xxxx')
+        return driver
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -93,23 +121,25 @@ class Task(AbsFetchTask):
                 account_pass = params.get("密码")
                 vc = params.get("vc")
 
-                data = {
-                    'userid': id_num,
-                    'userpw': account_pass,
-                    'userjym': vc
-                }
-                resp = self.s.post("http://www.12333sh.gov.cn/sbsjb/wzb/dologin.jsp", data=data)
-                # 检查是否登录成功
-                if resp.status_code != 200:
-                    raise InvalidParamsError("登录失败")
+                self._do_login(id_num, account_pass, vc)
 
-                if resp.url != LOGIN_SUCCESS_URL:
-                    soup = BeautifulSoup(resp.content, 'html.parser')
-                    spans = soup.select('tr > td > span')
-                    err_msg = "登录失败"
-                    if spans and len(spans) > 0:
-                        err_msg = spans[0].text
-                    raise InvalidParamsError(err_msg)
+                # data = {
+                #     'userid': id_num,
+                #     'userpw': account_pass,
+                #     'userjym': vc.encode('gbk'),
+                # }
+                # resp = self.s.post("http://www.12333sh.gov.cn/sbsjb/wzb/dologin.jsp", data=data)
+                # # 检查是否登录成功
+                # if resp.status_code != 200:
+                #     raise InvalidParamsError("登录失败")
+                #
+                # if resp.url != LOGIN_SUCCESS_URL:
+                #     soup = BeautifulSoup(resp.content, 'html.parser')
+                #     spans = soup.select('tr > td > span')
+                #     err_msg = "登录失败"
+                #     if spans and len(spans) > 0:
+                #         err_msg = spans[0].text
+                #     raise InvalidParamsError(err_msg)
 
                 # 设置key
                 self.result_key = params.get('用户名')
@@ -125,6 +155,43 @@ class Task(AbsFetchTask):
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
+
+
+    def _do_login(self, username, password, vc):
+        """使用web driver模拟登录过程"""
+        with self.dsc.get_driver_ctx() as driver:
+            # 打开登录页
+            driver.get(LOGIN_URL)
+            driver.switchTo().frame("iFrame2")
+            driver.findElement(By.name("userid"))
+            driver.switchTo().defaultContent()
+
+
+
+            # driver.find_element_by_xpath('//*[@id="pic"]').click()
+            username_input = driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td[2]/input')
+            password_input = driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[3]/td[2]/input')
+            vc_input = driver.find_element_by_xpath('//*[@id="userjym"]')
+
+            # 用户名
+            username_input.clear()
+            username_input.send_keys(username)
+
+            # 密码
+            password_input.clear()
+            password_input.send_keys(password)
+
+            # 验证码
+            vc_input.clear()
+            vc_input.send_keys(vc)
+
+            # 登录
+            driver.find_element_by_xpath('//*[@id="pic"]').click()
+            # time.sleep(5)
+
+            if driver.current_url.startswith('https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp'):
+                raise InvalidParamsError('登录失败，请重新登录！')
+
 
     def _unit_fetch(self):
         try:
@@ -298,7 +365,11 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    client = TaskTestClient(Task(SessionData()))
+    # client = TaskTestClient(Task(SessionData()))
+    # client.run()
+
+    meta = {'用户名': '321322199001067241', '密码': '123456'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
     # 321322199001067241  123456       5002931643   123456

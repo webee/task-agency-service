@@ -19,7 +19,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="贵阳",
         help="""
-            <li></li>
+            <li>初始密码为公积金账号最后六位.</li>
+            <li>如忘记密码或者遇到公积金相关问题，请拨打公积金热线12329.</li>
             """
     )
 
@@ -34,7 +35,6 @@ class Task(AbsFetchTask):
         super()._prepare()
         self.result_data['baseInfo']={}
         self.result_data['detail'] = {}
-        self.result_data['companyList']={}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -108,23 +108,27 @@ class Task(AbsFetchTask):
                     'Ed_Confirmation': vc
                 }
                 resp = self.s.post(LOGIN_URL, data=data)
+                respInfo=BeautifulSoup(resp.content,'html.parser').findAll('script')[0].text.split('alert')[1].split(';')[0]
+                if('0' not in respInfo):
+                    raise InvalidParamsError(respInfo)
+                else:
+                    self.result_key = id_num
+                    self.result_meta['身份证号'] =id_num
+                    self.result_meta['密码']=account_pass
 
-                self.result_key = id_num
-                self.result_meta['身份证号'] =id_num
-                self.result_meta['密码']=account_pass
-
-                return
+                    return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input'),
-            dict(key='密码', name='密码', cls='input'),
+            dict(key='身份证号', name='身份证号', cls='input',value=params.get('身份证号', '')),
+            dict(key='密码', name='密码', cls='input:password',value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch(self):
         try:
+            self.result_data['companyList']=[]
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             datas = soup.select('.table-content')
@@ -188,26 +192,35 @@ class Task(AbsFetchTask):
                 baseDetail[years].setdefault(months, [])
                 baseDetail[years][months].append(model)
 
-            self.result_data['companyList'] = {
+
+            status=""
+            if(datas[8].findAll("td")[1].text=="正常汇缴"):
+                status="正常"
+            else:
+                status="异常"
+
+
+            self.result_data['companyList'].append({
                 "单位名称": company[1].text.split('：')[1],
                 "单位登记号": company[0].text.split("：")[1],
                 "所属管理部编号": "-",
                 "所属管理部名称": "-",
                 "当前余额": datas[9].findAll("td")[3].text.replace('￥','').replace('元',''),
-                "帐户状态": datas[8].findAll("td")[1].text,
+                "帐户状态": status,
                 "当年缴存金额": "-",
                 "当年提取金额": "-",
                 "上年结转余额": "-",
                 "最后业务日期": datas[7].findAll("td")[5].text,
                 "转出金额": "-"
-            }
+            })
+
 
             # identity 信息
             self.result['identity'] = {
                 "task_name": "贵阳",
                 "target_name": datas[0].findAll("td")[3].text,
                 "target_id": self.result_meta['身份证号'],
-                "status": datas[8].findAll("td")[1].text
+                "status": status
             }
 
             return
