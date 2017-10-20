@@ -7,7 +7,7 @@ from services.commons import AbsFetchTask
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="广州",
-        help="""首次申请密码或遗忘网上登陆密码，本人须携带有效身份证件至就近街道社区事务受理中心或就近社保分中心自助机具上申请办理"""
+        help=""" """
     )
 
     def _prepare(self):
