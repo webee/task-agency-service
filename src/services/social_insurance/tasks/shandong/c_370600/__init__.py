@@ -115,7 +115,7 @@ class Task(AbsFetchTask):
 
                     self.result_key=id_num
                     # 保存到meta
-                    self.result_meta['用户名'] = id_num
+                    self.result_meta['身份证号'] = id_num
                     self.result_meta['密码'] = password
 
                     self.result_identity['task_name'] = '烟台'

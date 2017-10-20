@@ -135,7 +135,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        resp = self.s.get('https://fund.hrbgjj.gov.cn:8443/fund/webSearchInfoAction.do')
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
