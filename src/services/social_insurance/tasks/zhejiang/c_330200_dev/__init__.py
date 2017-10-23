@@ -33,6 +33,9 @@ INFO_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-grxx.jsp'
 VC_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/comm/yzm.jsp?r='
 YL_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-ylbx.jsp'
 YIL_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-yilbx.jsp'
+GS_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-gsbx.jsp'
+SY_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-sybx.jsp'
+SHY_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-shybx.jsp'
 
 class Task(AbsFetchTask):
    task_info = dict(
@@ -217,6 +220,7 @@ class Task(AbsFetchTask):
            else:
                cbzt = '停缴'
            self.result_identity['status'] = cbzt
+           self.g.Fivestatus={'养老':cbzt}
 
 
    def _yiliao(self):
@@ -265,6 +269,75 @@ class Task(AbsFetchTask):
            for k, v in self.result_data['old_age']['data'][nowyears].items():
                ljjfolder = ljjfolder + float(v[0]['个人缴费'])
            self.result_data["baseInfo"].setdefault('个人医疗累计缴费', ljjfolder)
+           cbzt = arrstr[4].replace('参保状态：', '')
+           if cbzt == '参保缴费':
+               cbzt = '正常参保'
+           else:
+               cbzt = '停缴'
+           self.g.Fivestatus.setdefault('医疗', cbzt)
+
+   def _gongshang(self):
+       with self.dsc.get_driver_ctx() as driver:
+           driver.get(GS_URL)
+           time.sleep(2)
+           htmls = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+           soupyl = BeautifulSoup(htmls, 'html.parser')
+           mingxitable = soupyl.select('#content')
+           tableinfo = mingxitable[0].find_all('tr')
+           arrstr = []
+           for row in tableinfo:
+               arr = []
+               cell = [i.text for i in row.find_all('td')]
+               if len(cell)<3:
+                   arrstr.extend(cell)
+           cbzt = arrstr[3].replace('参保状态：', '')
+           if cbzt == '参保缴费':
+               cbzt = '正常参保'
+           else:
+               cbzt = '停缴'
+           self.g.Fivestatus.setdefault('工伤', cbzt)
+
+   def _shiye(self):
+       with self.dsc.get_driver_ctx() as driver:
+           driver.get(SY_URL)
+           time.sleep(2)
+           htmls = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+           soupyl = BeautifulSoup(htmls, 'html.parser')
+           mingxitable = soupyl.select('#content')
+           tableinfo = mingxitable[0].find_all('tr')
+           arrstr = []
+           for row in tableinfo:
+               arr = []
+               cell = [i.text for i in row.find_all('td')]
+               if len(cell) < 3:
+                   arrstr.extend(cell)
+           cbzt = arrstr[3].replace('参保状态：', '')
+           if cbzt == '参保缴费':
+               cbzt = '正常参保'
+           else:
+               cbzt = '停缴'
+           self.g.Fivestatus.setdefault('失业', cbzt)
+
+   def _shengyu(self):
+       with self.dsc.get_driver_ctx() as driver:
+           driver.get(SHY_URL)
+           time.sleep(2)
+           htmls = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+           soupyl = BeautifulSoup(htmls, 'html.parser')
+           mingxitable = soupyl.select('#content')
+           tableinfo = mingxitable[0].find_all('tr')
+           arrstr = []
+           for row in tableinfo:
+               arr = []
+               cell = [i.text for i in row.find_all('td')]
+               if len(cell) < 3:
+                   arrstr.extend(cell)
+           cbzt = arrstr[3].replace('参保状态：', '')
+           if cbzt == '参保缴费':
+               cbzt = '正常参保'
+           else:
+               cbzt = '停缴'
+           self.g.Fivestatus.setdefault('生育', cbzt)
 
    def _unit_fetch_name(self):
        """用户信息"""
@@ -288,11 +361,14 @@ class Task(AbsFetchTask):
                '邮政编码': soup.select('#yzbm')[0].text
            }
            self.result_identity['target_name'] = soup.select('#xm')[0].text
-           #self.result_data["baseInfo"].setdefault()
+           self.g.Fivestatus=[]
 
            self._yanglao()
            self._yiliao()
-
+           self._gongshang()
+           self._shiye()
+           self._shengyu()
+           self.result_data["baseInfo"].setdefault('五险状态', self.g.Fivestatus)
 
            #resp=self.s.get(YL_URL)
 
