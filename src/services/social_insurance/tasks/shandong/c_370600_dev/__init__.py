@@ -452,11 +452,10 @@ class Task(AbsFetchTask):
                 fromImge.convert("RGB")
             loc = (i * 22 + 15, 10)
             toImage.paste(fromImge, loc)
-        #toImage.show()
-        toImage.save("newImg.png","PNG")
-
-        img = open(r'newImg.png','rb')
-        resp = img.read()#base64.b64encode(img.read())
+        imgsave=io.BytesIO()
+        toImage.save(imgsave,"PNG")
+        imgsave.seek(0)
+        resp = imgsave.read()
         return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
