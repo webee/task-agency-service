@@ -178,7 +178,7 @@ class Task(AbsFetchTask):
                 years=tds[0].text[0:4]
                 months=tds[0].text[5:7]
                 model = {
-                    '时间':tds[0].text,
+                    '时间':tds[0].text.replace('.','-'),
                     '类型':tds[1].text,
                     '汇缴年月': tds[2].text,
                     '收入':tds[3].text.replace(',',''),
