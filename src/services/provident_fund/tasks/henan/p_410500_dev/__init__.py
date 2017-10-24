@@ -121,7 +121,7 @@ class Task(AbsFetchTask):
                 self.result_identity['task_name'] = '安阳'
                 self.result_identity['target_id'] = id_num
                 self.result_identity['target_name'] = account_num
-                self.result_identity['status'] = ''
+
                 return
             except Exception as e:
                 err_msg = str(e)
@@ -151,6 +151,7 @@ class Task(AbsFetchTask):
                 cell = [i.text for i in row.find_all('td')]
                 data['baseinfo'].setdefault(cell[0].replace('职工姓名','姓名'),cell[1].replace('\xa0',''))
                 data['baseinfo'].setdefault(cell[2], cell[3].replace('\xa0',''))
+            self.result_identity['status'] = data['baseinfo']['账户状态']
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
             soup = BeautifulSoup(resp.content, 'html.parser')
