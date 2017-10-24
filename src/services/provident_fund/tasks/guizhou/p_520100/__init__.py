@@ -122,6 +122,15 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
+    def _short_type(self,keyname):
+        res=""
+        if(keyname=="公积金月对冲还贷"):
+            res="对冲还贷"
+        else:
+            res=keyname
+        return res
+
+
     def _unit_fetch(self):
         try:
             self.result_data['baseInfo'] = {}
@@ -178,8 +187,8 @@ class Task(AbsFetchTask):
                 years=tds[0].text[0:4]
                 months=tds[0].text[5:7]
                 model = {
-                    '时间':tds[0].text,
-                    '类型':tds[1].text,
+                    '时间':tds[0].text.replace('.','-'),
+                    '类型':self._short_type(tds[1].text),
                     '汇缴年月': tds[2].text,
                     '收入':tds[3].text.replace(',',''),
                     '支出':tds[4].text.replace(',',''),

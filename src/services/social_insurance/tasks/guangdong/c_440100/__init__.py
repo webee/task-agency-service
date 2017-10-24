@@ -375,6 +375,34 @@ class Task(AbsFetchTask):
                     dataBaseB[nowtime5[0:4]][nowtime5[4:6]].append(modelB)
 
 
+            # 大病保险明细
+            # dabingData = sidata.findAll("tr", {'temp': '重大疾病医疗补助'})
+            #
+            # self.result_data['serious_illness'] = {"data": {}}
+            # dataBaseQ = self.result_data['serious_illness']["data"]
+            # modelQ = {}
+            # for q in range(len(dabingData)):
+            #     td6 = dabingData[q].findAll("td")
+            #     yearQ = self._to_replace(td[1].text)[0:4]
+            #     monthQ = self._to_replace(td[1].text)[4:6]
+            #     rangNumQ = int(self._to_replace(td[3].text))
+            #
+            #     for a1 in range(-1, rangNumQ - 1):
+            #         nowtime6 = datetime.date(int(yearQ) + (int(monthQ) + a1) // 12, (int(monthQ) + a1) % 12 + 1,1).strftime('%Y%m')
+            #         modelQ = {
+            #             '缴费单位': si_com,
+            #             '缴费类型': si_status,
+            #             '缴费时间': nowtime6,
+            #             '缴费基数': self._to_replace(td6[9].text),
+            #             '政府资助': re.findall(r"\d+\.?\d*", td6[8].text)[0],
+            #             '公司缴费': float(re.findall(r"\d+\.?\d*", td6[6].text)[0]) / rangNum,
+            #             '个人缴费': float(re.findall(r"\d+\.?\d*", td6[7].text)[0]) / rangNum
+            #         }
+            #         dataBaseQ.setdefault(nowtime6[0:4], {})
+            #         dataBaseQ[nowtime6[0:4]].setdefault(nowtime6[4:6], [])
+            #         dataBaseQ[nowtime6[0:4]][nowtime6[4:6]].append(modelQ)
+
+
             social_status={
                 '医疗':si_status,
                 '养老':sixian[len(sixian)-4].findAll("td")[12].text,
