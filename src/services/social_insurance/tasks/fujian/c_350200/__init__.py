@@ -308,6 +308,10 @@ class Task(AbsFetchTask):
 
                 basedataB[yearB][monthB].append(modelB)
 
+            # 大病明细
+            self.result['data']["serious_illness"] = {"data": {}}
+
+
             # 五险状态
             social_type = {
                 '养老': re.sub('\s', '', sEI[len(sEI) - 1].findAll('td')[2].text),

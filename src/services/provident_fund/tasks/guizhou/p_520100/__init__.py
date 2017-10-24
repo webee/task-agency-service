@@ -31,10 +31,6 @@ class Task(AbsFetchTask):
                 'Host': 'zxcx.gygjj.gov.cn',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-        self.result_data['detail'] = {}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -128,6 +124,8 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
+            self.result_data['baseInfo'] = {}
+            self.result_data['detail'] = {"data": {}}
             self.result_data['companyList']=[]
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -135,23 +133,23 @@ class Task(AbsFetchTask):
 
             self.result_data['baseInfo']={
                 '姓名':datas[0].findAll("td")[3].text,
-                '身份证号':datas[0].findAll("td")[5].text,
+                '证件号':datas[0].findAll("td")[5].text,
+                '证件类型': '身份证',
                 '公积金帐号': datas[0].findAll("td")[1].text,
+
                 '性别':datas[1].findAll("td")[1].text,
                 '手机号':datas[1].findAll("td")[3].text,
                 '卡号':datas[1].findAll("td")[5].text,
-
                 '工资基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
                 '单位缴存比例':datas[4].findAll("td")[1].text,
                 '职工缴存比例':datas[4].findAll("td")[3].text,
                 '单位月应缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
                 '职工月应缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
-
                 '开户日期':datas[7].findAll("td")[1].text,
-                '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
+
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
                 '城市名称': '贵阳市',
                 '城市编号': '520100'
-
             # '汇缴状态': datas[8].findAll("td")[1].text,
             # '月应缴额':datas[3].findAll("td")[3].text.replace('￥','').replace('元',''),
             #'起缴年月':datas[7].findAll("td")[3].text,
@@ -170,7 +168,7 @@ class Task(AbsFetchTask):
             soup2 = BeautifulSoup(resp2.content, 'html.parser')
             data_list = soup2.find('table', {'id': 'extjsp_div_data_table_0'})
             trs = data_list.findAll("tr")
-            self.result_data['detail']={"data":{}}
+
             baseDetail = self.result_data["detail"]["data"]
             model={}
             company=soup2.findAll('table')[1].findAll('td')
@@ -203,15 +201,15 @@ class Task(AbsFetchTask):
             self.result_data['companyList'].append({
                 "单位名称": company[1].text.split('：')[1],
                 "单位登记号": company[0].text.split("：")[1],
-                "所属管理部编号": "-",
-                "所属管理部名称": "-",
+                "所属管理部编号": "",
+                "所属管理部名称": "",
                 "当前余额": datas[9].findAll("td")[3].text.replace('￥','').replace('元',''),
                 "帐户状态": status,
-                "当年缴存金额": "-",
-                "当年提取金额": "-",
-                "上年结转余额": "-",
+                "当年缴存金额": "",
+                "当年提取金额": "",
+                "上年结转余额": "",
                 "最后业务日期": datas[7].findAll("td")[5].text,
-                "转出金额": "-"
+                "转出金额": ""
             })
 
 

@@ -293,6 +293,11 @@ class Task(AbsFetchTask):
                 "data": {}
             }
 
+            # 大病
+            self.result_data["serious_illness"] = {
+                "data": {}
+            }
+
             self.result_identity.update({
                 "task_name": "上海",
                 "target_name": soup.find('xm').text,

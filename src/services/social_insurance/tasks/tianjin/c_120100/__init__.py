@@ -167,7 +167,7 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-
+            self.result['data']['baseInfo']={}
             rest = self.s.get("http://public.tj.hrss.gov.cn/api/security/user")
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
             s2=json.loads(rest.text)["associatedPersons"][0]["personNumber"]
@@ -350,6 +350,9 @@ class Task(AbsFetchTask):
 
                 basedataB[yearB][monthB].append(modelB)
 
+            # 大病明细
+            self.result['data']["serious_illness"] = {"data": {}}
+
 
             # 五险状态
             stype = json.loads(
@@ -389,9 +392,9 @@ class Task(AbsFetchTask):
                 # '手机号码':mobileNumber,
                 # '户口性质':householdTypes,
                 # '户口所在地详址':rs['householdAddress']
-                '医疗账户余额':str(rs2['medicalBalance'])+"元",
-                '城职养老账户余额':str(rs2['empAccountSum'])+"元",
-                '职业年金余额':str(rs2['residentAccountSum'])+"元"
+                '医疗账户余额':str(rs2['medicalBalance']),
+                '城职养老账户余额':str(rs2['empAccountSum']),
+                '职业年金余额':str(rs2['residentAccountSum'])
             }
 
             if (social_Type['养老'] == "正常参保"):
