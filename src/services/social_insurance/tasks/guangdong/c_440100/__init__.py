@@ -220,7 +220,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             s=json.loads(self.s.get(User_BaseInfo).text)   # 个人信息导航
-            s2=s[8]['url']
+            s2=s[0]['url']
             res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+s2)   # 个人基础信息
 
             if(len(BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'}))<=0):
@@ -407,13 +407,13 @@ class Task(AbsFetchTask):
                 '状态':social_status['养老'],
 
                 '个人编号': redata.find('input', {'id': 'aac001'})['value'],
-                '性别': redata.find('input', {'id': 'aac004ss'})['value'],
+                # '性别': redata.find('input', {'id': 'aac004ss'})['value'],
                 #'民族': redata2.find('select', {'id': 'aac005'}).find(selected="selected").text.replace('\r', '').replace('\n', '').replace('\t', ''),
-                '户口性质': redata.find('input', {'id': 'aac009ss'})['value'],
-                '出生日期': redata.find('input', {'id': 'aac006ss'})['value'],
-                '单位名称': redata.find('input', {'id': 'aab069ss'})['value'],
-                '地址': redata2.find('input', {'id': 'bab306'})['value'],
-                '电子邮箱': redata2.find('input', {'id': 'bbc019'})['value']
+                #'户口性质': redata.find('input', {'id': 'aac009ss'})['value'],
+                # '出生日期': redata.find('input', {'id': 'aac006ss'})['value'],
+                # '单位名称': redata.find('input', {'id': 'aab069ss'})['value'],
+                # '地址': redata2.find('input', {'id': 'bab306'})['value'],
+                # '电子邮箱': redata2.find('input', {'id': 'bbc019'})['value']
             }
 
             # identity信息
@@ -440,13 +440,12 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '441225199102281010', '密码': 'wtz969462'}
+    meta = {'账号': '441481198701204831', '密码': 'taifaikcoi168'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
     #file=open("D:/789654321.html",'r')
 
-    # 441225199102281010  wtz969462
 
     # 441481198701204831 '密码': taifaikcoi168
 
