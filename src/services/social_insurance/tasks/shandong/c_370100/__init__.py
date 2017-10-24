@@ -14,6 +14,7 @@ import base64
 from PIL import Image
 import io
 import hashlib
+import os
 
 
 LOGIN_URL = r"http://60.216.99.138/hsp/logonDialog.jsp"
@@ -41,6 +42,7 @@ class Task(AbsFetchTask):
         super()._prepare()
         self.result_data['baseInfo']={}
 
+
     def _query(self, params: dict):
         """任务状态查询"""
         t = params.get('t')
@@ -63,7 +65,12 @@ class Task(AbsFetchTask):
                 fromImge.convert("RGB")
             loc = (i * 22 + 15, 10)
             toImage.paste(fromImge, loc)
-        toImage.show()
+        #toImage.show()
+
+        toImage.save("imgYZM.png", "PNG")
+        imginfo = open(r'imgYZM.png', 'rb')
+        res=imginfo.read()
+        return dict(cls='data:image', content=res, contents_type='image/png')
 
 
     def _setup_task_units(self):
@@ -122,9 +129,8 @@ class Task(AbsFetchTask):
                 m.update(str(account_pass).encode(encoding="utf-8"))
                 pw = m.hexdigest()
 
-                self._new_vc()
-                vc = input("请输入运算后的结果：")
-                dict(key='验证码', name='验证码', value=vc)
+                #self._new_vc()
+                vc = params.get("验证码")
 
                 _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='1.0.60'/><s dlfs='undefined'/></p>"
 
@@ -132,6 +138,7 @@ class Task(AbsFetchTask):
                 if('true' not in resp.text):
                     raise InvalidParamsError(resp.text)
                 else:
+                    os.remove("imgYZM.png")
                     uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
                     res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
                     soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
@@ -294,6 +301,9 @@ class Task(AbsFetchTask):
                             }
                             basedataB[yearB][monthB].append(modelB)
 
+                    # 大病保险
+                    self.result['data']['serious_illness']={"data":{}}
+
 
                     # 状态
                     status=""
@@ -319,7 +329,7 @@ class Task(AbsFetchTask):
                     }
 
                     self.result_identity.update({
-                        "task_name": "济南",
+                        "task_name": "济南市",
                         "target_name": soup[0].findAll("td")[1].find(type="text")["value"],
                         "target_id": self.result_meta['身份证号'],
                         "status": status
@@ -332,6 +342,7 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='验证码', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _convert_type(self,num):
@@ -355,5 +366,6 @@ if __name__ == '__main__':
     client.run()
 
     # 371402199708176125  1314.bing
+
 
 

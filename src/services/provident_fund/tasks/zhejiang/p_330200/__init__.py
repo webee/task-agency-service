@@ -87,6 +87,7 @@ class Task(AbsFetchTask):
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
+                self.result_data['baseInfo']={}
                 self.result_data["companyList"] = []
                 self._check_login_params(params)
                 id_num = params.get("账号")
@@ -194,7 +195,7 @@ class Task(AbsFetchTask):
 
         raise AskForParamsError([
             dict(key='账号', name='账号', cls='input', value=params.get('账号', '')),
-            dict(key='密码', name='密码', cls='input', value=params.get('密码', '')),
+            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
@@ -219,5 +220,3 @@ if __name__ == '__main__':
     # 330227198208247314  111111
 
     # 0122831927 111111
-
-    #

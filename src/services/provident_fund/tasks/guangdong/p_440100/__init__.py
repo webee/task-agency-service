@@ -1,4 +1,3 @@
-
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
@@ -97,4 +96,3 @@ if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task(SessionData()))
     client.run()
-
