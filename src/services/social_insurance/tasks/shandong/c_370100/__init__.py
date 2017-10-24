@@ -38,10 +38,6 @@ class Task(AbsFetchTask):
             'X-Requested-With':'XMLHttpRequest'
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -65,11 +61,11 @@ class Task(AbsFetchTask):
                 fromImge.convert("RGB")
             loc = (i * 22 + 15, 10)
             toImage.paste(fromImge, loc)
-        #toImage.show()
 
-        toImage.save("imgYZM.png", "PNG")
-        imginfo = open(r'imgYZM.png', 'rb')
-        res=imginfo.read()
+        savefile=io.BytesIO()
+        toImage.save(savefile,"PNG")
+        savefile.seek(0)
+        res=savefile.read()
         return dict(cls='data:image', content=res, contents_type='image/png')
 
 
@@ -122,7 +118,7 @@ class Task(AbsFetchTask):
         if params:
             try:
                 self._check_login_params(params)
-
+                self.result_data['baseInfo'] = {}
                 id_num = params.get("身份证号")
                 account_pass = params.get("密码")
                 m = hashlib.md5()
@@ -138,7 +134,6 @@ class Task(AbsFetchTask):
                 if('true' not in resp.text):
                     raise InvalidParamsError(resp.text)
                 else:
-                    os.remove("imgYZM.png")
                     uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
                     res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
                     soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
