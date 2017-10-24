@@ -113,7 +113,7 @@ class Task(AbsFetchTask):
                     'validateCode': vc,
                     'date': str(time.time() * 1000)[0:13]
                 }
-                resp = self.s.post("https://app.xmhrss.gov.cn/login_dowith.xhtml", data=data)
+                resp = self.s.post("https://app.xmhrss.gov.cn/login_dowith.xhtml", data=data, verify=False)
                 res = json.loads(resp.text)
 
                 if res['result'] == False:
