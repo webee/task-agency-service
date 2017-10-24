@@ -31,10 +31,6 @@ class Task(AbsFetchTask):
                 'Host': 'zxcx.gygjj.gov.cn',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-        self.result_data['detail'] = {}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -128,6 +124,8 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
+            self.result_data['baseInfo'] = {}
+            self.result_data['detail'] = {"data": {}}
             self.result_data['companyList']=[]
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -170,7 +168,7 @@ class Task(AbsFetchTask):
             soup2 = BeautifulSoup(resp2.content, 'html.parser')
             data_list = soup2.find('table', {'id': 'extjsp_div_data_table_0'})
             trs = data_list.findAll("tr")
-            self.result_data['detail']={"data":{}}
+
             baseDetail = self.result_data["detail"]["data"]
             model={}
             company=soup2.findAll('table')[1].findAll('td')
