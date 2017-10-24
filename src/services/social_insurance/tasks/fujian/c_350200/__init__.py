@@ -21,6 +21,7 @@ Detail_URL = r"https://app.xmhrss.gov.cn/UCenter/sbjfxxcx.xhtml"
 
 
 class Task(AbsFetchTask):
+    requests.packages.urllib3.disable_warnings()
     task_info = dict(
         city_name="厦门",
         help="""
@@ -37,10 +38,9 @@ class Task(AbsFetchTask):
             'Host': 'app.xmhrss.gov.cn',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        requests.packages.urllib3.disable_warnings()
-        self.result_data['baseInfo'] = {}
+    # def _prepare(self, data=None):
+    #     #requests.packages.urllib3.disable_warnings()
+    #     True
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -128,8 +128,6 @@ class Task(AbsFetchTask):
                     return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
-            except Exception as e:
-                err_msg = str(e)
 
         raise AskForParamsError([
             dict(key='社保号', name='社保号', cls='input', placeholder='请输入社保号', value=params.get('社保号', '')),
@@ -149,6 +147,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             # 个人信息
+            self.result_data['baseInfo'] = {}
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data = soup.find('table', {'class': 'tab3'}).findAll('tr')
