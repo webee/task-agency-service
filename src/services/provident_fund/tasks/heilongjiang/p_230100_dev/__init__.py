@@ -1,15 +1,17 @@
 import time
 import requests
 import re
+import ssl
 requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
 
-MAIN_URL = 'https://fund.hrbgjj.gov.cn:8443/fund/webSearchInfoAction.do?method=process'
-LOGIN_URL = 'https://fund.hrbgjj.gov.cn:8443/fund/webSearchInfoAction.do?method=process'
-VC_URL = 'https://fund.hrbgjj.gov.cn:8443/fund/webSearchInfoAction.do?method=process&dispatch=genetateValidatecode'
+MAIN_URL = 'https://fund.hrbgjj.org.cn:8443/fund/webSearchInfoAction.do?method=process'
+LOGIN_URL = 'https://fund.hrbgjj.org.cn:8443/fund/webSearchInfoAction.do?method=process'
+VC_URL = 'https://fund.hrbgjj.org.cn:8443/fund/webSearchInfoAction.do?method=process&dispatch=genetateValidatecode'
+
 
 
 class Task(AbsFetchTask):
@@ -37,7 +39,7 @@ class Task(AbsFetchTask):
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert '身份证号' in params, '缺少身份证号'
-        assert '个人帐号' in params, '缺少个人帐号'
+        assert '个人账号' in params, '缺少个人账号'
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
@@ -46,8 +48,8 @@ class Task(AbsFetchTask):
             meta = self.prepared_meta
             if '身份证号' not in params:
                 params['身份证号'] = meta.get('身份证号')
-            if '个人帐号' not in params:
-                params['个人帐号'] = meta.get('个人帐号')
+            if '个人账号' not in params:
+                params['个人账号'] = meta.get('个人账号')
             if '密码' not in params:
                 params['密码'] = meta.get('密码')
         return params
@@ -57,7 +59,7 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '个人帐号' and '个人帐号' in meta:
+            if pr['key'] == '个人账号' and '个人账号' in meta:
                 continue
             elif pr['key'] == '身份证号' and '身份证号' in meta:
                 continue
@@ -69,13 +71,12 @@ class Task(AbsFetchTask):
         return res
     def _unit_login(self, params=None):
         err_msg = None
-        params
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
                 id_num = params['身份证号']
-                account_num = params['个人帐号']
+                account_num = params['个人账号']
                 password=params['密码']
                 vc = params['vc']
 
@@ -97,11 +98,10 @@ class Task(AbsFetchTask):
                     self.html = str(resp.content, 'gbk')
 
                 self.result_key= id_num
-                self.result_meta = {
-                    '身份证号': id_num,
-                    '个人账号': account_num,
-                    '密码':password
-                }
+                self.result_meta['身份证号'] =id_num
+                self.result_meta['个人账号'] = account_num
+                self.result_meta['密码'] = password
+
                 return
             except Exception as e:
                 err_msg = str(e)
@@ -110,7 +110,7 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input'),
             dict(key='个人账号', name='个人账号', cls='input'),
-            dict(key='密码',name='密码',cls='input'),
+            dict(key='密码',name='密码',cls='input:password'),
             dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
         ], err_msg)
 
@@ -135,12 +135,13 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get('https://fund.hrbgjj.gov.cn:8443/fund/webSearchInfoAction.do')
+        resp = self.s.get(vc_url,verify=False)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
+    meta = {'身份证号': '230223197310180837','个人账号':'801016453429', '密码': '111111'}
 
-    client = TaskTestClient(Task())
+    client = TaskTestClient(Task(prepare_data = dict(meta=meta)))
     client.run()
