@@ -102,6 +102,9 @@ class Task(AbsFetchTask):
                 self.result_meta['个人账号'] = account_num
                 self.result_meta['密码'] = password
 
+                self.result_identity['task_name']='哈尔滨'
+                self.result_identity['target_id'] = id_num
+
                 return
             except Exception as e:
                 err_msg = str(e)
@@ -117,7 +120,11 @@ class Task(AbsFetchTask):
     def _unit_fetch_name(self):
         try:
             data = self.result_data
-            data['baseInfo']={}
+            data['baseInfo']={
+                '城市名称': '哈尔滨',
+                '城市编号': '230100',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+            }
             resp = self.html
             soup = BeautifulSoup(resp, 'html.parser')
             table_text=soup.findAll('table')
@@ -125,10 +132,12 @@ class Task(AbsFetchTask):
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell)==4:
-                    data['baseInfo'][cell[0].replace('\n','')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
-                    data['baseInfo'][cell[2].replace('\n','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0',''))
-                #elif len(cell)==2:
-                    #data[cell[0].replace('\n','')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
+                    data['baseInfo'][cell[0].replace('\n','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
+                    data['baseInfo'][cell[2].replace('\n','').replace('\r                \xa0','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0',''))
+
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            self.result_identity['status'] = ''
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
