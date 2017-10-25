@@ -123,7 +123,8 @@ class Task(AbsFetchTask):
             data['baseInfo']={
                 '城市名称': '哈尔滨',
                 '城市编号': '230100',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '证件类型':'身份证'
             }
             resp = self.html
             soup = BeautifulSoup(resp, 'html.parser')
@@ -132,7 +133,7 @@ class Task(AbsFetchTask):
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell)==4:
-                    data['baseInfo'][cell[0].replace('\n','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
+                    data['baseInfo'][cell[0].replace('\n','').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
                     data['baseInfo'][cell[2].replace('\n','').replace('\r                \xa0','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0',''))
 
             self.result_identity['target_name'] = data['baseInfo']['姓名']
