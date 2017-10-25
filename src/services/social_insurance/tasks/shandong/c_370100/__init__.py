@@ -207,6 +207,7 @@ class Task(AbsFetchTask):
                                     '个人缴费': float(td2[2].find(type="text")["value"])-float(td2[3].find(type="text")["value"])-float(td2[4].find(type="text")["value"]),
                                     '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                 }
+                                permedicalTotal +=float(float(td2[2].find(type="text")["value"])-float(td2[3].find(type="text")["value"])-float(td2[4].find(type="text")["value"]))
                                 basedataH[yearH][monthH].append(modelH)
 
 
@@ -331,7 +332,7 @@ class Task(AbsFetchTask):
                         '最近缴费时间': oldData.findAll('p')[3].text.split(':')[1].replace('\n',''),
                         '开始缴费时间': oldData.findAll('p')[2].text.split(':')[1].replace('\n',''),
                         '个人养老累计缴费': float(oldTotal.replace(',','')),
-                        '个人医疗累计缴费': '',
+                        '个人医疗累计缴费': permedicalTotal,
                         '状态': status,
                         '出生日期': soup[1].findAll("td")[3].find(type="text")["value"]
                     }
