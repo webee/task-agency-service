@@ -145,12 +145,13 @@ class Task(AbsFetchTask):
             data['baseinfo'] = {
                 '城市名称': '安阳',
                 '城市编号': '410500',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '证件类型':'身份证'
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 data['baseinfo'].setdefault(cell[0].replace('职工姓名','姓名'),cell[1].replace('\xa0',''))
-                data['baseinfo'].setdefault(cell[2], cell[3].replace('\xa0',''))
+                data['baseinfo'].setdefault(cell[2].replace('身份证号','证件号'), cell[3].replace('\xa0',''))
             self.result_identity['status'] = data['baseinfo']['账户状态']
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
