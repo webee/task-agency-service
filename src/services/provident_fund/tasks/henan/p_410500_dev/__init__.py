@@ -131,7 +131,7 @@ class Task(AbsFetchTask):
             dict(key='身份证号', name='身份证号', cls='input'),
             dict(key='职工姓名', name='职工姓名', cls='input'),
             dict(key='密码',name='密码',cls='input:password'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
