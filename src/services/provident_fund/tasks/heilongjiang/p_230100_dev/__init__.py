@@ -143,7 +143,7 @@ class Task(AbsFetchTask):
             diclist= {
                 '单位名称':data['baseInfo']['单位名称'],
                 '当前余额': data['baseInfo']['账户余额'],
-                '账户状态': data['baseInfo']['状 态'],
+                '帐户状态': data['baseInfo']['状 态'],
                 '当年缴存金额': data['baseInfo']['本年缴存总额'],
                 '当年提取金额': data['baseInfo']['本年支取总额'],
                 '最后业务日期': data['baseInfo']['最后汇缴年月']
