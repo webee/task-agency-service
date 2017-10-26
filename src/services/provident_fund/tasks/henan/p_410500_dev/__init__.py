@@ -150,8 +150,8 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名'),cell[1].replace('\xa0',''))
-                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号'), cell[3].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace(' ',''),cell[1].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ',''), cell[3].replace('\xa0',''))
             self.result_identity['status'] = data['baseInfo']['账户状态']
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
