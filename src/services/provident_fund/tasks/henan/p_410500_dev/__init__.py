@@ -159,9 +159,12 @@ class Task(AbsFetchTask):
             data['detail'] = {}
             data['detail']['data'] = {}
             selectyear = []
+            years = ''
+            months = ''
             for option in soup.findAll('option'):
                 selectyear.append(option.getText())
-            for y in range(0,len(selectyear)):
+            selectyear.append('当前年度')
+            for y in range(1,len(selectyear)):
                 cxydone=selectyear[y]
                 cxydtwo1=''
                 if y==0:
@@ -174,7 +177,7 @@ class Task(AbsFetchTask):
                            'sfzh':self.sfzh,
                            'zgxm':self.zgxm,
                            'dwbm':self.dwbm,
-                           'cxyd':self.cxyd}
+                           'cxyd':cxydtwo1}
                 resp = self.s.post(GJJ_URL, data=parse.urlencode(data1, encoding='gbk'),
                                   headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
@@ -187,8 +190,7 @@ class Task(AbsFetchTask):
                 #         titkeys = td.getText()
                 #     else:
                 #         titkeys = titkeys + ',' + td.getText()
-                years = ''
-                months = ''
+
                 for tr in range(0,len(tabcontent)):
                     dic = {}
                     i = 0
@@ -211,12 +213,15 @@ class Task(AbsFetchTask):
                             dic['单位名称']= ''
                             if years==''or years!=monthkeys[:4]:
                                 years=monthkeys[:4]
-                                data['detail']['data'][years]={}
+                                if years not in data['detail']['data'].keys():
+                                    data['detail']['data'][years]={}
                                 if months==monthkeys[5:7]:
-                                    data['detail']['data'][years][months] = {}
+                                    if months not in data['detail']['data'][years].keys():
+                                        data['detail']['data'][years][months] = {}
                             if months=='' or months!=monthkeys[5:7]:
                                 months=monthkeys[5:7]
-                                data['detail']['data'][years][months] = {}
+                                if months not in data['detail']['data'][years].keys():
+                                    data['detail']['data'][years][months] = {}
                             if len(data['detail']['data'][years][months])>0:
                                 arr=data['detail']['data'][years][months]
                             arr.append(dic)
