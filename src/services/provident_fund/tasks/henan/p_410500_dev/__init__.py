@@ -227,7 +227,8 @@ class Task(AbsFetchTask):
                             arr.append(dic)
                             data['detail']['data'][years][months]=arr
 
-            data['companyList'] = {
+            data['companyList']=[]
+            diclist = {
                 '单位名称': data['baseInfo']['所在单位'],
                 '单位登记号': data['baseInfo']['单位账号'],
                 '账户状态': data['baseInfo']['账户状态'],
@@ -236,6 +237,7 @@ class Task(AbsFetchTask):
                 '当年缴存金额': data['baseInfo']['本年缴交'],
                 '上年结转余额': data['baseInfo']['上年余额']
             }
+            data['companyList'].append(diclist)
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
