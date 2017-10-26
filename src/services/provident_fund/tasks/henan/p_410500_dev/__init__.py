@@ -142,7 +142,7 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp, 'html.parser')
             table_text = soup.select('table.1')
             rows = table_text[0].find_all('tr')
-            data['baseinfo'] = {
+            data['baseInfo'] = {
                 '城市名称': '安阳',
                 '城市编号': '410500',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
@@ -150,9 +150,9 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseinfo'].setdefault(cell[0].replace('职工姓名','姓名'),cell[1].replace('\xa0',''))
-                data['baseinfo'].setdefault(cell[2].replace('身份证号','证件号'), cell[3].replace('\xa0',''))
-            self.result_identity['status'] = data['baseinfo']['账户状态']
+                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名'),cell[1].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号'), cell[3].replace('\xa0',''))
+            self.result_identity['status'] = data['baseInfo']['账户状态']
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -222,7 +222,15 @@ class Task(AbsFetchTask):
                             arr.append(dic)
                             data['detail']['data'][years][months]=arr
 
-
+            data['companyList'] = {
+                '单位名称': data['baseInfo']['所在单位'],
+                '单位登记号': data['baseInfo']['单位账号'],
+                '账户状态': data['baseInfo']['账户状态'],
+                '当前余额': data['baseInfo']['账户余额'],
+                '当年提取金额': data['baseInfo']['本年支取'],
+                '当年缴存金额': data['baseInfo']['本年缴交'],
+                '上年结转余额': data['baseInfo']['上年余额']
+            }
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
