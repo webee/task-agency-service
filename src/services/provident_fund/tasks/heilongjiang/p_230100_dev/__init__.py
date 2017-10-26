@@ -139,7 +139,8 @@ class Task(AbsFetchTask):
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['status'] = ''
 
-            data['companyList']={
+            data['companyList']=[]
+            diclist= {
                 '单位名称':data['baseInfo']['单位名称'],
                 '当前余额': data['baseInfo']['账户余额'],
                 '账户状态': data['baseInfo']['状 态'],
@@ -147,7 +148,7 @@ class Task(AbsFetchTask):
                 '当年提取金额': data['baseInfo']['本年支取总额'],
                 '最后业务日期': data['baseInfo']['最后汇缴年月']
             }
-
+            data['companyList'].append(diclist)
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
