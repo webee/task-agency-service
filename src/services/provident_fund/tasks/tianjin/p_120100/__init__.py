@@ -46,31 +46,27 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '账号' in params, '缺少公积金账号'
+        assert '身份证号' in params, '缺少公积金账号'
         assert '密码' in params, '缺少密码'
         # other check
-        公积金账号 = params['公积金账号']
+        身份证号 = params['身份证号']
         密码 = params['密码']
         if len(密码) < 4:
-            raise InvalidParamsError('公积金账号或密码错误')
-        if 公积金账号.isdigit():
-            if len(公积金账号) < 15:
-                raise InvalidParamsError('公积金账号错误')
+            raise InvalidParamsError('身份证号或密码错误')
+        if 身份证号.isdigit():
+            if len(身份证号) < 18:
+                raise InvalidParamsError('身份证号错误')
             return
-        if '@' in 公积金账号:
-            if not 公积金账号.endswith('@hz.cn'):
-                raise InvalidParamsError('市民邮箱错误')
-            return
-        raise InvalidParamsError('公积金账号或密码错误')
+        raise InvalidParamsError('身份证号或密码错误')
 
     def _unit_login(self, params: dict):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('公积金账号')
+                self.result_key = params.get('身份证号')
                 # 保存到meta
-                self.result_meta['公积金账号'] = params.get('公积金账号')
+                self.result_meta['身份证号'] = params.get('身份证号')
                 self.result_meta['密码'] = params.get('密码')
 
                 raise TaskNotImplementedError('查询服务维护中')
@@ -78,7 +74,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='公积金账号', name='公积金账号', cls='input', placeholder='公积金账号', value=params.get('公积金账号', '')),
+            dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
