@@ -6,9 +6,11 @@ from services.commons import AbsFetchTask
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="重庆",
-        help="""<li>初始密码为公积金账号后四位+00；可登录重庆住房公积金管理中心官网后进行修改。</li>
-        <li>未验证注册用户首次登录时需进行身份验证，具体验证方式如下：用户通过输入公积金联名卡后六位（若用户未办理公积金联名卡的须输入个人公积金账号）验证登录。</li>"""
+        city_name="青岛",
+        help="""<li>首次登陆密码默认为住房公积金个人编号后6位。</li>
+            <li>住房公积金个人编号取得方式：
+                本人持住房公积金联名卡到所属银行自助终端查询；本人持身份证到住房公积金管理中心各管理处查询；本人到单位住房公积金经办人处查询。
+            </li>"""
     )
 
     def _prepare(self):
@@ -52,11 +54,15 @@ class Task(AbsFetchTask):
         # other check
         账号 = params['账号']
         密码 = params['密码']
-        if len(密码) < 4:
+        if len(密码) < 6:
             raise InvalidParamsError('账号或密码错误')
         if 账号.isdigit():
-            if len(账号) < 5:
+            if len(账号) <5:
                 raise InvalidParamsError('账号错误')
+            return
+        if '@' in 账号:
+            if not 账号.endswith('@hz.cn'):
+                raise InvalidParamsError('市民邮箱错误')
             return
         raise InvalidParamsError('账号或密码错误')
 
@@ -75,7 +81,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input', placeholder='账号/手机', value=params.get('账号', '')),
+            dict(key='账号', name='账号', cls='input', placeholder='账号或者市民邮箱(@hz.cn)', value=params.get('账号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
