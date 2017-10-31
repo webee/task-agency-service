@@ -46,16 +46,16 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '账号' in params, '缺少公积金账号'
+        assert '公积金账号' in params, '缺少公积金账号'
         assert '密码' in params, '缺少密码'
         # other check
         公积金账号 = params['公积金账号']
         密码 = params['密码']
-        if len(密码) < 4:
+        if len(密码) < 6:
             raise InvalidParamsError('公积金账号或密码错误')
         if 公积金账号.isdigit():
-            if len(公积金账号) < 15:
-                raise InvalidParamsError('公积金账号错误')
+            if len(公积金账号) !=11:
+                raise InvalidParamsError('个人公积金账号位数不正确!')
             return
         if '@' in 公积金账号:
             if not 公积金账号.endswith('@hz.cn'):
