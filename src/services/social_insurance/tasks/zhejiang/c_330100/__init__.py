@@ -3,6 +3,7 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
+VC_URL='http://wsbs.zjhz.hrss.gov.cn/captcha.svl'
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -10,33 +11,14 @@ class Task(AbsFetchTask):
         help="""<li>首次申请密码或遗忘网上登陆密码，本人须携带有效身份证件至就近街道社区事务受理中心或就近社保分中心自助机具上申请办理</li>"""
     )
 
-    def _prepare(self):
-        """恢复状态，初始化结果"""
-        super()._prepare()
-        # state
-        # state: dict = self.state
-        # TODO: restore from state
-
-        # result
-        # result: dict = self.result
-        # TODO: restore from result
-
-    def _update_session_data(self):
-        """保存任务状态"""
-        super()._update_session_data()
-        # state
-        # state: dict = self.state
-        # TODO: update state
-
-        # result
-        # result: dict = self.result
-        # TODO: update temp result
-
     def _get_common_headers(self):
-        return {}
+        return {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
 
     def _query(self, params: dict):
         """任务状态查询"""
+        t = params.get('t')
+        if t == 'vc':
+            return self._new_vc()
         pass
 
     def _setup_task_units(self):
@@ -87,7 +69,9 @@ class Task(AbsFetchTask):
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
-
+    def _new_vc(self):
+        resp = self.s.get(VC_URL)
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task(SessionData()))
