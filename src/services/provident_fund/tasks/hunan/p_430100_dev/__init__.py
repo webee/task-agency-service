@@ -20,7 +20,7 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="湖南省",
         help="""
-            <li></li>
+            <li>初始化密码111111,请注意修改密码.</li>
             """
     )
 
@@ -31,11 +31,6 @@ class Task(AbsFetchTask):
             'Host': 'www.xzgjj.com:7001',
         }
 
-    def _prepare(self, data=None):
-        super()._prepare()
-        self.result_data['baseInfo']={}
-        self.result_data['detail'] = {}
-        self.result_data['companyList']={}
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -87,12 +82,29 @@ class Task(AbsFetchTask):
         return res
 
 
+    def _short_type(self,keyname):
+        res=""
+        if('汇缴' in keyname):
+            res="汇缴公积金"
+        elif ('补缴' in keyname):
+            res = "补缴公积金"
+        elif('提取' in keyname):
+            res="部分提取"
+        else:
+            res=keyname
+        return res
+
+
     def _unit_login(self, params=None):
         err_msg = None
         if not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
+                self.result_data['baseInfo'] = {}
+                self.result_data['detail'] = {}
+                self.result_data['companyList'] = []
+
                 id_num = params.get("身份证号")
                 account_pass = params.get("密码")
 
@@ -107,37 +119,45 @@ class Task(AbsFetchTask):
                 if(resp.text.find('alert')>0):
                     raise InvalidParamsError("登录失败，请核对用户名或者密码！")
 
+                self.result_key = id_num
+                self.result_meta['身份证号'] = id_num
+                self.result_meta['密码'] = account_pass
+
+                # 个人基本信息
                 rsdata_url=resp.text.split('?')[1].split(';')[0].replace('"','')
                 ss=self.s.get(MAIN_URL+rsdata_url)
                 basedatass=BeautifulSoup(ss.text,'html.parser').find('table',{'class':'1'}).findAll('tr')
 
                 self.result_data['baseInfo'] = {
                     '姓名':basedatass[0].findAll("td")[1].text.strip(),
-                    '身份证号':basedatass[1].findAll("td")[1].text.strip(),
+                    '证件类型':'身份证',
+                    '证件号':basedatass[1].findAll("td")[1].text.strip(),
+
                     '职工账号': basedatass[1].findAll("td")[3].text.strip(),
                     '开户日期':basedatass[3].findAll("td")[1].text.strip(),
                     '月缴基数':basedatass[4].findAll("td")[1].text.strip().replace('元','').replace(',',''),
                     '单位月缴额':basedatass[6].findAll("td")[1].text.strip().replace('元',''),
                     '个人月缴额':basedatass[7].findAll("td")[1].text.strip().replace('元',''),
                     '缴至年月':basedatass[10].findAll("td")[1].text.strip(),
-                    '更新日期': time.strftime("%Y-%m-%d", time.localtime()),
+
+                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
                     '城市名称': '湖南省',
                     '城市编号': '430100'
                 }
 
-                self.result_data['companyList'] = {
+                self.result_data['companyList'].append({
                     "单位名称": basedatass[2].findAll("td")[1].text.strip(),
-                    "单位登记号": "-",
-                    "所属管理部编号": "-",
-                    "所属管理部名称": "-",
-                    "当前余额": basedatass[9].findAll("td")[3].text.strip().replace('元',''),
+                    "单位登记号": "",
+                    "所属管理部编号": "",
+                    "所属管理部名称": "",
+                    "当前余额": float(basedatass[9].findAll("td")[3].text.strip().replace('元','')),
                     "帐户状态": basedatass[3].findAll("td")[3].text.strip(),
-                    "当年缴存金额": basedatass[8].findAll("td")[1].text.strip().replace('元',''),
-                    "当年提取金额": basedatass[7].findAll("td")[3].text.strip().replace('元',''),
-                    "上年结转余额": basedatass[5].findAll("td")[3].text.strip().replace('元',''),
+                    "当年缴存金额": float(basedatass[8].findAll("td")[1].text.strip().replace('元','')),
+                    "当年提取金额": float(basedatass[7].findAll("td")[3].text.strip().replace('元','')),
+                    "上年结转余额": float(basedatass[5].findAll("td")[3].text.strip().replace('元','')),
                     "最后业务日期": basedatass[10].findAll("td")[1].text.strip(),
-                    "转出金额": "-"
-                }
+                    "转出金额": ""
+                })
 
 
                 # 公积金明细
@@ -170,11 +190,11 @@ class Task(AbsFetchTask):
                             months = tds[0].text[5:7]
                             model = {
                                 '时间': tds[0].text,
-                                '类型': tds[5].text,
-                                '汇缴年月': tds[0].text,
-                                '收入': tds[2].text.replace(',', ''),
-                                '支出': tds[1].text.replace(',', ''),
-                                '余额': tds[3].text.replace(',', ''),
+                                '类型': self._short_type(tds[5].text),
+                                '汇缴年月': '',
+                                '收入': float(tds[2].text.replace(',', '')),
+                                '支出': float(tds[1].text.replace(',', '')),
+                                '余额': float(tds[3].text.replace(',', '')),
                                 '单位名称': basedatass[2].findAll("td")[1].text.strip()
                             }
                             baseDetail.setdefault(years, {})
@@ -182,9 +202,14 @@ class Task(AbsFetchTask):
                             baseDetail[years][months].append(model)
 
 
-                self.result_key = id_num
-                self.result_meta['身份证号'] =id_num
-                self.result_meta['密码']=account_pass
+                # indentity
+                    self.result['identity']={
+                    "task_name": "湖南",
+                    "target_name": basedatass[0].findAll("td")[1].text.strip(),
+                    "target_id": self.result_meta['身份证号'],
+                    "status": basedatass[3].findAll("td")[3].text.strip()
+                }
+
 
                 return
             except (AssertionError, InvalidParamsError) as e:
