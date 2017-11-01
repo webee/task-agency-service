@@ -1,5 +1,6 @@
 
 import base64
+import datetime
 from bs4 import BeautifulSoup
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
@@ -8,6 +9,8 @@ from services.commons import AbsFetchTask
 VC_URL='http://wsbs.zjhz.hrss.gov.cn/captcha.svl'
 LOGIN_URL='http://wsbs.zjhz.hrss.gov.cn/loginvalidate.html'
 INFO_URL='http://wsbs.zjhz.hrss.gov.cn/person/personInfo/index.html'
+MX_URL='http://wsbs.zjhz.hrss.gov.cn/unit/web_zgjf_query/web_zgjf_doQuery.html'
+
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="杭州",
@@ -86,6 +89,9 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['账号'] = id_num
                 self.result_meta['密码'] = password
+
+                self.result_identity['task_name'] = '杭州'
+
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
@@ -98,11 +104,57 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
+            data = self.result_data
+            # 基本信息
             resp=self.s.get(INFO_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             alltable=soup.findAll('table')
             infotable=alltable[3]
             infostatus=alltable[6]
+
+            data['baseInfo'] = {
+                "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
+                '城市名称': '杭州',
+                '城市编号': '330100'
+            }
+            for row in infotable.find_all('tr'):
+                cell = [i.text for i in row.find_all('td')]
+                data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('：',''), cell[1].replace(' ', '').replace('\xa0','').replace('\r','').replace('\n',''))
+                data['baseInfo'].setdefault(cell[2].replace(' ', '').replace('：',''), cell[3].replace(' ', '').replace('\xa0','').replace('\r','').replace('\n',''))
+
+            fristtime=[]
+            infodic={}
+            for row in infostatus.find_all('tr'):
+                cell = [i.text for i in row.find_all('td')]
+                if cell[1] != '险种类型':
+                    infodic[cell[1].replace('企业基本','').replace('保险','').replace('职工医保（企业）','医疗').replace('\r\n','')]=cell[2].replace('参保缴费','正常参保').replace('\r\n','')
+
+                    fristtime.append(cell[4])
+
+            data['baseInfo'].setdefault('五险状态',infodic)
+            data['baseInfo'].setdefault('开始缴费时间',min(fristtime))
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            self.result_identity['target_id'] = data['baseInfo']['身份证号码']
+            if '正常参保' in infodic.values():
+                self.result_identity['status'] = '正常参保'
+            else:
+                self.result_identity['status'] = '停缴'
+
+
+            #五险明细
+            # 五险arrtype={'11':'基本养老保险','21':'失业保险','31':'基本医疗保险','41':'工伤保险','51':'生育保险'}
+            arrtype = {'11': 'old_age', '21': 'unemployment', '31': 'medical_care','41': 'injuries', '51': 'maternity'}
+            for k, v in arrtype.items():   #类型
+                data[v] = {}
+                data[v]['data'] = {}
+                yearkeys = ''
+                for i in range(int(min(fristtime)[:4]),int(datetime.date.year)):  #年
+                    for y in range(1,3):     #分页
+                        url=MX_URL+'?m_aae002='+i+'&m_aae140='+k+'&pageNo='+y
+                        resp = self.s.get(url)
+                        soup = BeautifulSoup(resp.content, 'html.parser')
+                        tablelist=soup.select('.grid')
+
 
 
             return

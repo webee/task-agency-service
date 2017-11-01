@@ -97,10 +97,10 @@ class Task(AbsFetchTask):
                 ),headers={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
-                xmlstr = '<?xml version="1.0" encoding="UTF-8"?><p> <s userid ="'+id_num+'"/> <s usermm="'+pw+'"/><s authcode="'+vc+'"/><s yxzjlx="A"/><s appversion="81002198533703667231184339811848228729"/><s dlfs=""/></p>'
+                xmlstrs = '<?xml version="1.0" encoding="UTF-8"?><p> <s userid ="'+id_num+'"/> <s usermm="'+pw+'"/><s authcode="'+vc+'"/><s yxzjlx="A"/><s appversion="81002198533703667231184339811848228729"/><s dlfs=""/></p>'
                 resp = self.s.post(LOGIN_URL, data=dict(
                     method='doLogon',
-                    _xmlString=xmlstr,
+                    _xmlString=xmlstrs,
                     _random=random.random()
                 ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
                            'X-Requested-With': 'XMLHttpRequest'})
@@ -459,6 +459,6 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    #meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}prepare_data=dict(meta=meta)
-    client = TaskTestClient(Task())
+    meta = {'身份证号': '3703021978111848212', '密码': 'qq781017'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
