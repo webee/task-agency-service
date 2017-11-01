@@ -1,10 +1,13 @@
-from services.service import SessionData
+
+import base64
+from bs4 import BeautifulSoup
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
 VC_URL='http://wsbs.zjhz.hrss.gov.cn/captcha.svl'
-
+LOGIN_URL='http://wsbs.zjhz.hrss.gov.cn/loginvalidate.html'
+INFO_URL='http://wsbs.zjhz.hrss.gov.cn/person/personInfo/index.html'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="杭州",
@@ -29,42 +32,79 @@ class Task(AbsFetchTask):
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert '账号' in params, '缺少账号'
-        assert '密码' in params, '缺少密码'
+        assert '密码' in params,'缺少密码'
+        assert 'vc' in params, '缺少验证码'
         # other check
-        账号 = params['账号']
-        密码 = params['密码']
-        if len(密码) < 4:
-            raise InvalidParamsError('账号或密码错误')
-        if 账号.isdigit():
-            if len(账号) < 15:
-                raise InvalidParamsError('身份证错误')
-            return
-        if '@' in 账号:
-            if not 账号.endswith('@hz.cn'):
-                raise InvalidParamsError('市民邮箱错误')
-            return
-        raise InvalidParamsError('账号或密码错误')
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '账号' not in params:
+                params['账号'] = meta.get('账号')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '账号' and '账号' in meta:
+                continue
+            elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            res.append(pr)
+        return res
 
     def _unit_login(self, params: dict):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('账号')
+                id_num = params['账号']
+                password = params['密码']
+                # m = hashlib.md5()
+                # m.update(str(password).encode(encoding="utf-8"))
+                # pw = m.hexdigest()
+                pw=base64.b64encode(password.encode('utf-8'))
+                vc = params['vc']
+                newurl=LOGIN_URL+'?logintype=2&captcha='+vc
+                resp = self.s.post(newurl, data=dict(
+                                    type='01',
+                                    persontype='01',
+                                    account=id_num,
+                                    password=pw,
+                                    captcha1=vc))
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                if 'success' in soup.text:
+                    print("登录成功！")
+                else:
+                    return_message = soup.text
+                    raise Exception(return_message)
+
+                self.result_key = id_num
                 # 保存到meta
-                self.result_meta['账号'] = params.get('账号')
-                self.result_meta['密码'] = params.get('密码')
+                self.result_meta['账号'] = id_num
+                self.result_meta['密码'] = password
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
-
+        vc = self._new_vc()
         raise AskForParamsError([
             dict(key='账号', name='账号', cls='input', placeholder='身份证号或者市民邮箱(@hz.cn)', value=params.get('账号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
     def _unit_fetch(self):
         try:
-            # TODO: 执行任务，如果没有登录，则raise PermissionError
+            resp=self.s.get(INFO_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            alltable=soup.findAll('table')
+            infotable=alltable[3]
+            infostatus=alltable[6]
+
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -74,5 +114,6 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    client = TaskTestClient(Task(SessionData()))
+    meta = {'账号': '441426198410150015@hz.cn', '密码': 'lsp123456'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
