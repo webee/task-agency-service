@@ -144,19 +144,59 @@ class Task(AbsFetchTask):
             #五险明细
             # 五险arrtype={'11':'基本养老保险','21':'失业保险','31':'基本医疗保险','41':'工伤保险','51':'生育保险'}
             arrtype = {'11': 'old_age', '21': 'unemployment', '31': 'medical_care','41': 'injuries', '51': 'maternity'}
+            yllen=0
+            ylsum=0.00
+            yilsum=0.00
             for k, v in arrtype.items():   #类型
                 data[v] = {}
                 data[v]['data'] = {}
-                yearkeys = ''
-                for i in range(int(min(fristtime)[:4]),int(datetime.date.year)):  #年
+                for i in range(int(min(fristtime)[:4]),datetime.datetime.now().year+1):  #年
                     for y in range(1,3):     #分页
-                        url=MX_URL+'?m_aae002='+i+'&m_aae140='+k+'&pageNo='+y
+                        url=MX_URL+'?m_aae002='+str(i)+'&m_aae140='+str(k)+'&pageNo='+str(y)
                         resp = self.s.get(url)
                         soup = BeautifulSoup(resp.content, 'html.parser')
-                        tablelist=soup.select('.grid')
+                        tablelist=soup.select('.grid')[0]
+                        arrtitle =[]
+                        cell=[]
+                        for row in tablelist.find_all('tr'):
+                            if len(row.attrs)>0:
+                                arrtitle=[ii.text for ii in row.find_all('td')]
+                            else:
+                                arrs=[]
+                                cell = [ii.text for ii in row.find_all('td')]
+                                if len(cell[0])>0:
+                                    dic={
+                                        '缴费时间':cell[0],
+                                        '险种类型':cell[1],
+                                        '缴费基数': cell[2],
+                                        '个人缴费': cell[3],
+                                        '单位编号': cell[4],
+                                        '缴费单位': cell[5],
+                                        '缴费类型': cell[6],
+                                        '公司缴费': ''
+                                    }
+                                    yearkeys= cell[0]
+                                    years = yearkeys[:4]
+                                    months = yearkeys[-2:]
+                                    if v == 'old_age':
+                                        ylsum=ylsum+float(cell[3])
+                                    if v == 'medical_care':
+                                        yilsum = yilsum + float(cell[3])
+                                    if years not in data[v]['data'].keys():
+                                        data[v]['data'][years] = {}
+                                    if months not in data[v]['data'][years].keys():
+                                        if v=='old_age':
+                                            yllen=yllen+1
+                                        data[v]['data'][years][months] = {}
+                                    else :
+                                        arrs=data[v]['data'][years][months]
+                                    arrs.append(dic)
+                                    data[v]['data'][years][months] =arrs
 
-
-
+            data['baseInfo']['最近缴费时间'] =max(data['old_age']['data'])+max(data['old_age']['data'][max(data['old_age']['data'])])
+            data['baseInfo']['缴费时长'] =yllen
+            data['baseInfo']['个人养老累计缴费'] = ylsum
+            data['baseInfo']['个人医疗累计缴费'] = yilsum
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)

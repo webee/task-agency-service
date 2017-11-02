@@ -25,6 +25,7 @@ GS_URL='http://ytrsj.gov.cn:8081/hsp/siHarm.do'
 SHY_URL='http://ytrsj.gov.cn:8081/hsp/siBirth.do'
 SY_URL='http://ytrsj.gov.cn:8081/hsp/siLost.do'
 
+
 class Task(AbsFetchTask):
     # noinspection PyAttributeOutsideInit
     task_info = dict(
@@ -459,6 +460,6 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '3703021978111848212', '密码': 'qq781017'}
+    meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
