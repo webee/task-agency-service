@@ -165,8 +165,8 @@ class Task(AbsFetchTask):
             driver.get(LOGIN_URL)
             driver.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp")
 
-            username_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td[2]/input')
-            password_input = driver.find_element_by_xpath('/html/body/form/table/tbody/tr[3]/td[2]/input')
+            username_input = driver.find_element_by_xpath('//*[@id="userid"]')
+            password_input = driver.find_element_by_xpath('//*[@id="userpw"]')
             vc_input = driver.find_element_by_xpath('//*[@id="userjym"]')
 
             # 用户名
@@ -182,7 +182,7 @@ class Task(AbsFetchTask):
             vc_input.send_keys(vc)
 
             # 登录
-            driver.find_element_by_xpath('/html/body/form/table/tbody/tr[6]/td[2]').click()
+            driver.find_element_by_xpath('//*[@id="ckRecId20"]/form/table[1]/tbody/tr[7]/td[2]/img').click()  # /html/body/form/table/tbody/tr[6]/td[2]
             # time.sleep(3)
 
             if driver.current_url!="http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0":

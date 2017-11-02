@@ -1,3 +1,9 @@
+
+# cff---广州--公积金账号采集
+
+import time
+import requests
+
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError, \
@@ -11,7 +17,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="广州",
         help="""
-            <li></li>
+            <li>公积金账号一般为身份证号后面+00或者01（顺序生成）。</li>
+            <li>个人密码当天连续错误输入累计3次，则系统自动锁定账户，第二天才能继续验证；错误连续累计超过10次的，将被锁定账户，职工可持本人身份证明原件前往住房公积金归集业务经办网点办理解锁。</li>
             """
     )
 
