@@ -120,7 +120,7 @@ class Task(AbsFetchTask):
             for row in infotable.find_all('tr'):
                 cell = [i.text for i in row.find_all('td')]
                 data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('：',''), cell[1].replace(' ', '').replace('\xa0','').replace('\r','').replace('\n',''))
-                data['baseInfo'].setdefault(cell[2].replace(' ', '').replace('：',''), cell[3].replace(' ', '').replace('\xa0','').replace('\r','').replace('\n',''))
+                data['baseInfo'].setdefault(cell[2].replace(' ', '').replace('：','').replace('码',''), cell[3].replace(' ', '').replace('\xa0','').replace('\r','').replace('\n',''))
 
             fristtime=[]
             infodic={}
@@ -134,7 +134,7 @@ class Task(AbsFetchTask):
             data['baseInfo'].setdefault('五险状态',infodic)
             data['baseInfo'].setdefault('开始缴费时间',min(fristtime))
             self.result_identity['target_name'] = data['baseInfo']['姓名']
-            self.result_identity['target_id'] = data['baseInfo']['身份证号码']
+            self.result_identity['target_id'] = data['baseInfo']['身份证号']
             if '正常参保' in infodic.values():
                 self.result_identity['status'] = '正常参保'
             else:
