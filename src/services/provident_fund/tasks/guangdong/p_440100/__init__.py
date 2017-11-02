@@ -1,8 +1,3 @@
-# cff---广州--公积金账号采集
-
-import time
-import requests
-
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError, \

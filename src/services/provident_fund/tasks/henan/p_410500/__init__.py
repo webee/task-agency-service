@@ -18,8 +18,8 @@ GJJ_URL='http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/gjjmx_cxtwo.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="安阳",
-        help="""<li></li>
-                """
+        help="""<li>初始密码为111111。</li>
+                <li>如身份证最后一位是“X”时，请输入大写X。</li>"""
     )
 
     def _get_common_headers(self):
