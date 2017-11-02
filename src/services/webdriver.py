@@ -45,9 +45,12 @@ def new_driver(driver_type=DriverType.PHANTOMJS, **kwargs):
 
 def new_chrome_driver(*args, **kwargs):
     options = webdriver.ChromeOptions()
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    options.add_experimental_option("prefs", prefs)
-    driver = webdriver.Chrome(chrome_options=options)
+    # prefs = {"profile.managed_default_content_settings.images": 2}
+    # options.add_experimental_option("prefs", prefs)
+    cap = webdriver.DesiredCapabilities.CHROME
+    cap['loggingPrefs'] = {'browser': 'ALL'}
+
+    driver = webdriver.Chrome(chrome_options=options, desired_capabilities=cap)
 
     return driver
 
