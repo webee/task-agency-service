@@ -217,7 +217,9 @@ class Task(AbsFetchTask):
                 }
 
                 if ("已缴费" in re.sub('\s', '', dateH[0].text)):
-                    permedicalTotal += float(re.sub('\s', '', dateH[32].text))
+                    totalmed=float(re.sub('\s', '', dateH[38].text))+float(re.sub('\s', '', dateH[40].text))
+                    permedicalTotal += totalmed
+
                 basedataH[yearH][monthH].append(modelH)
 
             self.result['data']["unemployment"] = {"data": {}}
