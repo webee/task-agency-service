@@ -182,8 +182,8 @@ class Task(AbsFetchTask):
             vc_input.send_keys(vc)
 
             # 登录
-            driver.find_element_by_xpath('//*[@id="ckRecId20"]/form/table[1]/tbody/tr[7]/td[2]/img').click()  # /html/body/form/table/tbody/tr[6]/td[2]
-            # time.sleep(3)
+            # driver.find_element_by_xpath('//*[@id="ckRecId20"]/form/table[1]/tbody/tr[7]/td[2]/img').click()  # /html/body/form/table/tbody/tr[6]/td[2]
+            driver.execute_script('checkForm()')
 
             if driver.current_url!="http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0":
                 raise InvalidParamsError('登录失败，请重新登录！')
