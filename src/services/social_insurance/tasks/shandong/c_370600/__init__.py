@@ -7,15 +7,29 @@ import random
 import json
 import io,sys
 import base64
-import datetime
+import datetime,time
 from PIL import Image
 from bs4 import BeautifulSoup
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
+class value_is_number(object):
+    """判断元素value是数字"""
 
-MAIN_URL = 'http://ytrsj.gov.cn:8081/hsp/mainFrame.jsp'
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        element = driver.find_element(*self.locator)
+        val = element.get_attribute('value')
+        return val and val.isnumeric()
+
+
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
+
+MAIN_URL = 'http://ytrsj.gov.cn:8081/hsp/logonDialog_withF.jsp'#mainFrame.jsp
 LOGIN_URL = 'http://ytrsj.gov.cn:8081/hsp/logon.do'
 VC_URL = 'http://ytrsj.gov.cn:8081/hsp/genAuthCode?_='
 INFO_URL='http://ytrsj.gov.cn:8081/hsp/systemOSP.do'
@@ -47,6 +61,14 @@ class Task(AbsFetchTask):
         if t == 'vc':
             return self._new_vc()
 
+    def _prepare(self, data=None):
+        super()._prepare(data)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+
+    def _create_driver(self):
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
+        driver.get(MAIN_URL)
+        return driver
     # noinspection PyMethodMayBeStatic
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
@@ -89,24 +111,25 @@ class Task(AbsFetchTask):
                 m.update(str(password).encode(encoding="utf-8"))
                 pw = m.hexdigest()
                 vc=params['vc']
+                self._do_login(id_num, password, vc)
 
-                xmlstr='<?xml version = "1.0" encoding = "UTF-8"?><p><s tempmm = "'+password+'"/></p>'
-                resp = self.s.post(LOGIN_URL, data=dict(
-                    method='writeMM2Temp',
-                    _xmlString=xmlstr,
-                    _random=random.random()
-                ),headers={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'})
-                soup = BeautifulSoup(resp.content, 'html.parser')
-
-                xmlstrs = '<?xml version="1.0" encoding="UTF-8"?><p> <s userid ="'+id_num+'"/> <s usermm="'+pw+'"/><s authcode="'+vc+'"/><s yxzjlx="A"/><s appversion="81002198533703667231184339811848228729"/><s dlfs=""/></p>'
-                resp = self.s.post(LOGIN_URL, data=dict(
-                    method='doLogon',
-                    _xmlString=xmlstrs,
-                    _random=random.random()
-                ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                           'X-Requested-With': 'XMLHttpRequest'})
-                soup = BeautifulSoup(resp.content, 'html.parser')
-                errormsg = soup.text
+                # xmlstr='<?xml version = "1.0" encoding = "UTF-8"?><p><s tempmm = "'+password+'"/></p>'
+                # resp = self.s.post(LOGIN_URL, data=dict(
+                #     method='writeMM2Temp',
+                #     _xmlString=xmlstr,
+                #     _random=random.random()
+                # ),headers={'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','X-Requested-With':'XMLHttpRequest'})
+                # soup = BeautifulSoup(resp.content, 'html.parser')
+                #
+                # xmlstrs = '<?xml version="1.0" encoding="UTF-8"?><p> <s userid ="'+id_num+'"/> <s usermm="'+pw+'"/><s authcode="'+vc+'"/><s yxzjlx="A"/><s appversion="81002198533703667231184339811848228729"/><s dlfs=""/></p>'
+                # resp = self.s.post(LOGIN_URL, data=dict(
+                #     method='doLogon',
+                #     _xmlString=xmlstrs,
+                #     _random=random.random()
+                # ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                #            'X-Requested-With': 'XMLHttpRequest'})
+                # soup = BeautifulSoup(resp.content, 'html.parser')
+                errormsg = self.s.soup.text
                 if errormsg:
                     if len(errormsg)>20:
                         dicts=eval(errormsg.replace('true','"true"'))
@@ -130,6 +153,48 @@ class Task(AbsFetchTask):
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
+    def _do_login(self, username, password, vc):
+        """使用web driver模拟登录过程"""
+        with self.dsc.get_driver_ctx() as driver:
+            # 打开登录页
+            driver.get(MAIN_URL)
+
+            username_input = driver.find_element_by_xpath('//*[@id="yhmInput"]')
+            password_input = driver.find_element_by_xpath('//*[@id="mmInput"]')
+            vc_input = driver.find_element_by_xpath('//*[@id="authcode_result"]')
+            submit_btn = driver.find_element_by_xpath('//*[@name="login_btn"]')
+
+            # 用户名
+            username_input.clear()
+            username_input.send_keys(username)
+
+            # 密码
+            password_input.clear()
+            password_input.send_keys(password)
+            vc_input.clear()
+            vc_input.send_keys(vc)
+            # 提交
+            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            submit_btn.click()
+            time.sleep(2)
+            # Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            if driver.current_url != MAIN_URL:
+                print('登录成功')
+                # 保存登录后的页面内容供抓取单元解析使用
+                login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+                self.s.soup = BeautifulSoup(login_page_html, 'html.parser')
+
+
+                # realname=soup.select('#xm')[0].text
+            else:
+                # FIXME: 尝试处理alert
+                err_msg = '登录失败，请检查输入'
+                alert = driver.switch_to.alert
+                try:
+                    err_msg = alert.text
+                    # alert.accept()
+                finally:
+                    raise InvalidParamsError(err_msg)
 
     def _unit_fetch_name(self):
         try:
