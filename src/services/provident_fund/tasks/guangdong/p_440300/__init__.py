@@ -7,7 +7,8 @@ from services.commons import AbsFetchTask
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="深圳",
-        help=""" """
+        help="""<li>如您首次在网上查询您的公积金账户，初始密码为身份证后六位，身份证号码有字母的用数字“0”代替。</li>
+                <li>如您在公积金官网查询过您的公积金账户，请输入账户信息和密码登录即可。</li>"""
     )
 
     def _prepare(self):
