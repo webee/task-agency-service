@@ -29,15 +29,15 @@ class value_is_number(object):
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
 
-MAIN_URL = 'http://ytrsj.gov.cn:8081/hsp/logonDialog_withF.jsp'#mainFrame.jsp
-LOGIN_URL = 'http://ytrsj.gov.cn:8081/hsp/logon.do'
-VC_URL = 'http://ytrsj.gov.cn:8081/hsp/genAuthCode?_='
-INFO_URL='http://ytrsj.gov.cn:8081/hsp/systemOSP.do'
-YL_URL='http://ytrsj.gov.cn:8081/hsp/siAd.do'
-YIL_URL='http://ytrsj.gov.cn:8081/hsp/siMedi.do'
-GS_URL='http://ytrsj.gov.cn:8081/hsp/siHarm.do'
-SHY_URL='http://ytrsj.gov.cn:8081/hsp/siBirth.do'
-SY_URL='http://ytrsj.gov.cn:8081/hsp/siLost.do'
+MAIN_URL = 'http://www.ytrsj.gov.cn:8081/hsp/logonDialog_withF.jsp'#mainFrame.jsp
+LOGIN_URL = 'http://www.ytrsj.gov.cn:8081/hsp/logon.do'
+VC_URL = 'http://www.ytrsj.gov.cn:8081/hsp/genAuthCode?_='
+INFO_URL='http://www.ytrsj.gov.cn:8081/hsp/systemOSP.do'
+YL_URL='http://www.ytrsj.gov.cn:8081/hsp/siAd.do'
+YIL_URL='http://www.ytrsj.gov.cn:8081/hsp/siMedi.do'
+GS_URL='http://www.ytrsj.gov.cn:8081/hsp/siHarm.do'
+SHY_URL='http://www.ytrsj.gov.cn:8081/hsp/siBirth.do'
+SY_URL='http://www.ytrsj.gov.cn:8081/hsp/siLost.do'
 
 
 class Task(AbsFetchTask):
@@ -171,13 +171,16 @@ class Task(AbsFetchTask):
             # 密码
             password_input.clear()
             password_input.send_keys(password)
+
+            #验证码
             vc_input.clear()
             vc_input.send_keys(vc)
-            # 提交
             Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            submit_btn.click()
-            time.sleep(2)
-            # Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            # 提交
+            driver.execute_script('onLogin("1.0.68","105","mainFrame.jsp?","1","")')
+            #submit_btn.click()
+            time.sleep(8)
+            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             if driver.current_url != MAIN_URL:
                 print('登录成功')
                 # 保存登录后的页面内容供抓取单元解析使用
