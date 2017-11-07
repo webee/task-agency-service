@@ -71,9 +71,9 @@ class Task(AbsFetchTask):
             res.append(pr)
         return res
 
-    def _unit_login(self, params: dict):
+    def _unit_login(self, params=None):
         err_msg = None
-        if params:
+        if  not self.is_start or params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
@@ -274,6 +274,6 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    # meta = {'身份证号': '440681198412040228', '密码': '198412'}prepare_data=dict(meta=meta)
+    #meta = {'身份证号': '440681198412040228', '密码': '198412'}prepare_data=dict(meta=meta)
     client = TaskTestClient(Task())
     client.run()
