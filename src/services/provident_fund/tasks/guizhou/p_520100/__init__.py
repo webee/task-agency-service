@@ -3,6 +3,7 @@
 import time
 import requests
 from bs4 import BeautifulSoup
+import json
 
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
@@ -172,32 +173,60 @@ class Task(AbsFetchTask):
             }
 
             #公积金明细
-
-            resp2 = self.s.get("http://zxcx.gygjj.gov.cn/PersonAccountsList.do?method=list")
-            soup2 = BeautifulSoup(resp2.content, 'html.parser')
-            data_list = soup2.find('table', {'id': 'extjsp_div_data_table_0'})
-            trs = data_list.findAll("tr")
-
+            params="&aaxmlrequest=true&currentPage=1&startTime_a=2000-01-01&startTime_b="+time.strftime("%Y-%m-%d",time.localtime())+""
+            resp2 = self.s.get("http://zxcx.gygjj.gov.cn/PersonAccountsList.do?method=list"+params)
+            soup2 = BeautifulSoup(resp2.text, 'html.parser')
             baseDetail = self.result_data["detail"]["data"]
-            model={}
-            company=soup2.findAll('table')[1].findAll('td')
+            model = {}
+            models = {}
+            company = BeautifulSoup(soup2.text, 'html.parser').findAll('table')[0].findAll('td')
 
-            for tr in range(len(trs)):
-                tds=trs[tr].findAll("td")
-                years=tds[0].text[0:4]
-                months=tds[0].text[5:7]
-                model = {
-                    '时间':tds[0].text.replace('.','-'),
-                    '类型':self._short_type(tds[1].text),
-                    '汇缴年月': tds[2].text.replace('.',''),
-                    '收入':tds[3].text.replace(',',''),
-                    '支出':tds[4].text.replace(',',''),
-                    '余额': tds[5].text.replace(',',''),
-                    '单位名称':company[1].text.split('：')[1]
-                }
-                baseDetail.setdefault(years, {})
-                baseDetail[years].setdefault(months, [])
-                baseDetail[years][months].append(model)
+            pages=BeautifulSoup(soup2.text, 'html.parser').findAll('table')[5].findAll('b')[1].text
+            if(int(pages)==1):
+                data_list = BeautifulSoup(soup2.text, 'html.parser').find('table',{'id':'extjsp_div_data_table_0'})
+                trs = data_list.findAll("tr")
+
+                for tr in range(len(trs)):
+                    tds=trs[tr].findAll("td")
+                    years=tds[0].text[0:4]
+                    months=tds[0].text[5:7]
+                    model = {
+                        '时间':tds[0].text.replace('.','-'),
+                        '类型':self._short_type(tds[1].text),
+                        '汇缴年月': tds[2].text.replace('.',''),
+                        '收入':tds[3].text.replace(',',''),
+                        '支出':tds[4].text.replace(',',''),
+                        '余额': tds[5].text.replace(',',''),
+                        '单位名称':company[1].text.split('：')[1]
+                    }
+                    baseDetail.setdefault(years, {})
+                    baseDetail[years].setdefault(months, [])
+                    baseDetail[years][months].append(model)
+            else:
+                for pg in range(1,int(pages)+1):
+                    paramss = "&aaxmlrequest=true&currentPage="+str(pg)+"&startTime_a=2000-01-01&startTime_b=" + time.strftime("%Y-%m-%d", time.localtime()) + ""
+                    resp2s = self.s.get("http://zxcx.gygjj.gov.cn/PersonAccountsList.do?method=list" + paramss)
+                    soup2s = BeautifulSoup(resp2s.text, 'html.parser')
+
+                    data_lists = BeautifulSoup(soup2s.text, 'html.parser').find('table',{'id': 'extjsp_div_data_table_0'})
+                    trss = data_lists.findAll("tr")
+
+                    for tr2 in range(len(trss)):
+                        tdss = trss[tr2].findAll("td")
+                        yearss = tdss[0].text[0:4]
+                        monthss = tdss[0].text[5:7]
+                        models = {
+                            '时间': tdss[0].text.replace('.', '-'),
+                            '类型': self._short_type(tdss[1].text),
+                            '汇缴年月': tdss[2].text.replace('.', ''),
+                            '收入': tdss[3].text.replace(',', ''),
+                            '支出': tdss[4].text.replace(',', ''),
+                            '余额': tdss[5].text.replace(',', ''),
+                            '单位名称': company[1].text.split('：')[1]
+                        }
+                        baseDetail.setdefault(yearss, {})
+                        baseDetail[yearss].setdefault(monthss, [])
+                        baseDetail[yearss][monthss].append(models)
 
 
             status=""
