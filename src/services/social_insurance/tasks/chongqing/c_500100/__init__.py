@@ -173,14 +173,14 @@ class Task(AbsFetchTask):
 
             data["baseInfo"] = {
                 "姓名": name,
-                "社保编号": personNum,
+                "社会保障号": personNum,
                 "性别": sex,
                 "民族": mz,
-                "出生年月": birthDay,
-                "所在公司编号": CompanyCode,
+                "出生日期": birthDay,
+                "组织机构代码": CompanyCode,
                 "户口性质": hkxz,
                 "个人身份": sf,
-                "所在公司": Company,
+                "单位名称": Company,
                 "身份证号": idCard,
                 "五险状态": old_age_state,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),

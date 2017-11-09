@@ -345,7 +345,6 @@ class Task(AbsFetchTask):
                                                     "余额": re.sub('\s', '', detail_tds[5].text),
                                                     "单位名称": _tds[37].text
                                                 })
-
                         except:
                             pass
 
