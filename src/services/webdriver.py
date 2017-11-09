@@ -202,7 +202,7 @@ class DriverRequestsCoordinator(object):
         with_domain = self._d.current_url == 'about:blank'
         for c in list(self._s.cookies):
             try:
-                d = dict(name=c.name, value=c.value, path=c.path)
+                d = dict(name=c.name, value=c.value, path=c.path, httpOnly='HttpOnly' in c._rest, expiry=c.expires or 'Session')
                 if with_domain:
                     d['domain'] = c.domain
                 self._d.add_cookie(d)
