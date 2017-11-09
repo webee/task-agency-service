@@ -143,18 +143,18 @@ class Task(AbsFetchTask):
 
             self.result_data['baseInfo']={
                 '姓名':datas[0].findAll("td")[3].text,
-                '证件号':datas[0].findAll("td")[5].text,
+                '身份证号':datas[0].findAll("td")[5].text,
                 '证件类型': '身份证',
                 '公积金帐号': datas[0].findAll("td")[1].text,
 
                 '性别':datas[1].findAll("td")[1].text,
                 '手机号':datas[1].findAll("td")[3].text,
-                '卡号':datas[1].findAll("td")[5].text,
-                '工资基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
+                '公积金卡号':datas[1].findAll("td")[5].text,
+                '缴存基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
                 '单位缴存比例':datas[4].findAll("td")[1].text,
-                '职工缴存比例':datas[4].findAll("td")[3].text,
-                '单位月应缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
-                '职工月应缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
+                '个人缴存比例':datas[4].findAll("td")[3].text,
+                '单位月缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
+                '个人月缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
                 '开户日期':datas[7].findAll("td")[1].text,
 
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
