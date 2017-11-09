@@ -285,6 +285,9 @@ class Task(AbsFetchTask):
                                     })
 
                                 detail_tag = result.findAll("span", {"class": "style2"})
+                                # 20177月份后数据不太准确
+                                temp_detail = result.findAll("table", {"id": "tab-style"})
+                                temp_all_date = []
                                 if len(detail_tag) > 0:
                                     detail_a = detail_tag[1].findAll("a")[0]
                                     detail_link = detail_a.attrs['onclick'].split("'")[1]
@@ -307,6 +310,7 @@ class Task(AbsFetchTask):
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]]
                                                 except KeyError:
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
+                                                temp_all_date.append(date)
                                                 self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
                                                     "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
                                                     "类型": re.sub('\s', '', detail_tds[2].text),
@@ -316,12 +320,37 @@ class Task(AbsFetchTask):
                                                     "余额": re.sub('\s', '', detail_tds[5].text),
                                                     "单位名称": _tds[37].text
                                                 })
-                                    pass
+                                if len(temp_detail) > 0:
+                                    detail_trs = temp_detail[0].findAll("tr")
+                                    for detail_tr in detail_trs:
+                                        detail_tds = detail_tr.findAll("td")
+                                        if detail_tr != detail_trs[0]:
+                                            date = re.sub('\s', '', detail_tds[0].text)
+                                            if date not in temp_all_date:
+                                                try:
+                                                    self.result_data["detail"]["data"][date[0:4]]
+                                                except KeyError:
+                                                    self.result_data["detail"]["data"][date[0:4]] = {}
+                                                try:
+                                                    self.result_data["detail"]["data"][date[0:4]][date[4:6]]
+                                                except KeyError:
+                                                    self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
+
+                                                self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
+                                                    "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
+                                                    "类型": re.sub('\s', '', detail_tds[2].text),
+                                                    "汇缴年月": re.sub('\s', '', detail_tds[1].text),
+                                                    "收入": re.sub('\s', '', detail_tds[3].text),
+                                                    "支出": re.sub('\s', '', detail_tds[4].text),
+                                                    "余额": re.sub('\s', '', detail_tds[5].text),
+                                                    "单位名称": _tds[37].text
+                                                })
+
                         except:
                             pass
 
                         i = i + 1
-
+            detail_tag = result.findAll("table", {"id": "tab-style"})
             self.result_identity.update({
                 'task_name': self.task_info['city_name'],
                 'target_name': name,
