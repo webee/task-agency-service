@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
+from  services.errors import InvalidParamsError
 
 MAIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/main_menu.jsp'
 LOGIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/login_hidden.jsp'
@@ -19,7 +20,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="安阳",
         help="""<li>初始密码为111111。</li>
-                <li>如身份证最后一位是“X”时，请输入大写X。</li>"""
+                <li>如身份证最后一位是“X”时，请输入大写X。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -44,6 +46,24 @@ class Task(AbsFetchTask):
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        职工姓名= params['职工姓名']
+        密码 = params['密码']
+
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(职工姓名) == 0:
+            raise InvalidParamsError('职工姓名为空，请输入职工姓名')
+        elif len(职工姓名) < 2:
+            raise InvalidParamsError('职工姓名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta

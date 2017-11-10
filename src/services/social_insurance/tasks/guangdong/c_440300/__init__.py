@@ -38,7 +38,8 @@ class Task(AbsFetchTask):
         help="""<li>若您尚未激活或者没有在网上查询过您的社保卡，请点击激活社保账号</li>
         <li>如果您曾经激活过社保卡，但忘记密码，请点击忘记密码</li>
         <li>如办理社保卡时，没有登记手机号码或者更换手机号码，请本人携带身份证原件和新手机到社保分中心柜台办理注册手机变更业务。</li>
-        """
+        """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -76,10 +77,16 @@ class Task(AbsFetchTask):
         # other check
         用户名 = params['用户名']
         密码 = params['密码']
-        if len(密码) < 4:
-            raise InvalidParamsError('用户名或密码错误')
-        if len(用户名) < 4:
-            raise InvalidParamsError('用户名或密码错误')
+
+        if len(用户名) == 0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(用户名) < 5:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
 
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):

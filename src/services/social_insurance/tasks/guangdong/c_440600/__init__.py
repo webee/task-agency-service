@@ -24,7 +24,8 @@ class Task(AbsFetchTask):
         city_name="佛山",
         help="""<li>可向公司人事或者经办人索取公积金账号。</li>
             <li>如需设置密码，可登录公积金官网后进行设置。</li>
-            """
+            """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -47,7 +48,18 @@ class Task(AbsFetchTask):
         assert '身份证号' in params, '缺少身份证号'
         assert '密码' in params, '缺少密码'
         # other check
+        身份证号 = params['身份证号']
+        密码 = params['密码']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -155,7 +167,7 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseInfo'].setdefault(cell[0].replace(' ', ''), cell[1].replace(' ', ''))
+                data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('现', ''), cell[1].replace(' ', ''))
                 if cell[0] == '姓名':
                     self.result_identity['target_name'] = cell[1].replace(' ', '')
                 if cell[0] == '养老 实际缴费月数':
