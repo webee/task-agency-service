@@ -33,7 +33,8 @@ class Task(AbsFetchTask):
         city_name="北京市",
         expect_time=10,
         help="""<li>首次登陆查询功能，验证方式必须选择联名卡号；初始密码为身份证后四位阿拉伯数字+00。为了保证您的个人信息安全，请您及时修改初始密码，如有问题请拨打“住房公积金热线12329”咨询</li>
-            """
+            """,
+        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):

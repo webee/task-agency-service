@@ -20,7 +20,8 @@ class Task(AbsFetchTask):
         help="""<li>初始查询密码为社会保障卡卡号的后6位</li>
         <li>如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</li>
         <li>数据解析需要较长的时间，请耐心等待</li>
-        """
+        """,
+        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
     )
 
     @classmethod
