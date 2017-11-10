@@ -14,7 +14,8 @@ MX_URL='http://wsbs.zjhz.hrss.gov.cn/unit/web_zgjf_query/web_zgjf_doQuery.html'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="杭州",
-        help="""<li>首次申请密码或遗忘网上登陆密码，本人须携带有效身份证件至就近街道社区事务受理中心或就近社保分中心自助机具上申请办理</li>"""
+        help="""<li>首次申请密码或遗忘网上登陆密码，本人须携带有效身份证件至就近街道社区事务受理中心或就近社保分中心自助机具上申请办理</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -38,6 +39,18 @@ class Task(AbsFetchTask):
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        账号 = params['账号']
+        密码 = params['密码']
+
+        if len(账号) == 0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(账号) < 4:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -206,6 +219,6 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'账号': '441426198410150015@hz.cn', '密码': 'lsp123456'}
-    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
+    #meta = {'账号': '441426198410150015@hz.cn', '密码': 'lsp123456'}prepare_data=dict(meta=meta)
+    client = TaskTestClient(Task())
     client.run()

@@ -41,7 +41,8 @@ class Task(AbsFetchTask):
         city_name="上海",
         help="""<li>如您未在公积金网站查询过您的公积金信息，请到上海公积金管理中心官网网完成“注册”然后再登录。</li>
                 <li>用户名指的是在注册时自行设置的2-12位英文字母或数字（区分大小写）。</li>
-                """
+                """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -65,6 +66,18 @@ class Task(AbsFetchTask):
         assert '密码' in params, '缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        用户名 = params['用户名']
+        密码 = params['密码']
+
+        if len(用户名) == 0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(用户名) < 5:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
 
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
