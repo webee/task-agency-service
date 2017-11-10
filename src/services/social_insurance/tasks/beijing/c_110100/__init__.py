@@ -19,6 +19,7 @@ SMS_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/passwordSetAction!getTelSafeCo
 
 
 class Task(AbsFetchTask):
+
     task_info = dict(
         city_name="北京",
         expect_time=10,
@@ -27,7 +28,8 @@ class Task(AbsFetchTask):
         <li>若您尚未登录过请登录北京社保官网点击新用户注册，按新用户帮助其中的步骤完成登录密码的设置。</li>
         <li>注册时填写的手机号信息，方便您在登录时收取短信验证码。</li>
         <li>若您无法正常登录，可以查看相关帮助，或者拨打96102。</li>
-        """
+        """,
+        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -131,7 +133,7 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
-            except Exception:
+            except Exception as e:
                 self._unit_login(params, from_error=True)
                 raise
 
@@ -707,6 +709,7 @@ class Task(AbsFetchTask):
 
 
 if __name__ == '__main__':
+    
     from services.client import TaskTestClient
 
     client = TaskTestClient(Task())
