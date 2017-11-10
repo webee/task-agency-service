@@ -28,7 +28,9 @@ class Task(AbsFetchTask):
         <li>初始密码是123456</li>
         <li>如您未在社保网站查询过您的社保信息，请到厦门社保网上服务平台完成“注册”然后再登录</li>
         <li>如未“交易密码”，请携带本人的社会保障卡和身份证件，到市、区社保经办机构或所在的社区劳动保障服务机构修改；也可以在“劳动保障自助服务机”上自行修改</li>
-        """
+        """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):
@@ -338,9 +340,9 @@ class Task(AbsFetchTask):
                 '个人养老累计缴费': peroldTotal,
                 '个人医疗累计缴费': permedicalTotal,
                 '五险状态': social_type,
-                '状态': self._convert_type(
+                '账户状态': self._convert_type(
                     data[3].findAll('td')[1].text.replace('\r', '').replace('\n', '').replace('\t', '').strip()),
-                '工作状态': data[8].findAll('td')[1].text,
+                '人员状态': data[8].findAll('td')[1].text,
                 '社会保障卡卡号': data[2].findAll('td')[1].text,
             }
 
