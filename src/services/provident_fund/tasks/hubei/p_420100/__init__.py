@@ -7,7 +7,8 @@ from services.commons import AbsFetchTask
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="武汉",
-        help=""""""
+        help="""""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _prepare(self):

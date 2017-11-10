@@ -8,7 +8,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="郑州",
         help="""<li>如您未在社保网站查询过您的社保信息，请到郑州社保网上服务平台完成“注册”然后再登录。</li>
-        <li>如有问题请拨打12333。</li>"""
+        <li>如有问题请拨打12333。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _prepare(self):

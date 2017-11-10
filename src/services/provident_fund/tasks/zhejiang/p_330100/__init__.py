@@ -8,7 +8,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="杭州",
         help="""<li>个人客户号作为办理业务的唯一编号，可通过询问单位经办人或本人携带本人身份证到本中心查询的方式获取。</li>
-        <li>在获取到个人客户号后，请到杭州公积金管理中心官网网完成“注册”然后再登录。</li>"""
+        <li>在获取到个人客户号后，请到杭州公积金管理中心官网网完成“注册”然后再登录。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _prepare(self):
