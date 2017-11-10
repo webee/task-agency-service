@@ -22,8 +22,11 @@ class Task(AbsFetchTask):
         help="""
             <li>初始密码为公积金账号最后六位.</li>
             <li>如忘记密码或者遇到公积金相关问题，请拨打公积金热线12329.</li>
-            """
+            """,
+
+        developers = [{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
+
 
     def _get_common_headers(self):
         return {
@@ -143,7 +146,7 @@ class Task(AbsFetchTask):
 
             self.result_data['baseInfo']={
                 '姓名':datas[0].findAll("td")[3].text,
-                '身份证号':datas[0].findAll("td")[5].text,
+                '证件号':datas[0].findAll("td")[5].text,
                 '证件类型': '身份证',
                 '公积金帐号': datas[0].findAll("td")[1].text,
 

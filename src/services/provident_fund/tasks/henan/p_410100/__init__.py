@@ -22,7 +22,9 @@ class Task(AbsFetchTask):
         help="""
             <li>初始密码是111111</li>
             <li>可向公司人事或者经办人索取公积金账号</li>
-            """
+            """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):
@@ -128,7 +130,7 @@ class Task(AbsFetchTask):
                     '公积金账号': data[0].text.split('：')[1],
                     '开户日期': data[2].text.split('：')[1],
                     '缴存基数': data[4].text.split('：')[1],
-                    '月缴额': data[5].text.split('：')[1],
+                    '月应缴额': data[5].text.split('：')[1],
                     '个人缴存比例': data[6].text.split('：')[1],
                     '单位缴存比例': data[7].text.split('：')[1],
                     '更新时间': time.strftime("%Y-%m-%d", time.localtime()),

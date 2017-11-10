@@ -27,7 +27,9 @@ class Task(AbsFetchTask):
         help="""
         <li>如您未在社保网站查询过您的社保信息，请到天津社保网上服务平台完成“注册”后再登录查询</li>
         <li>如忘记密码，可在天津社保网上服务平台中的”忘记密码”中重置密码</li>
-        """
+        """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     # def _prepare(self,data=None):
@@ -373,6 +375,11 @@ class Task(AbsFetchTask):
             else:
                 counts = len(detailEI)
 
+            if (social_Type['养老'] == "正常参保"):
+                statuss = "正常"
+            else:
+                statuss = "异常"
+
             self.result['data']['baseInfo'] = {
                 '姓名': rs['name'],
                 '身份证号': rs['idNumber'],
@@ -385,6 +392,7 @@ class Task(AbsFetchTask):
                 '个人养老累计缴费': perTotalold,
                 '个人医疗累计缴费': perTotalMedical,
                 '五险状态': social_Type,
+                '账户状态':statuss,
                 # '性别': sexs,
                 # '民族':nations,
                 # '出生日期':rs['birthday'],
@@ -396,11 +404,6 @@ class Task(AbsFetchTask):
                 '城职养老账户余额':str(rs2['empAccountSum']),
                 '职业年金余额':str(rs2['residentAccountSum'])
             }
-
-            if (social_Type['养老'] == "正常参保"):
-                statuss = "正常"
-            else:
-                statuss = "异常"
 
             self.result['identity'] = {
                 "task_name": "天津",
