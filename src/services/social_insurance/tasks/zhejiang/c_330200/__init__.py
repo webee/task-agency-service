@@ -368,14 +368,14 @@ class Task(AbsFetchTask):
                 '性别': soup.select('#xb')[0].text,
                 '身份证号': soup.select('#sfz')[0].text,
                 '国籍': soup.select('#gj')[0].text,
-                '社保卡号码': soup.select('#sbkh')[0].text,
+                '社会保障卡号码': soup.select('#sbkh')[0].text,
                 '社保卡状态': soup.select('#kzt')[0].text,
-                '银行卡号码': soup.select('#yhkh')[0].text,
+                '银行账号': soup.select('#yhkh')[0].text,
                 '发卡日期': soup.select('#fkrq')[0].text,
-                '手机号码': soup.select('#sjhm')[0].text,
+                '手机号': soup.select('#sjhm')[0].text,
                 '固定号码': soup.select('#gddh')[0].text,
                 '常住地址': soup.select('#czdz')[0].text,
-                '邮政编码': soup.select('#yzbm')[0].text
+                '邮编': soup.select('#yzbm')[0].text
             }
             self.result_identity['target_name'] = soup.select('#xm')[0].text
             self.g.Fivestatus = []

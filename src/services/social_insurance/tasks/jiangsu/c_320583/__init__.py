@@ -18,7 +18,6 @@ class Task(AbsFetchTask):
         <li>由定点医院或药店出具发票上的8位数字的“社会保障号码”、“保险号”。</li>
         <li>“职工社会保险个人权益记录单”及“社会保险参保证明”上的社保编号。</li>
         <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>""",
-        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):

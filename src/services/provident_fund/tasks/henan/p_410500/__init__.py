@@ -170,9 +170,9 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace(' ',''),cell[1].replace('\xa0',''))
-                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ',''), cell[3].replace('\xa0',''))
-            self.result_identity['status'] = data['baseInfo']['账户状态']
+                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace('职工账号','个人账号').replace('所在单位','单位名称').replace('账户状态','帐户状态').replace('上年余额','上年结转余额').replace('本年缴交','当年缴存金额').replace(' ',''),cell[1].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ','').replace('本年支取','当年提取金额').replace('账户余额','当前余额'), cell[3].replace('\xa0',''))
+            self.result_identity['status'] = data['baseInfo']['帐户状态']
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -249,13 +249,13 @@ class Task(AbsFetchTask):
 
             data['companyList']=[]
             diclist = {
-                '单位名称': data['baseInfo']['所在单位'],
-                '单位登记号': data['baseInfo']['单位账号'],
-                '帐户状态': data['baseInfo']['账户状态'],
-                '当前余额': data['baseInfo']['账户余额'],
-                '当年提取金额': data['baseInfo']['本年支取'],
-                '当年缴存金额': data['baseInfo']['本年缴交'],
-                '上年结转余额': data['baseInfo']['上年余额']
+                '单位名称': data['baseInfo']['单位名称'],
+                '单位账号': data['baseInfo']['单位账号'],
+                '帐户状态': data['baseInfo']['帐户状态'],
+                '当前余额': data['baseInfo']['当前余额'],
+                '当年提取金额': data['baseInfo']['当年提取金额'],
+                '当年缴存金额': data['baseInfo']['当年缴存金额'],
+                '上年结转余额': data['baseInfo']['上年结转余额']
             }
             data['companyList'].append(diclist)
             return
