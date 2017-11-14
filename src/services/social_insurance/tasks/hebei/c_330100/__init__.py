@@ -19,7 +19,9 @@ class Task(AbsFetchTask):
         help="""
             <li>1.社会保障号为公民身份证号码</li>
             <li>2.请您使用社会保障卡服务密码或医保卡密码进行查询</li>
-            """
+            """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):

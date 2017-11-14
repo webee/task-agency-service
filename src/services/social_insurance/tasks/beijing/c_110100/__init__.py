@@ -21,7 +21,7 @@ SMS_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/passwordSetAction!getTelSafeCo
 class Task(AbsFetchTask):
 
     task_info = dict(
-        city_name="北京",
+        city_name="北京市",
         expect_time=10,
         sms_time=120,
         help="""
