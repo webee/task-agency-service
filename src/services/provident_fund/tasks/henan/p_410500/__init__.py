@@ -170,8 +170,8 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace('职工账号','个人账号').replace('所在单位','单位名称').replace('账户状态','帐户状态').replace('上年余额','上年结转余额').replace('本年缴交','当年缴存金额').replace(' ',''),cell[1].replace('\xa0',''))
-                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ','').replace('本年支取','当年提取金额').replace('账户余额','当前余额'), cell[3].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace('职工账号','个人账号').replace('所在单位','单位名称').replace('月缴基数','缴存基数').replace('账户状态','帐户状态').replace('上年余额','上年结转余额').replace('本年缴交','当年缴存金额').replace(' ',''),cell[1].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ','').replace('本年支取','当年提取金额').replace('月缴金额','月应缴额').replace('账户余额','当前余额'), cell[3].replace('\xa0',''))
             self.result_identity['status'] = data['baseInfo']['帐户状态']
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
