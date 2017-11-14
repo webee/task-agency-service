@@ -19,7 +19,7 @@ class Task(AbsFetchTask):
         city_name="苏州",
         help="""<li>个人编号长度为10位，参保地为市本级、姑苏区（原沧浪区、平江区、金阊区）、高新区，不足部分前面“00”补足；参保地为吴中区，不足部分前面“02”补足；参保地为相城区，不足部分前面“03”补足。</li>
             <li>如有问题请拨打12333。</li>""",
-        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
+
     )
 
     def _get_common_headers(self):
@@ -690,3 +690,4 @@ if __name__ == '__main__':
 
     client = TaskTestClient(Task())
     client.run()
+#社保编号：0002357919  身份证号：320981198212274213

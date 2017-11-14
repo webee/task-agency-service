@@ -267,7 +267,10 @@ class Task(AbsFetchTask):
                 if k.find('参保状态')>0:
                     fivedic.setdefault(k[:2], v)
                 else:
-                    self.result_data["baseInfo"].setdefault(k, v)
+                    if k=='户籍类别':
+                        self.result_data["baseInfo"].setdefault('户口性质', v)
+                    else:
+                        self.result_data["baseInfo"].setdefault(k, v)
                     if k=='姓名':
                         self.result_identity['target_name'] = v
                     if k=='身份证号':
@@ -280,7 +283,12 @@ class Task(AbsFetchTask):
 
             monthnum = 0
             for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
-                self.result_data["baseInfo"].setdefault(k, v)
+                if k == '养老保险累计月数':
+                    self.result_data["baseInfo"].setdefault('养老实际缴费月数', v)
+                elif k == '失业保险累计月数':
+                    self.result_data["baseInfo"].setdefault('失业实际缴费月数', v)
+                else:
+                    self.result_data["baseInfo"].setdefault(k, v)
                 if k.find('保险累计月数') > -1:
                     if(monthnum < int(v)):
                         monthnum = int(v)
@@ -432,7 +440,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'gaoyingen', '密码': 'Gao1831850'}
+    meta = {'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
