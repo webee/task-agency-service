@@ -146,7 +146,7 @@ class Task(AbsFetchTask):
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell)==4:
-                    data['baseInfo'][cell[0].replace('\n','').replace('账户余额','当前余额').replace('本年支取总额','当年提取金额').replace('本年缴存总额','当年缴存金额').replace('月汇缴金额','月缴存额').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
+                    data['baseInfo'][cell[0].replace('\n','').replace('账户余额','当前余额').replace('本年支取总额','当年提取金额').replace('本年缴存总额','当年缴存金额').replace('月汇缴金额','月应缴额').replace('个人缴存基数','缴存基数').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
                     data['baseInfo'][cell[2].replace('\n','').replace('状 态','帐户状态').replace('最后汇缴年月','最后业务日期').replace('\r                \xa0','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0','').replace('-',''))
 
             self.result_identity['target_name'] = data['baseInfo']['姓名']

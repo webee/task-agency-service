@@ -230,7 +230,7 @@ class Task(AbsFetchTask):
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
                 if len(cell) > 1:
-                    data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('所属单位','单位名称').replace('末次缴存年月','汇缴年月').replace('账户余额','当前余额').replace('当前账户状态','账户状态').replace('绑定手机号','手机号'),
+                    data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('所属单位','单位名称').replace('末次缴存年月','汇缴年月').replace('账户余额','当前余额').replace('当前账户状态','账户状态').replace('绑定手机号','手机号').replace('月缴存额','月应缴额'),
                                                 cell[1].replace('\r\n             ', '').replace('  >>>住房公积金本年度账户明细',
                                                                                                  '').replace(
                                                     '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', '').replace('年','').replace('月','').replace('日',''))
