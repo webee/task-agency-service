@@ -41,7 +41,8 @@ class Task(AbsFetchTask):
         city_name="上海",
         help="""<li>如您未在公积金网站查询过您的公积金信息，请到上海公积金管理中心官网网完成“注册”然后再登录。</li>
                 <li>用户名指的是在注册时自行设置的2-12位英文字母或数字（区分大小写）。</li>
-                """
+                """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -65,6 +66,18 @@ class Task(AbsFetchTask):
         assert '密码' in params, '缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        用户名 = params['用户名']
+        密码 = params['密码']
+
+        if len(用户名) == 0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(用户名) < 5:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
 
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -217,13 +230,13 @@ class Task(AbsFetchTask):
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
                 if len(cell) > 1:
-                    data['baseInfo'].setdefault(cell[0].replace(' ', ''),
+                    data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('所属单位','单位名称').replace('末次缴存年月','汇缴年月').replace('账户余额','当前余额').replace('当前账户状态','账户状态').replace('绑定手机号','手机号'),
                                                 cell[1].replace('\r\n             ', '').replace('  >>>住房公积金本年度账户明细',
                                                                                                  '').replace(
-                                                    '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', ''))
+                                                    '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', '').replace('年','').replace('月','').replace('日',''))
 
             self.result_identity['target_name']=data['baseInfo']['姓名']
-            self.result_identity['status'] = data['baseInfo']['当前账户状态']
+            self.result_identity['status'] = data['baseInfo']['账户状态']
             # 内容
             infourl = LOGIN_URL + '?ID=11'
             resp = self.s.get(infourl)
@@ -293,8 +306,8 @@ class Task(AbsFetchTask):
                             "单位登记号": "",
                             "所属管理部编号": "",
                             "所属管理部名称": "",
-                            "当前余额": data['baseInfo']['账户余额'],
-                            "帐户状态": data['baseInfo']['当前账户状态'],
+                            "当前余额": data['baseInfo']['当前余额'],
+                            "帐户状态": data['baseInfo']['账户状态'],
                             "当年缴存金额": 0,
                             "当年提取金额": 0,
                             "上年结转余额": 0,
@@ -310,7 +323,7 @@ class Task(AbsFetchTask):
                             "单位登记号": "",
                             "所属管理部编号": "",
                             "所属管理部名称": "",
-                            "当前余额": data['baseInfo']['账户余额'],
+                            "当前余额": data['baseInfo']['当前余额'],
                             "帐户状态": '转出',
                             "当年缴存金额": 0,
                             "当年提取金额": 0,

@@ -4,7 +4,7 @@ import re
 import ssl
 requests.packages.urllib3.disable_warnings()
 from bs4 import BeautifulSoup
-from services.service import SessionData, AbsTaskUnitSessionTask
+from services.errors import InvalidParamsError
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
 
@@ -19,7 +19,8 @@ class Task(AbsFetchTask):
         city_name="哈尔滨",
         help="""<li>公积金初始查询密码为111111。为了您的信息安全，请及时到公积金中心查询机上更改密码。</li>
         <li>可向公司人事或者经办人索取公积金账号；凭借身份证去当地网点查询。</li>
-        """
+        """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -42,6 +43,18 @@ class Task(AbsFetchTask):
         assert '个人账号' in params, '缺少个人账号'
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
+        身份证号 = params['身份证号']
+        个人账号 = params['密码']
+
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(个人账号) == 0:
+            raise InvalidParamsError('个人账号为空，请输入个人账号！')
+        elif len(个人账号) < 6:
+            raise InvalidParamsError('个人账号不正确，请重新输入！')
         # other check
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -133,8 +146,8 @@ class Task(AbsFetchTask):
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell)==4:
-                    data['baseInfo'][cell[0].replace('\n','').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
-                    data['baseInfo'][cell[2].replace('\n','').replace('\r                \xa0','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0',''))
+                    data['baseInfo'][cell[0].replace('\n','').replace('账户余额','当前余额').replace('本年支取总额','当年提取金额').replace('本年缴存总额','当年缴存金额').replace('月汇缴金额','月缴存额').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
+                    data['baseInfo'][cell[2].replace('\n','').replace('状 态','帐户状态').replace('最后汇缴年月','最后业务日期').replace('\r                \xa0','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0','').replace('-',''))
 
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['status'] = ''
@@ -142,11 +155,11 @@ class Task(AbsFetchTask):
             data['companyList']=[]
             diclist= {
                 '单位名称':data['baseInfo']['单位名称'],
-                '当前余额': data['baseInfo']['账户余额'],
-                '帐户状态': data['baseInfo']['状 态'],
-                '当年缴存金额': data['baseInfo']['本年缴存总额'],
-                '当年提取金额': data['baseInfo']['本年支取总额'],
-                '最后业务日期': data['baseInfo']['最后汇缴年月']
+                '当前余额': data['baseInfo']['当前余额'],
+                '帐户状态': data['baseInfo']['帐户状态'],
+                '当年缴存金额': data['baseInfo']['当年缴存金额'],
+                '当年提取金额': data['baseInfo']['当年提取金额'],
+                '最后业务日期': data['baseInfo']['最后业务日期']
             }
             data['companyList'].append(diclist)
             return

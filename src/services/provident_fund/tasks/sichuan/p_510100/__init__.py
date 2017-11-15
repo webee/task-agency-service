@@ -8,7 +8,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="成都",
         help="""<li>联名卡有两个密码，一个是银行查询密码，一个是公积金查询服务密码。</li>
-        <li>如若查询服务密码，可拨打服务热线12329修改。</li>"""
+        <li>如若查询服务密码，可拨打服务热线12329修改。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _prepare(self):

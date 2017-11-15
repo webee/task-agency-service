@@ -7,7 +7,9 @@ from services.commons import AbsFetchTask
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="厦门",
-        help="""<li>如您未在公积金网站查询过您的公积金信息，请到厦门公积金管理中心官网网完成“注册”然后再登录。</li>"""
+        help="""<li>如您未在公积金网站查询过您的公积金信息，请到厦门公积金管理中心官网网完成“注册”然后再登录。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
+
     )
 
     def _prepare(self):

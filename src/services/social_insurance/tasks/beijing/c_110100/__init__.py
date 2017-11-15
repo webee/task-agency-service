@@ -19,15 +19,17 @@ SMS_URL = "http://www.bjrbj.gov.cn/csibiz/indinfo/passwordSetAction!getTelSafeCo
 
 
 class Task(AbsFetchTask):
+
     task_info = dict(
-        city_name="北京",
+        city_name="北京市",
         expect_time=10,
         sms_time=120,
         help="""
         <li>若您尚未登录过请登录北京社保官网点击新用户注册，按新用户帮助其中的步骤完成登录密码的设置。</li>
         <li>注册时填写的手机号信息，方便您在登录时收取短信验证码。</li>
         <li>若您无法正常登录，可以查看相关帮助，或者拨打96102。</li>
-        """
+        """,
+        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -131,7 +133,7 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
-            except Exception:
+            except Exception as e:
                 self._unit_login(params, from_error=True)
                 raise
 
@@ -183,7 +185,7 @@ class Task(AbsFetchTask):
             }
 
             data["baseInfo"] = {
-                "缴费单位名称": companyName,
+                "单位名称": companyName,
                 "组织机构代码": companyCode,
                 "社会保险登记证编号": socialCode,
                 "所属区县": fromCity,
@@ -206,7 +208,7 @@ class Task(AbsFetchTask):
                 '参加工作日期': td1[18].text,
                 '户口所在区县街乡': td1[20].text,
                 '户口性质': td1[22].text,
-                '户口所在地地址': td1[24].text,
+                '户口所在地': td1[24].text,
                 '户口所在地邮政编码': td1[26].text,
                 '居住地（联系）地址': td1[28].text,
                 '居住地（联系）邮政编码': td1[30].text,
@@ -215,15 +217,15 @@ class Task(AbsFetchTask):
                 '获取对账单方式': td1[36].text,
                 '电子邮件地址': td1[38].text,
                 '文化程度': td1[40].text,
-                '参保人电话': td1[42].text,
-                '参保人手机': td1[44].text,
+                '电话': td1[42].text,
+                '手机号': td1[44].text,
                 '申报月均工资收入（元）': td1[46].text,
                 '证件类型': td1[48].text,
                 '证件号码': td1[50].text,
                 '委托代发银行名称': td1[52].text,
                 '委托代发银行账号': td1[54].text,
-                '缴费人员类别': td1[56].text,
-                '医疗参保人员类别': td1[58].text,
+                '用工形式': td1[56].text,
+                '人员类别': td1[58].text,
                 '离退休类别': td1[60].text,
                 '离退休日期': td1[62].text,
                 '定点医疗机构1': td1[64].text,
@@ -707,6 +709,7 @@ class Task(AbsFetchTask):
 
 
 if __name__ == '__main__':
+    
     from services.client import TaskTestClient
 
     client = TaskTestClient(Task())

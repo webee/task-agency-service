@@ -44,7 +44,8 @@ class Task(AbsFetchTask):
         city_name="宁波",
         help="""<li>如您未在社保网站查询过您的社保信息，请到宁波社保网上服务平台完成“注册”然后再登录。</li>
             <li>如有问题请拨打12333。</li>
-            """
+            """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -74,7 +75,18 @@ class Task(AbsFetchTask):
         assert '身份证号' in params, '缺少身份证号'
         assert '密码' in params, '缺少密码'
         # other check
+        身份证号 = params['身份证号']
+        密码 = params['密码']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -356,14 +368,14 @@ class Task(AbsFetchTask):
                 '性别': soup.select('#xb')[0].text,
                 '身份证号': soup.select('#sfz')[0].text,
                 '国籍': soup.select('#gj')[0].text,
-                '社保卡号码': soup.select('#sbkh')[0].text,
+                '社会保障卡号码': soup.select('#sbkh')[0].text,
                 '社保卡状态': soup.select('#kzt')[0].text,
-                '银行卡号码': soup.select('#yhkh')[0].text,
+                '银行账号': soup.select('#yhkh')[0].text,
                 '发卡日期': soup.select('#fkrq')[0].text,
-                '手机号码': soup.select('#sjhm')[0].text,
+                '手机号': soup.select('#sjhm')[0].text,
                 '固定号码': soup.select('#gddh')[0].text,
                 '常住地址': soup.select('#czdz')[0].text,
-                '邮政编码': soup.select('#yzbm')[0].text
+                '邮编': soup.select('#yzbm')[0].text
             }
             self.result_identity['target_name'] = soup.select('#xm')[0].text
             self.g.Fivestatus = []

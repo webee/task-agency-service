@@ -35,7 +35,9 @@ class Task(AbsFetchTask):
         help="""<li>用户名：为参保人身份证号</li>
         <li>密码：一般为6位数字；</li>
         <li>首次申请密码或遗忘网上登录密码，本人需携带有效身份证件至就近接到社区事务受理中心或就近社保分中心自助机申请办理。</li>
-        """
+        """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):
@@ -322,7 +324,7 @@ class Task(AbsFetchTask):
                 '开始缴费时间': details[0].find('jsjs1').text,
                 '个人养老累计缴费': personOldMoney,
                 '个人医疗累计缴费': '',
-                '状态':''
+                '账户状态':''
             }
 
 

@@ -17,7 +17,7 @@ class Task(AbsFetchTask):
         help="""<li>医保病例手册（2005年11月后发放）首页“个人编号”。</li>
         <li>由定点医院或药店出具发票上的8位数字的“社会保障号码”、“保险号”。</li>
         <li>“职工社会保险个人权益记录单”及“社会保险参保证明”上的社保编号。</li>
-        <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>"""
+        <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>""",
     )
 
     def _get_common_headers(self):
@@ -40,7 +40,18 @@ class Task(AbsFetchTask):
         assert '社保编号' in params, '缺少社保编号'
         # assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        密码 = params['密码']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -115,9 +126,9 @@ class Task(AbsFetchTask):
 
             data["baseInfo"] = {
                 "姓名": tds[2].text,
-                "社保编号": tds[4].text,
+                "社会保障号": tds[4].text,
                 "单位名称": tds[6].text,
-                "出生年月": tds[8].text,
+                "出生日期": tds[8].text,
                 "开始缴费时间": tds[10].text,
                 "当前账户状态": tds[12].text,
                 "身份证号": self.result['key'],

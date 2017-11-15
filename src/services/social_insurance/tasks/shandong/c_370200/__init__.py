@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
+from services.errors import InvalidParamsError
 
 MAIN_URL = 'http://221.215.38.136/grcx/work/index.do?method=level2Menu&topMenuId=1000'
 LOGINONE_URL = 'http://221.215.38.136/grcx/work/m01/logincheck/valid.action'
@@ -20,7 +21,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="青岛",
         help="""<li>首次登录初始密码为老卡的个人编号（磁条）或新卡的社会保障卡号（芯片）；如果老卡（磁条）的个人编号最前一位是0，输入密码时需去掉0。</li>
-            <li>如忘记密码，可到青岛社保网上查询平台中的“忘记密码”进行密码重置或到参保所在社会保险经办机构申请密码初始化。</li>"""
+            <li>如忘记密码，可到青岛社保网上查询平台中的“忘记密码”进行密码重置或到参保所在社会保险经办机构申请密码初始化。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
     def _get_common_headers(self):
         return { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
@@ -42,6 +44,18 @@ class Task(AbsFetchTask):
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        密码 = params['密码']
+
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -125,7 +139,7 @@ class Task(AbsFetchTask):
             soup=BeautifulSoup(resp.content,'html.parser')
             zkindex=soup.select('select')[0]['value']
             data['baseInfo']={
-                '社保编号' : soup.select('input')[0]['value'],
+                '个人编号' : soup.select('input')[0]['value'],
                 '姓名': soup.select('input')[1]['value'],
                 '身份证号': soup.select('input')[2]['value'],
                 '性别':soup.select('input')[3]['value'],

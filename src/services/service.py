@@ -395,7 +395,7 @@ class SessionTasksManager(object):
     def abort(self, session_id):
         """
         abort task
-        :param session_id:  session id
+        :param session_id:  session register_result_handlerid
         :return:
         """
         self._ss.remove_session(session_id)

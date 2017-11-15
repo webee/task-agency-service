@@ -38,7 +38,8 @@ class Task(AbsFetchTask):
         help="""<li>若您尚未激活或者没有在网上查询过您的社保卡，请点击激活社保账号</li>
         <li>如果您曾经激活过社保卡，但忘记密码，请点击忘记密码</li>
         <li>如办理社保卡时，没有登记手机号码或者更换手机号码，请本人携带身份证原件和新手机到社保分中心柜台办理注册手机变更业务。</li>
-        """
+        """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -76,10 +77,16 @@ class Task(AbsFetchTask):
         # other check
         用户名 = params['用户名']
         密码 = params['密码']
-        if len(密码) < 4:
-            raise InvalidParamsError('用户名或密码错误')
-        if len(用户名) < 4:
-            raise InvalidParamsError('用户名或密码错误')
+
+        if len(用户名) == 0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(用户名) < 5:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
 
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -260,7 +267,10 @@ class Task(AbsFetchTask):
                 if k.find('参保状态')>0:
                     fivedic.setdefault(k[:2], v)
                 else:
-                    self.result_data["baseInfo"].setdefault(k, v)
+                    if k=='户籍类别':
+                        self.result_data["baseInfo"].setdefault('户口性质', v)
+                    else:
+                        self.result_data["baseInfo"].setdefault(k, v)
                     if k=='姓名':
                         self.result_identity['target_name'] = v
                     if k=='身份证号':
@@ -273,7 +283,12 @@ class Task(AbsFetchTask):
 
             monthnum = 0
             for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
-                self.result_data["baseInfo"].setdefault(k, v)
+                if k == '养老保险累计月数':
+                    self.result_data["baseInfo"].setdefault('养老实际缴费月数', v)
+                elif k == '失业保险累计月数':
+                    self.result_data["baseInfo"].setdefault('失业实际缴费月数', v)
+                else:
+                    self.result_data["baseInfo"].setdefault(k, v)
                 if k.find('保险累计月数') > -1:
                     if(monthnum < int(v)):
                         monthnum = int(v)
@@ -425,7 +440,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'gaoyingen', '密码': 'Gao1831850'}
+    meta = {'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

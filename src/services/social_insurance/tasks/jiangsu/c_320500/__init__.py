@@ -18,7 +18,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="苏州",
         help="""<li>个人编号长度为10位，参保地为市本级、姑苏区（原沧浪区、平江区、金阊区）、高新区，不足部分前面“00”补足；参保地为吴中区，不足部分前面“02”补足；参保地为相城区，不足部分前面“03”补足。</li>
-            <li>如有问题请拨打12333。</li>"""
+            <li>如有问题请拨打12333。</li>""",
+
     )
 
     def _get_common_headers(self):
@@ -42,7 +43,18 @@ class Task(AbsFetchTask):
         assert '个人编号' in params, '缺少个人编号'
         assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        个人编号 = params['个人编号']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(个人编号) == 0:
+            raise InvalidParamsError('个人编号为空，请输入个人编号！')
+        elif len(个人编号) < 6:
+            raise InvalidParamsError('个人编号不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -120,7 +132,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"] = {
                 "姓名": name,
-                "社保编号": personNum,
+                "社会保障号": personNum,
                 "身份证号": sfzNum,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                 '城市名称': '苏州',
@@ -678,3 +690,4 @@ if __name__ == '__main__':
 
     client = TaskTestClient(Task())
     client.run()
+#社保编号：0002357919  身份证号：320981198212274213

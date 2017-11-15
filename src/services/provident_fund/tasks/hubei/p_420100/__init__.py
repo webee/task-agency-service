@@ -6,9 +6,8 @@ from services.commons import AbsFetchTask
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="重庆",
-        help="""<li>初始密码为公积金账号后四位+00；可登录重庆住房公积金管理中心官网后进行修改。</li>
-        <li>未验证注册用户首次登录时需进行身份验证，具体验证方式如下：用户通过输入公积金联名卡后六位（若用户未办理公积金联名卡的须输入个人公积金账号）验证登录。</li>""",
+        city_name="武汉",
+        help="""""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
@@ -56,8 +55,8 @@ class Task(AbsFetchTask):
         if len(密码) < 4:
             raise InvalidParamsError('账号或密码错误')
         if 账号.isdigit():
-            if len(账号) < 5:
-                raise InvalidParamsError('账号错误')
+            if len(账号) < 11:
+                raise InvalidParamsError('手机号或身份证错误')
             return
         raise InvalidParamsError('账号或密码错误')
 
@@ -76,7 +75,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input', placeholder='账号/手机', value=params.get('账号', '')),
+            dict(key='账号', name='账号', cls='input', placeholder='手机号或身份证', value=params.get('账号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
