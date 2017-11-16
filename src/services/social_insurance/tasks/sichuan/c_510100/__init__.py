@@ -41,7 +41,9 @@ class Task(AbsFetchTask):
         help="""
         <li>联名卡有两个密码，一个是银行查询密码，一个是公积金查询服务密码</li>
         <li>如若查询服务密码，可拨打服务热线12329修改</li>
-        """
+        """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):
@@ -395,7 +397,7 @@ class Task(AbsFetchTask):
                     '个人养老累计缴费': peroldTotal,
                     '个人医疗累计缴费': permedicalTotal,
                     '五险状态': social_Type,
-                    '状态': status,
+                    '账户状态': status,
                     '个人编号': s['aac001'],
                 }
 

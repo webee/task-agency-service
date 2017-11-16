@@ -27,7 +27,9 @@ class Task(AbsFetchTask):
         help="""
         <li>如您未在社保网站查询过您的社保信息，请到济南社保网上服务平台完成“注册”并获取密码</li>
         <li>如您还未获取社保卡，可向公司经办人索取，或者凭身份证到当地社保网点查询</li>
-        """
+        """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):
@@ -333,7 +335,7 @@ class Task(AbsFetchTask):
                         '开始缴费时间': oldData.findAll('p')[2].text.split(':')[1].replace('\n',''),
                         '个人养老累计缴费': float(oldTotal.replace(',','')),
                         '个人医疗累计缴费': permedicalTotal,
-                        '状态': status,
+                        '账户状态': status,
                         '出生日期': soup[1].findAll("td")[3].find(type="text")["value"]
                     }
 

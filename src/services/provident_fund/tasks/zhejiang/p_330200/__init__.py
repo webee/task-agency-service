@@ -23,7 +23,9 @@ class Task(AbsFetchTask):
         help="""
             <li>个人公积金查询初始密码为“111111”，如果您是首次登录，需要将初始密码修改为新的密码以确保账户安全。</li>
             <li>北仑、奉化、宁海、镇海、象山、慈溪、余姚、鄞州系统已接入宁波市本级系统，可在上述页面直接查询住房公积金个人帐户信息，查询规则与宁波市本级一致。</li>
-            """
+            """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):

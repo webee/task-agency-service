@@ -40,7 +40,9 @@ class Task(AbsFetchTask):
         help="""
         <li>个人用户第一次忘记密码，需要到各办事窗口办理；在办事窗口补充完整相关信息（如电子邮箱地址）以后，忘记密码功能才能使用。</li>
         <li>由于目前缴费历史的查询量较多，为减轻广州社保系统压力，限制每人每天只能查询5次，敬请谅解！</li>
-        """
+        """,
+
+        developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
     def _get_common_headers(self):
@@ -433,7 +435,7 @@ class Task(AbsFetchTask):
                 '个人养老累计缴费':peroldTotal,
                 '个人医疗累计缴费': permedicalTotal,
                 '五险状态': social_status,
-                '状态':social_status['养老'],
+                '账户状态':social_status['养老'],
 
                 '个人编号': redata.find('input', {'id': 'aac001'})['value'],
                 # '性别': redata.find('input', {'id': 'aac004ss'})['value'],

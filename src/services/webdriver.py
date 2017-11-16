@@ -45,9 +45,12 @@ def new_driver(driver_type=DriverType.PHANTOMJS, **kwargs):
 
 def new_chrome_driver(*args, **kwargs):
     options = webdriver.ChromeOptions()
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    options.add_experimental_option("prefs", prefs)
-    driver = webdriver.Chrome(chrome_options=options)
+    # prefs = {"profile.managed_default_content_settings.images": 2}
+    # options.add_experimental_option("prefs", prefs)
+    cap = webdriver.DesiredCapabilities.CHROME
+    cap['loggingPrefs'] = {'browser': 'ALL'}
+
+    driver = webdriver.Chrome(chrome_options=options, desired_capabilities=cap)
 
     return driver
 
@@ -199,7 +202,7 @@ class DriverRequestsCoordinator(object):
         with_domain = self._d.current_url == 'about:blank'
         for c in list(self._s.cookies):
             try:
-                d = dict(name=c.name, value=c.value, path=c.path)
+                d = dict(name=c.name, value=c.value, path=c.path, httpOnly='HttpOnly' in c._rest, expiry=c.expires or 'Session')
                 if with_domain:
                     d['domain'] = c.domain
                 self._d.add_cookie(d)

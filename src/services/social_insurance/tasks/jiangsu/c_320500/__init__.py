@@ -132,7 +132,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"] = {
                 "姓名": name,
-                "社保编号": personNum,
+                "社会保障号": personNum,
                 "身份证号": sfzNum,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                 '城市名称': '苏州',
