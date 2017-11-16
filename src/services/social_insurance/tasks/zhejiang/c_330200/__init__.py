@@ -127,8 +127,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_id'] = id_num
 
                 return
-
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),

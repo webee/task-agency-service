@@ -148,7 +148,7 @@ class Task(AbsFetchTask):
                         dicts=eval(errormsg.replace('true','"true"'))
                         self.g.usersession_uuid=dicts['__usersession_uuid']
                     else:
-                        raise Exception(errormsg)
+                        raise InvalidParamsError(errormsg)
 
                     self.result_key=id_num
                     # 保存到meta
@@ -159,7 +159,7 @@ class Task(AbsFetchTask):
                     self.result_identity['target_id'] = id_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),

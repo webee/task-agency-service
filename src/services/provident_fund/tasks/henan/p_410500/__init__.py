@@ -115,7 +115,7 @@ class Task(AbsFetchTask):
                 return_message =soup.find('head') #soup.find('input', {'name': 'zgzh'})["value"]
                 if len(return_message.text)>3:
                     return_message=return_message.text.split(';')[0].split('"')[1]
-                    raise Exception(return_message)
+                    raise InvalidParamsError(return_message)
                 else:
                     print("登录成功！")
                     self.zgzh=soup.find('input', {'name': 'zgzh'})["value"]
@@ -143,7 +143,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_name'] = account_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()

@@ -131,7 +131,7 @@ class Task(AbsFetchTask):
                         #     self.html = soup
 
                     else:
-                        raise Exception(errormsg)
+                        raise InvalidParamsError(errormsg)
                 else:
                     print()
 
@@ -142,7 +142,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_id'] = id_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([

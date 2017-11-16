@@ -8,6 +8,7 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
+
 class value_is_number(object):
     """判断元素value是数字"""
 
@@ -21,7 +22,10 @@ class value_is_number(object):
 
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36"
-LOGIN_PAGE_URL = 'http://www.cqgjj.cn/html/user/login.html'
+LOGIN_PAGE_URL = 'http://www.cqgjj.cn/Member/UserLogin.aspx?type=null'
+VC_URL='http://www.cqgjj.cn/Code.aspx'
+INFO_URL='http://www.cqgjj.cn/Member/gr/gjjyecx.aspx'
+MINGXI_URL='http://www.cqgjj.cn/Member/gr/gjjmxcx.aspx'
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -104,7 +108,8 @@ class Task(AbsFetchTask):
                 self.result_meta['密码'] = params.get('密码')
                 self.result_identity['task_name'] = '重庆'
 
-                raise TaskNotImplementedError('查询服务维护中')
+                return
+                #raise TaskNotImplementedError('查询服务维护中')
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
         vc = self._new_vc()
@@ -119,10 +124,10 @@ class Task(AbsFetchTask):
             # 打开登录页
             driver.get(LOGIN_PAGE_URL)
 
-            username_input = driver.find_element_by_xpath('//*[@id="pri"]/p[1]/label[2]/input')
-            password_input = driver.find_element_by_xpath('//*[@id="pri"]/p[2]/label[2]')
-            vc_input = driver.find_element_by_xpath('//*[@name="identifyCode"]')
-            submit_btn = driver.find_element_by_xpath('//*[@id="pri"]/p[6]/input[1]')
+            username_input = driver.find_element_by_xpath('//*[@id="txt_loginname"]')
+            password_input = driver.find_element_by_xpath('//*[@id="txt_pwd"]')#pwdRow/td[2]/input[1]
+            vc_input = driver.find_element_by_xpath('//*[@id="txt_code"]')
+            submit_btn = driver.find_element_by_xpath('//*[@id="loginBtn"]')
 
             # 用户名
             username_input.clear()
@@ -130,45 +135,80 @@ class Task(AbsFetchTask):
 
             # 密码
             password_input.clear()
+            driver.execute_script('$("#txt_pwd").removeAttr("readonly")')
             password_input.send_keys(password)
+            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
 
             #验证码
             vc_input.clear()
             vc_input.send_keys(vc)
 
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-
-
             # 提交
             submit_btn.click()
             time.sleep(2)
 
+            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+
+            #login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             if driver.current_url != LOGIN_PAGE_URL:
                 print('登录成功')
                 # 保存登录后的页面内容供抓取单元解析使用
-                login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-                self.s.soup = BeautifulSoup(login_page_html, 'html.parser')
+                #login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+                #self.s.soup = BeautifulSoup(login_page_html, 'html.parser')
 
 
                 # realname=soup.select('#xm')[0].text
             else:
                 # FIXME: 尝试处理alert
-                err_msg = '登录失败，请检查输入'
-                alert = driver.switch_to.alert
+
+                err_msg = driver.find_elements_by_class_name('error')[0].text
+                #err_msg = '登录失败，请检查输入'
+                #alert = driver.switch_to.alert
                 try:
-                    err_msg = alert.text
+                    err_msg =err_msg #alert.text
                     # alert.accept()
                 finally:
                     raise InvalidParamsError(err_msg)
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
+            # 基本信息
+            resp = self.s.get(INFO_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            table = soup.find('table')
+            data = self.result_data
+            data['baseInfo'] = {
+                '城市名称': '重庆',
+                '城市编号': '500100',
+                '证件号': '身份证',
+                '个人登记号': '',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+            }
+            for tr in table.findAll('tr'):
+                cell = [i.text.replace('\n','').replace('\r','').replace('     ','').replace('：  ','') for i in tr.find_all('td')]
+                if len(cell) > 1:
+                    data['baseInfo'].setdefault(
+                        cell[0].replace(' ', '').replace('身份证号码', '身份证号').replace('开户时间', '开户日期').replace('个人月缴交额(元)','个人月缴存额').replace(
+                            '单位月缴交额(元)', '单位月缴存额').replace('个人公积金帐号', '公积金帐号').replace('个人序号', '个人账号').replace('当前余额(元)', '当前余额').replace('当前状态', '帐户状态').replace('：', ''),
+                        cell[1].replace('-', '').replace(' ',''))
+
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            self.result_identity['target_id'] = data['baseInfo']['身份证号']
+            self.result_identity['status'] = data['baseInfo']['帐户状态']
+
+            #公积金明细
+            resp = self.s.get(MINGXI_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            table = soup.findAll('tbody')
 
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
-
+    def _new_vc(self):
+        #vc_url = VC_URL  # + str(int(time.time() * 1000))
+        resp = self.s.get(VC_URL)
+        return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
