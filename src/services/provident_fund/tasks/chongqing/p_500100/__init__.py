@@ -199,8 +199,69 @@ class Task(AbsFetchTask):
             #公积金明细
             resp = self.s.get(MINGXI_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            table = soup.findAll('tbody')
+            table = soup.find('table')
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            maxtime=''
+            y=1
+            for tb in table.findAll('tbody'):
+                dic = {}
+                arr = []
+                cell = [i.text.replace(' ', '').replace('\r\n', '') for i in tb.find_all('td')]
+                if(y==1):
+                    maxtime=cell[0]
+                y=y+1
+                typedate=cell[1].split('[')
+                hj=''
+                lx=cell[1]
+                if len(typedate) >1:
+                    hj =typedate[1].replace(']', '')
+                    lx=typedate[0]
 
+                dic = {
+                    '时间': cell[0],
+                    '单位名称':'',
+                    '支出': 0,
+                    '收入': str(float(cell[2])+float(cell[3])),
+                    '汇缴年月': hj,
+                    '余额': cell[4],
+                    '类型': lx
+                }
+                times = cell[0][:7].replace('-', '')
+                if years != times[:4]:
+                    years = times[:4]
+                    data['detail']['data'][years] = {}
+                    if months != times[-2:]:
+                        months = times[-2:]
+                        data['detail']['data'][years][months]={}
+                else:
+                    if months != times[-2:]:
+                        months = times[-2:]
+                        data['detail']['data'][years][months] = {}
+                    else:
+                        arr = data['detail']['data'][years][months]
+                arr.append(dic)
+                data['detail']['data'][years][months] = arr
+                print(arr)
+
+            #companyList
+            data['companyList'] = []
+            enterdic = {
+                "单位名称": data['baseInfo']['单位名称'],
+                "单位登记号": "",
+                "所属管理部编号": "",
+                "所属管理部名称": "",
+                "当前余额": data['baseInfo']['当前余额'],
+                "帐户状态": data['baseInfo']['帐户状态'],
+                #"当年缴存金额": 0,
+                "当年提取金额": 0,
+                #"上年结转余额": 0,
+                "最后业务日期": maxtime,
+                "转出金额": 0
+            }
+            data['companyList'].append(enterdic)
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)

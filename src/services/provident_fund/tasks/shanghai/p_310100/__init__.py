@@ -281,7 +281,7 @@ class Task(AbsFetchTask):
                             '收入': cell[2],
                             '汇缴年月': strtime,
                             '余额': '',
-                            '类型':strtype ,
+                            '类型':strtype,
                             '业务原因': cell[4].replace('\xa0', '')
                         }
 
