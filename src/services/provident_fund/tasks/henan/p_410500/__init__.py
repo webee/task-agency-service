@@ -114,11 +114,14 @@ class Task(AbsFetchTask):
                     self.html = str(resp2.content, 'gbk')
 
                 self.result_key =id_num
-                self.result_meta = {
-                    '身份证号': id_num,
-                    '密码':password,
-                    '职工姓名': account_num
-                }
+                self.result_meta['身份证号'] = id_num
+                self.result_meta['职工姓名'] = account_num
+                self.result_meta['密码'] = password
+
+                self.result_identity['task_name'] = '安阳'
+                self.result_identity['target_id'] = id_num
+                self.result_identity['target_name'] = account_num
+
                 return
             except Exception as e:
                 err_msg = str(e)
@@ -127,8 +130,8 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input'),
             dict(key='职工姓名', name='职工姓名', cls='input'),
-            dict(key='密码',name='密码',cls='input'),
-            dict(key='vc', name='验证码', cls='data:image', data=vc, query={'t': 'vc'}),
+            dict(key='密码',name='密码',cls='input:password'),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
     def _unit_fetch_name(self):
@@ -139,25 +142,29 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp, 'html.parser')
             table_text = soup.select('table.1')
             rows = table_text[0].find_all('tr')
-            data['baseinfo'] = {}
+            data['baseInfo'] = {
+                '城市名称': '安阳',
+                '城市编号': '410500',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '证件类型':'身份证'
+            }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseinfo'].setdefault(cell[0],cell[1].replace('\xa0',''))
-                data['baseinfo'].setdefault(cell[2], cell[3].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace(' ',''),cell[1].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ',''), cell[3].replace('\xa0',''))
+            self.result_identity['status'] = data['baseInfo']['账户状态']
 
-
-
-            resp = self.s.post(GJJMX_URL,data = dict(zgzh=self.zgzh,
-                                 sfzh=self.sfzh,
-                                 zgxm=self.zgxm,
-                                 dwbm=self.dwbm,cxyd=self.cxyd),headers={'Content-Type': 'application/x-www-form-urlencoded'})
+            resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
             selectyear = []
+            years = ''
+            months = ''
             for option in soup.findAll('option'):
                 selectyear.append(option.getText())
-            for y in range(0,len(selectyear)):
+            selectyear.append('当前年度')
+            for y in range(1,len(selectyear)):
                 cxydone=selectyear[y]
                 cxydtwo1=''
                 if y==0:
@@ -170,33 +177,67 @@ class Task(AbsFetchTask):
                            'sfzh':self.sfzh,
                            'zgxm':self.zgxm,
                            'dwbm':self.dwbm,
-                           'cxyd':self.cxyd}
+                           'cxyd':cxydtwo1}
                 resp = self.s.post(GJJ_URL, data=parse.urlencode(data1, encoding='gbk'),
-                                  headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                  headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 tab=soup.select('table')[16]
                 tabtitle=tab.findAll('tr')[0]
                 tabcontent=tab.select('.jtpsoft')
-                titkeys = ''
-                for td in tabtitle.findAll('td'):
-                    if len(titkeys) < 1:
-                        titkeys = td.getText()
-                    else:
-                        titkeys = titkeys + ',' + td.getText()
+                titkeys = '时间,类型,支出,收入,借贷方向,余额'
+                # for td in tabtitle.findAll('td'):
+                #     if len(titkeys) < 1:
+                #         titkeys = td.getText()
+                #     else:
+                #         titkeys = titkeys + ',' + td.getText()
 
                 for tr in range(0,len(tabcontent)):
                     dic = {}
                     i = 0
                     monthkeys = ''
+                    arr=[]
                     for td in tabcontent[tr].findAll('td'):
                         dic.setdefault(titkeys.split(',')[i], td.getText())
                         i = i + 1
                         if i == 1:
                             monthkeys = td.getText()
+                        if i == 2:
+                            hjny=''
+                            lx=td.getText()
+                            if '汇缴' in td.getText():
+                                hjny=td.getText().replace('汇缴','').replace('年','').replace('月','')
+                                lx='汇缴'
+                            dic.setdefault('汇缴年月', hjny)
+                            dic['类型']=lx
                         if i == 6:
-                            data['detail']['data'].setdefault(monthkeys,dic)
+                            dic['单位名称']= ''
+                            if years==''or years!=monthkeys[:4]:
+                                years=monthkeys[:4]
+                                if years not in data['detail']['data'].keys():
+                                    data['detail']['data'][years]={}
+                                if months==monthkeys[5:7]:
+                                    if months not in data['detail']['data'][years].keys():
+                                        data['detail']['data'][years][months] = {}
+                            if months=='' or months!=monthkeys[5:7]:
+                                months=monthkeys[5:7]
+                                if months not in data['detail']['data'][years].keys():
+                                    data['detail']['data'][years][months] = {}
+                            if len(data['detail']['data'][years][months])>0:
+                                arr=data['detail']['data'][years][months]
+                            arr.append(dic)
+                            data['detail']['data'][years][months]=arr
 
-
+            data['companyList']=[]
+            diclist = {
+                '单位名称': data['baseInfo']['所在单位'],
+                '单位登记号': data['baseInfo']['单位账号'],
+                '帐户状态': data['baseInfo']['账户状态'],
+                '当前余额': data['baseInfo']['账户余额'],
+                '当年提取金额': data['baseInfo']['本年支取'],
+                '当年缴存金额': data['baseInfo']['本年缴交'],
+                '上年结转余额': data['baseInfo']['上年余额']
+            }
+            data['companyList'].append(diclist)
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -209,7 +250,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-
-    client = TaskTestClient(Task())
+    meta = {'身份证号': '410523198507216025', '职工姓名': '肖科', '密码': '111111'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 # 	410523198410033046  陈静

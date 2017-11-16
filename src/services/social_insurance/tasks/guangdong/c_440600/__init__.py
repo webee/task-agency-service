@@ -73,7 +73,7 @@ class Task(AbsFetchTask):
 
     def _unit_login(self, params: dict):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
@@ -84,6 +84,8 @@ class Task(AbsFetchTask):
                     UserID=id_num,
                     Password=pwd
                 ))
+                if resp.status_code!=200:
+                    raise TaskNotAvailableError('升级维护中')
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 errormsg = soup.select('table')[1].text.replace('\n', '')
                 if errormsg:
