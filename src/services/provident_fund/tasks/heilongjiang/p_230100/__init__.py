@@ -105,7 +105,7 @@ class Task(AbsFetchTask):
                 return_message = soup.find('input', {'name': 'return_message'})["value"]
 
                 if return_message:
-                    raise Exception(return_message)
+                    raise InvalidParamsError(return_message)
                 else:
                     print("登录成功！")
                     self.html = str(resp.content, 'gbk')
@@ -119,7 +119,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_id'] = id_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()
@@ -163,7 +163,7 @@ class Task(AbsFetchTask):
             }
             data['companyList'].append(diclist)
             return
-        except PermissionError as e:
+        except (AssertionError, InvalidParamsError) as e:
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):

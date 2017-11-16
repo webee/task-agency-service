@@ -96,7 +96,7 @@ class Task(AbsFetchTask):
                     print("登录成功！")
                 else:
                     return_message = soup.text
-                    raise Exception(return_message)
+                    raise InvalidParamsError(return_message)
 
                 self.result_key = id_num
                 # 保存到meta

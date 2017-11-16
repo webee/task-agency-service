@@ -140,7 +140,7 @@ class Task(AbsFetchTask):
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 errormsg = soup.findAll('font')[0].text
                 if errormsg and errormsg != id_num:
-                    raise Exception(errormsg)
+                    raise InvalidParamsError(errormsg)
                 else:
                     self.g.soup = soup
 
@@ -151,7 +151,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_id'] = id_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()

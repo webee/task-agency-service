@@ -111,7 +111,7 @@ class Task(AbsFetchTask):
 
                     if soup.select('.text3'):
                         return_message=soup.select('.text3')[0].text
-                        raise Exception(return_message)
+                        raise InvalidParamsError(return_message)
                     else:
                         print("登录成功！")
 
@@ -121,7 +121,7 @@ class Task(AbsFetchTask):
                 self.result_identity['task_name'] = '青岛'
                 self.result_identity['target_id'] = id_num
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()
