@@ -6,9 +6,8 @@ from services.commons import AbsFetchTask
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="成都",
-        help="""<li>联名卡有两个密码，一个是银行查询密码，一个是公积金查询服务密码。</li>
-        <li>如若查询服务密码，可拨打服务热线12329修改。</li>""",
+        city_name="武汉",
+        help="""""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
@@ -56,8 +55,8 @@ class Task(AbsFetchTask):
         if len(密码) < 4:
             raise InvalidParamsError('账号或密码错误')
         if 账号.isdigit():
-            if len(账号) < 5:
-                raise InvalidParamsError('身份证错误')
+            if len(账号) < 11:
+                raise InvalidParamsError('手机号或身份证错误')
             return
         raise InvalidParamsError('账号或密码错误')
 
@@ -76,7 +75,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input', placeholder='账号', value=params.get('账号', '')),
+            dict(key='账号', name='账号', cls='input', placeholder='手机号或身份证', value=params.get('账号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
@@ -92,5 +91,3 @@ if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task(SessionData()))
     client.run()
-#联名卡登录 ：[{'账号': '6222803811824115177', '密码': '117173'}] [{'账号': '6222108326064250', '密码': '786042'}]
-
