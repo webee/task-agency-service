@@ -19,7 +19,7 @@ class Task(AbsFetchTask):
         city_name="苏州",
         help="""<li>个人编号长度为10位，参保地为市本级、姑苏区（原沧浪区、平江区、金阊区）、高新区，不足部分前面“00”补足；参保地为吴中区，不足部分前面“02”补足；参保地为相城区，不足部分前面“03”补足。</li>
             <li>如有问题请拨打12333。</li>""",
-
+        developers=[{'name': '卜圆圆', 'email': 'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -97,7 +97,7 @@ class Task(AbsFetchTask):
                 data = resp.json()
                 errormsg = data.get('errormsg')
                 if errormsg:
-                    raise Exception(errormsg)
+                    raise InvalidParamsError(errormsg)
 
                 self.result_key = id_num
                 # 保存到meta
@@ -109,8 +109,6 @@ class Task(AbsFetchTask):
 
                 return
             except (AssertionError, InvalidParamsError) as e:
-                err_msg = str(e)
-            except Exception as e:
                 err_msg = str(e)
 
         raise AskForParamsError([

@@ -361,71 +361,73 @@ class Task(AbsFetchTask):
                 pagearr=json.loads(resp.text)
 
                 """获取分页"""
-                pagesize=pagearr["datas"][arrmingxi[ii]]['params']['pageSize']
-                rowsCount=pagearr["datas"][arrmingxi[ii]]['params']['rowsCount']
-                pagenum=rowsCount/pagesize
-                pagenums=rowsCount//pagesize
-                if pagenum>pagenums:
-                    pagenums=pagenums+1
-                for i in range(1,pagenums+1):
-                    if i!=1:
-                        datas = dict(
-                            _isModel='true',
-                            params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"'+arrmingxi[ii]+'": {"params": {"pageSize": 10, "curPageNum": '+str(i)+',"maxPageSize":50,"rowsCount":'+str(rowsCount)+',"Total_showMsg":null,"Total_showMsgCell":null,"Total_Cols":[]},"heads":[],"heads_change":[],"dataset":[]}}}'
-                        )
-                        strr = USERINFO_URL + '?r=' + str(random.random())
-                        resp = self.s.post(strr, datas, headers={'X-Requested-With': 'XMLHttpRequest',
-                                                                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                                                 'Accept': 'application / json, text / plain, * / *',
-                                                                 'Connection': 'keep - alive', 'Token': self.g.Token,
-                                                                 'Host': 'seyb.szsi.gov.cn',
-                                                                 'Origin': 'https://seyb.szsi.gov.cn',
-                                                                 'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
-                        self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
-                    mx=json.loads(resp.text)["datas"]
-                    for i in range(0,len(mx[arrmingxi[ii]]['dataset'])):
-                        arr=[]
-                        if v=='old_age'or v=='medical_care':
-                            personjfsum=personjfsum+float(mx[arrmingxi[ii]]['dataset'][i]['个人缴'])
-                            #enterjfsum=enterjfsum+float(mx['dataset'][i]['单位缴'])
-                        yearmonth=mx[arrmingxi[ii]]['dataset'][i]['缴费年月'].replace('年','').replace('月','')
-                        if len(yearmonth)==5:
-                            yearmonth=yearmonth[:4]+'0'+yearmonth[-1:]
-                        if statetime=='':
-                            statetime=yearmonth
-                        elif int(statetime)>int(yearmonth):
-                            statetime = yearmonth
-                        if endtime=='':
-                            endtime=yearmonth
-                        elif  int(endtime)<int(yearmonth):
-                            endtime = yearmonth
-                        if years=='' or years!=yearmonth[:4]:
-                            years=yearmonth[:4]
-                            self.result_data[v]['data'][years]={}
-                            if len(months)>0:
-                                if months == yearmonth[-2:]:
-                                    self.result_data[v]['data'][years][months] = {}
-                        if months == '' or months != yearmonth[-2:]:
-                            months=yearmonth[-2:]
-                            self.result_data[v]['data'][years][months]={}
-                        mxdic={
-                            '缴费时间':yearmonth,
-                            '缴费类型':'-',
-                            '缴费基数':mx[arrmingxi[ii]]['dataset'][i]['缴费工资'],
-                            '公司缴费':mx[arrmingxi[ii]]['dataset'][i]['单位缴'],
-                            '个人缴费': mx[arrmingxi[ii]]['dataset'][i]['个人缴'],
-                            '缴费单位': mx[arrmingxi[ii]]['dataset'][i]['单位名称'],
-                            '单位编号': mx[arrmingxi[ii]]['dataset'][i]['单位编号'],
-                            '缴费合计': mx[arrmingxi[ii]]['dataset'][i]['缴费合计'],
-                            '备注': mx[arrmingxi[ii]]['dataset'][i]['备注']
-                        }
-                        arr.append(mxdic)
-                        self.result_data[v]['data'][years][months] = arr
-                ii=ii+1
-                if v == 'old_age':
-                    self.result_data["baseInfo"].setdefault('个人养老累计缴费', personjfsum)
-                if v == 'medical_care':
-                    self.result_data["baseInfo"].setdefault('个人医疗累计缴费', personjfsum)
+                if 'datas' in pagearr.keys():
+                    pagesize=pagearr["datas"][arrmingxi[ii]]['params']['pageSize']
+                    rowsCount=pagearr["datas"][arrmingxi[ii]]['params']['rowsCount']
+                    pagenum=rowsCount/pagesize
+                    pagenums=rowsCount//pagesize
+                    if pagenum>pagenums:
+                        pagenums=pagenums+1
+                    for i in range(1,pagenums+1):
+                        if i!=1:
+                            datas = dict(
+                                _isModel='true',
+                                params='{"oper": "CbjfmxcxAction.queryCbjfmx'+k+'", "params": {}, "datas": {"'+arrmingxi[ii]+'": {"params": {"pageSize": 10, "curPageNum": '+str(i)+',"maxPageSize":50,"rowsCount":'+str(rowsCount)+',"Total_showMsg":null,"Total_showMsgCell":null,"Total_Cols":[]},"heads":[],"heads_change":[],"dataset":[]}}}'
+                            )
+                            strr = USERINFO_URL + '?r=' + str(random.random())
+                            resp = self.s.post(strr, datas, headers={'X-Requested-With': 'XMLHttpRequest',
+                                                                     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                                     'Accept': 'application / json, text / plain, * / *',
+                                                                     'Connection': 'keep - alive', 'Token': self.g.Token,
+                                                                     'Host': 'seyb.szsi.gov.cn',
+                                                                     'Origin': 'https://seyb.szsi.gov.cn',
+                                                                     'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
+                            self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+                        mx=json.loads(resp.text)["datas"]
+                        for i in range(0,len(mx[arrmingxi[ii]]['dataset'])):
+                            arr=[]
+                            if v=='old_age'or v=='medical_care':
+                                personjfsum=personjfsum+float(mx[arrmingxi[ii]]['dataset'][i]['个人缴'])
+                                #enterjfsum=enterjfsum+float(mx['dataset'][i]['单位缴'])
+                            yearmonth=mx[arrmingxi[ii]]['dataset'][i]['缴费年月'].replace('年','').replace('月','')
+                            if len(yearmonth)==5:
+                                yearmonth=yearmonth[:4]+'0'+yearmonth[-1:]
+                            if statetime=='':
+                                statetime=yearmonth
+                            elif int(statetime)>int(yearmonth):
+                                statetime = yearmonth
+                            if endtime=='':
+                                endtime=yearmonth
+                            elif  int(endtime)<int(yearmonth):
+                                endtime = yearmonth
+                            if years=='' or years!=yearmonth[:4]:
+                                years=yearmonth[:4]
+                                self.result_data[v]['data'][years]={}
+                                if len(months)>0:
+                                    if months == yearmonth[-2:]:
+                                        self.result_data[v]['data'][years][months] = {}
+                            if months == '' or months != yearmonth[-2:]:
+                                months=yearmonth[-2:]
+                                self.result_data[v]['data'][years][months]={}
+                            mxdic={
+                                '缴费时间':yearmonth,
+                                '缴费类型':'-',
+                                '缴费基数':mx[arrmingxi[ii]]['dataset'][i]['缴费工资'],
+                                '公司缴费':mx[arrmingxi[ii]]['dataset'][i]['单位缴'],
+                                '个人缴费': mx[arrmingxi[ii]]['dataset'][i]['个人缴'],
+                                '缴费单位': mx[arrmingxi[ii]]['dataset'][i]['单位名称'],
+                                '单位编号': mx[arrmingxi[ii]]['dataset'][i]['单位编号'],
+                                '缴费合计': mx[arrmingxi[ii]]['dataset'][i]['缴费合计'],
+                                '备注': mx[arrmingxi[ii]]['dataset'][i]['备注']
+                            }
+                            arr.append(mxdic)
+                            self.result_data[v]['data'][years][months] = arr
+
+                    if v == 'old_age':
+                        self.result_data["baseInfo"].setdefault('个人养老累计缴费', personjfsum)
+                    if v == 'medical_care':
+                        self.result_data["baseInfo"].setdefault('个人医疗累计缴费', personjfsum)
+                ii = ii + 1
             self.result_data["baseInfo"].setdefault('最近缴费时间', endtime)
             self.result_data["baseInfo"].setdefault('开始缴费时间', statetime)
             # TODO: 执行任务，如果没有登录，则raise PermissionError
@@ -440,12 +442,12 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'}
+    meta = {'用户名': 'lishaofeng1989', '密码': 'Li8880165'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
     '''有效账号'''
-    #'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'
-    #'用户名':'keguangping'， 密码：'Kegp850907'
+    #'用户名': 'xiaolan0612', '密码': 'Xiaolan0612''用户名': 'lmc13828893775', '密码': 'Luo123465'
+    #'用户名':'keguangping'， 密码：'Kegp850907' '用户名': 'Xuxiayu', '密码': 'Xuxiayu143'
     #'用户名': 'ligang860119', '密码': 'ligangL860'
     #'用户名': 'gaoyingen', '密码': 'Gao1831850'

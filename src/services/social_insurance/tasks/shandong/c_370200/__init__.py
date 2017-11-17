@@ -92,7 +92,7 @@ class Task(AbsFetchTask):
                  ))
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 if len(soup.text)>0:
-                    raise Exception(soup.text)
+                    raise InvalidParamsError(soup.text)
                 else:
                     m = hashlib.md5()
                     m.update(password.encode(encoding='utf-8'))
@@ -186,7 +186,9 @@ class Task(AbsFetchTask):
             resp = self.s.get(pageOLDQuery_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             pages = len(soup.select('.mypagelink')[0].findAll('a'))
-            for i in range(1,pages):
+            if pages==0:
+                pages=1
+            for i in range(1,pages+1):
                 pageOLDQuery_URL=OLDQuery_URL+'?aac001=80161738&page_active=oldQuery&page_oldQuery='+str(i)
                 resp=self.s.get(pageOLDQuery_URL)
                 soup=BeautifulSoup(resp.content,'html.parser')
@@ -230,9 +232,10 @@ class Task(AbsFetchTask):
                             else:
                                 arrtime.append(monthkeys)
                                 data['old_age']['data'][yearkeys].setdefault(monthkeys[-2:],arr)
-            data['baseInfo'].setdefault('缴费时长',str(len(arrtime)))
-            data['baseInfo'].setdefault('最近缴费时间',max(arrtime))
-            data['baseInfo'].setdefault('开始缴费时间',min(arrtime))
+            if len(arrtime)>1:
+                data['baseInfo'].setdefault('缴费时长',str(len(arrtime)))
+                data['baseInfo'].setdefault('最近缴费时间',max(arrtime))
+                data['baseInfo'].setdefault('开始缴费时间',min(arrtime))
             data['baseInfo'].setdefault('个人养老累计缴费', oldsum)
             #医疗明细信息
             data['medical_care'] = {}
@@ -242,7 +245,9 @@ class Task(AbsFetchTask):
             resp = self.s.get(medicalQuery_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             pages = len(soup.select('.mypagelink')[0].findAll('a'))
-            for i in range(1, pages):
+            if pages==0:
+                pages=1
+            for i in range(1, pages+1):
                 pageOLDQuery_URL = medicalQuery_URL + '?aac001=80161738&page_active=medicalQuery&page_medicalQuery=' + str(i)
                 resp = self.s.get(pageOLDQuery_URL)
                 soup = BeautifulSoup(resp.content, 'html.parser')
@@ -293,7 +298,9 @@ class Task(AbsFetchTask):
             resp = self.s.get(unemployQuery_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             pages = len(soup.select('.mypagelink')[0].findAll('a'))
-            for i in range(1, pages):
+            if pages==0:
+                pages=1
+            for i in range(1, pages+1):
                 pageunemployQuery_URL = unemployQuery_URL + '?aac001=80161738&page_active=unemployQuery&page_unemployQuery=' + str(
                     i)
                 resp = self.s.get(pageunemployQuery_URL)

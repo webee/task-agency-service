@@ -180,7 +180,7 @@ class Task(AbsFetchTask):
             data['baseInfo'] = {
                 '城市名称': '重庆',
                 '城市编号': '500100',
-                '证件号': '身份证',
+                '证件类型': '身份证',
                 '个人登记号': '',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
@@ -188,19 +188,80 @@ class Task(AbsFetchTask):
                 cell = [i.text.replace('\n','').replace('\r','').replace('     ','').replace('：  ','') for i in tr.find_all('td')]
                 if len(cell) > 1:
                     data['baseInfo'].setdefault(
-                        cell[0].replace(' ', '').replace('身份证号码', '身份证号').replace('开户时间', '开户日期').replace('个人月缴交额(元)','个人月缴存额').replace(
+                        cell[0].replace(' ', '').replace('身份证号码', '证件号').replace('开户时间', '开户日期').replace('个人月缴交额(元)','个人月缴存额').replace(
                             '单位月缴交额(元)', '单位月缴存额').replace('个人公积金帐号', '公积金帐号').replace('个人序号', '个人账号').replace('当前余额(元)', '当前余额').replace('当前状态', '帐户状态').replace('：', ''),
                         cell[1].replace('-', '').replace(' ',''))
 
             self.result_identity['target_name'] = data['baseInfo']['姓名']
-            self.result_identity['target_id'] = data['baseInfo']['身份证号']
+            self.result_identity['target_id'] = data['baseInfo']['证件号']
             self.result_identity['status'] = data['baseInfo']['帐户状态']
 
             #公积金明细
             resp = self.s.get(MINGXI_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            table = soup.findAll('tbody')
+            table = soup.find('table')
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            maxtime=''
+            y=1
+            for tb in table.findAll('tbody'):
+                dic = {}
+                arr = []
+                cell = [i.text.replace(' ', '').replace('\r\n', '') for i in tb.find_all('td')]
+                if(y==1):
+                    maxtime=cell[0]
+                y=y+1
+                typedate=cell[1].split('[')
+                hj=''
+                lx=cell[1]
+                if len(typedate) >1:
+                    hj =typedate[1].replace(']', '')
+                    lx=typedate[0]
 
+                dic = {
+                    '时间': cell[0],
+                    '单位名称':'',
+                    '支出': 0,
+                    '收入': str(float(cell[2])+float(cell[3])),
+                    '汇缴年月': hj,
+                    '余额': cell[4],
+                    '类型': lx
+                }
+                times = cell[0][:7].replace('-', '')
+                if years != times[:4]:
+                    years = times[:4]
+                    data['detail']['data'][years] = {}
+                    if months != times[-2:]:
+                        months = times[-2:]
+                        data['detail']['data'][years][months]={}
+                else:
+                    if months != times[-2:]:
+                        months = times[-2:]
+                        data['detail']['data'][years][months] = {}
+                    else:
+                        arr = data['detail']['data'][years][months]
+                arr.append(dic)
+                data['detail']['data'][years][months] = arr
+                print(arr)
+
+            #companyList
+            data['companyList'] = []
+            enterdic = {
+                "单位名称": data['baseInfo']['单位名称'],
+                "单位登记号": "",
+                "所属管理部编号": "",
+                "所属管理部名称": "",
+                "当前余额": data['baseInfo']['当前余额'],
+                "帐户状态": data['baseInfo']['帐户状态'],
+                #"当年缴存金额": 0,
+                "当年提取金额": 0,
+                #"上年结转余额": 0,
+                "最后业务日期": maxtime,
+                "转出金额": 0
+            }
+            data['companyList'].append(enterdic)
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
