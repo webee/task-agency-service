@@ -9,7 +9,26 @@ from services.errors import InvalidParamsError, TaskNotImplementedError, Invalid
     PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
 
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
 LoginUrl="https://gzgjj.gov.cn/wsywgr/"
+USER_AGENT="Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.79 Mobile Safari/537.36"
+VC_URL="https://gzgjj.gov.cn/wsywgr/CheckAction!createYZM.action"
+
+
+class value_is_number(object):
+
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        element = driver.find_element(*self.locator)
+        val = element.get_attribute('value')
+        return val and val.isnumeric()
 
 
 class Task(AbsFetchTask):
@@ -25,7 +44,24 @@ class Task(AbsFetchTask):
 
     def _get_common_headers(self):
         return {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.79 Mobile Safari/537.36',
+            'Host': 'gzgjj.gov.cn',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
         }
+
+    def _prepare(self, data=None):
+        super()._prepare(data)
+        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+
+    def _create_driver(self):
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='')
+        # 随便访问一个相同host的地址，方便之后设置cookie
+        driver.get('http://www.gzgjj.gov.cn/xxxx')
+        return driver
+
+    def _new_vc(self):
+        resp = self.s.get(VC_URL)
+        return dict(cls='data:image', content=resp.content)
 
     def _setup_task_units(self):
         """设置任务执行单元"""
@@ -88,14 +124,16 @@ class Task(AbsFetchTask):
 
     def _unit_login(self, params=None):
         err_msg = None
-        if not self.is_start or params:
+        if params:
             # 非开始或者开始就提供了参数
             try:
                 self._check_login_params(params)
                 id_num = params.get("证件号")
                 username=params.get("姓名")
                 account_pass = params.get("密码")
-                # vc = params.get("vc")
+                vc = params.get("vc")
+
+                self._do_login(id_num, username,account_pass, vc)
 
                 self.result_key = id_num
                 self.result_meta['证件号'] =id_num
@@ -111,7 +149,49 @@ class Task(AbsFetchTask):
             dict(key='证件号', name='证件号', cls='input',value=params.get('证件号', '')),
             dict(key='姓名', name='姓名', cls='input', value=params.get('姓名', '')),
             dict(key='密码', name='密码', cls='input:password',value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
+
+
+    def _do_login(self, id_card,user_name, password, vc):
+        """使用web driver模拟登录过程"""
+        with self.dsc.get_driver_ctx() as driver:
+            # 打开登录页
+            driver.get(LoginUrl)
+            chooseType=driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td/table/tbody/tr/td[1]/table[2]/tbody/tr/td[2]/table/tbody/tr[1]/td/input[2]')
+
+            choosejs='document.getElementById("id2").style.display="";'
+            driver.execute_script(choosejs)
+            js ='document.getElementById("seczjh").getElementsByTagName("param")'
+            driver.execute_script(js)
+            username_input = driver.find_element_by_xpath('//*[@id="zjh"]')
+            usernames=driver.find_element_by_xpath('//*[@id="name"]')
+
+            password_input = driver.find_element_by_xpath('//*[@id="password"]')
+            vc_input = driver.find_element_by_xpath('//*[@id="captcha"]')
+
+            # 证件号
+            # username_input.clear()
+            # username_input.send_keys(id_card)
+
+            # 姓名
+            usernames.clear()
+            usernames.send_keys(user_name)
+
+            # 密码
+            password_input.clear()
+            password_input.send_keys(password)
+
+            # 验证码
+            vc_input.clear()
+            vc_input.send_keys(vc)
+
+            # 登录
+            driver.execute_script("doLogin()")
+            # time.sleep(5)
+
+            if driver.current_url.startswith('https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp'):
+                raise InvalidParamsError('登录失败，请重新登录！')
 
 
     def _unit_fetch(self):
@@ -125,5 +205,6 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    client = TaskTestClient(Task(SessionData()))
+    meta = {'证件号': '440106198003100923','姓名':'王碧君', '密码': '800918'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
