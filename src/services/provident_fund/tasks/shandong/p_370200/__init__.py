@@ -1,3 +1,5 @@
+import json
+import time
 from bs4 import BeautifulSoup
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
@@ -5,8 +7,9 @@ from services.commons import AbsFetchTask
 
 LOGIN_URL = 'http://219.147.7.52:89/Controller/login.ashx'
 VC_URL='http://219.147.7.52:89/Controller/Image.aspx'
-INFO_URL='http://www.cqgjj.cn/Member/gr/gjjyecx.aspx'
-MINGXI_URL='http://www.cqgjj.cn/Member/gr/gjjmxcx.aspx'
+INFO_URL='http://219.147.7.52:89/Controller/GR/gjcx/gjjzlcx.ashx'
+ENTER_URL='http://219.147.7.52:89/Controller/GR/gjcx/dwjbxx.ashx'
+MINGXI_URL='http://219.147.7.52:89/Controller/GR/gjcx/gjcx.ashx'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="青岛",
@@ -67,14 +70,13 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data)
                 soup = BeautifulSoup(resp.content, 'html.parser')
-
-                return_message = soup.find('input', {'name': 'return_message'})["value"]
-
-                if return_message:
-                    raise InvalidParamsError(return_message)
-                else:
+                successinfo=json.loads(soup.text)
+                if successinfo['success']:
                     print("登录成功！")
                     self.html = str(resp.content, 'gbk')
+                else:
+                    return_message = successinfo['msg']
+                    raise InvalidParamsError(return_message)
 
                 self.result_key = params.get('身份证号')
                 # 保存到meta
@@ -94,7 +96,109 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-            # TODO: 执行任务，如果没有登录，则raise PermissionError
+            # 基本信息
+            resp = self.s.get(INFO_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            info = json.loads(soup.text)
+            data = self.result_data
+            data['baseInfo'] = {
+                '城市名称': '青岛',
+                '城市编号': '370200',
+                '证件号': info['sfz'],
+                '证件类型': '身份证',
+                '个人账号':info['khh'],
+                '姓名':info['hm'],
+                '帐户状态': info['zt'],
+                '手机号': info['sjhm'],
+                '开户日期': info['khrq'].replace('-',''),
+                '月应缴额': info['gze'],
+                '单位缴存比例': info['dwjcbl'],
+                '个人缴存比例': info['grjcbl'],
+                '当前余额': info['zhye'],
+                '联名卡号': info['kh'],
+                '联名卡发卡行': info['hb'],
+                '联名卡登记日期': info['djrq'],
+                '单位月缴存额': info['dwyhjje'],
+                '个人月缴存额': info['gryhjje'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+            }
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            self.result_identity['target_id'] = data['baseInfo']['证件号']
+            self.result_identity['status'] = data['baseInfo']['帐户状态']
+
+            resp = self.s.get(ENTER_URL)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            enterinfo = json.loads(soup.text)
+            data['companyList']=[]
+            entdic={
+                "单位名称": enterinfo['hm'],
+                "单位编号": enterinfo['khh'],
+                "单位地址": enterinfo['dz'],
+                "经办部门": enterinfo['jbbm'],
+                "所在市区": enterinfo['szqs'],
+                "成立日期": enterinfo['clrq'],
+                "组织机构代码": enterinfo['zzdm'],
+                "单位性质": enterinfo['dwxz'],
+                "营业执照编号": enterinfo['yyzz'],
+                "法人资格": enterinfo['frzg'],
+                "法人代表": enterinfo['frdb'],
+                "发薪日": enterinfo['fxrq'],
+                "主管单位": enterinfo['zgdw'],
+                "单位传真": enterinfo['cz'],
+                "单位邮编": enterinfo['yb']
+            }
+            data['companyList'].append(entdic)
+            #明细
+            datas={
+                'dt':time.time() * 1000,
+                'm': 'grjcmx',
+                'start': '1900-01-01',
+                'end':time.strftime("%Y-%m-%d", time.localtime()),
+                'page': '1',
+                'rows': '20000',
+                'sort': 'csrq',
+                'order': 'desc'
+            }
+            resp = self.s.post(MINGXI_URL,data=datas)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            mingxiinfo = json.loads(soup.text)
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            for i in range(0,int(mingxiinfo['total'])):
+                mxdic=mingxiinfo['rows'][i]
+                arr = []
+                dic = {
+                    '时间': mxdic['csrq'],
+                    '单位名称': mxdic['hm'],
+                    '支出': 0,
+                    '收入':str(float(mxdic['grje'])+float(mxdic['dwje'])) ,
+                    '汇缴年月': mxdic['ssny'],
+                    '余额': 0,
+                    '类型': mxdic['jjyyname'],
+                    '单据状态':  mxdic['ztname'],
+                    '单位金额': mxdic['dwje'],
+                    '个人金额': mxdic['grje'],
+                    '结算方式': mxdic['jslxname']
+                }
+                times = mxdic['csrq'][:7].replace('-', '')
+                if years != times[:4]:
+                    years = times[:4]
+                    data['detail']['data'][years] = {}
+                    if months != times[-2:]:
+                        months = times[-2:]
+                        data['detail']['data'][years][months] = {}
+                else:
+                    if months != times[-2:]:
+                        months = times[-2:]
+                        data['detail']['data'][years][months] = {}
+                    else:
+                        arr = data['detail']['data'][years][months]
+                arr.append(dic)
+                data['detail']['data'][years][months] = arr
+                print(arr)
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)

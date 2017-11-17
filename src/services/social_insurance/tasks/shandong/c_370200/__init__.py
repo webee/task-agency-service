@@ -92,7 +92,7 @@ class Task(AbsFetchTask):
                  ))
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 if len(soup.text)>0:
-                    raise Exception(soup.text)
+                    raise InvalidParamsError(soup.text)
                 else:
                     m = hashlib.md5()
                     m.update(password.encode(encoding='utf-8'))
