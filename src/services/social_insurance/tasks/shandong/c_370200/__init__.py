@@ -17,6 +17,7 @@ OLDQuery_URL='http://221.215.38.136/grcx/work/m01/f1203/oldQuery.action'
 medicalQuery_URL='http://221.215.38.136/grcx/work/m01/f1204/medicalQuery.action'
 unemployQuery_URL='http://221.215.38.136/grcx/work/m01/f1205/unemployQuery.action'
 STATUS_URL='http://221.215.38.136/grcx/work/m01/f1102/insuranceQuery.action'
+PASS_URl='http://221.215.38.136/grcx/pages/passwordReset/passwordReset.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="青岛",
@@ -107,13 +108,15 @@ class Task(AbsFetchTask):
                         password=hashpsw,
                         kc02flag=''
                     ))
-                    soup = BeautifulSoup(resp.content, 'html.parser')
-
-                    if soup.select('.text3'):
-                        return_message=soup.select('.text3')[0].text
-                        raise InvalidParamsError(return_message)
+                    if resp.url==PASS_URl:
+                        raise InvalidParamsError('请登录官网修改密码 ！说明:1、为保证信息安全,密码不能为个人编号。2、密码长度需大于6位小于18位。')
                     else:
-                        print("登录成功！")
+                        soup = BeautifulSoup(resp.content, 'html.parser')
+                        if soup.select('.text3'):
+                            return_message=soup.select('.text3')[0].text
+                            raise InvalidParamsError(return_message)
+                        else:
+                            print("登录成功！")
 
                 self.result_key = id_num
                 self.result_meta['身份证号'] = id_num
@@ -138,6 +141,9 @@ class Task(AbsFetchTask):
             resp=self.s.get(BASEINFO_URl)
             soup=BeautifulSoup(resp.content,'html.parser')
             zkindex=soup.select('select')[0]['value']
+            if zkindex:
+                zkindex=soup.find_all('option')[int(zkindex)].text
+
             data['baseInfo']={
                 '个人编号' : soup.select('input')[0]['value'],
                 '姓名': soup.select('input')[1]['value'],
@@ -148,7 +154,7 @@ class Task(AbsFetchTask):
                 '人员状态': soup.select('input')[6]['value'],
                 '民 族': soup.select('input')[7]['value'],
                 '特殊工种': soup.select('input')[8]['value'],
-                '制卡状态': soup.find_all('option')[int(zkindex)].text,
+                '制卡状态':zkindex ,
                 '发卡银行': soup.select('input')[9]['value'],
                 '银行地址': soup.select('input')[10]['value'],
                 '联系电话': soup.select('input')[11]['value'],
@@ -357,3 +363,5 @@ if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task())
     client.run()
+
+#修改密码账号    370682199602031616   u26193005

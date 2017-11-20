@@ -442,12 +442,12 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'用户名': 'lishaofeng1989', '密码': 'Li8880165'}
+    meta = {'用户名': 'lmc13828893775', '密码': 'Luo123465'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
     '''有效账号'''
     #'用户名': 'xiaolan0612', '密码': 'Xiaolan0612''用户名': 'lmc13828893775', '密码': 'Luo123465'
     #'用户名':'keguangping'， 密码：'Kegp850907' '用户名': 'Xuxiayu', '密码': 'Xuxiayu143'
-    #'用户名': 'ligang860119', '密码': 'ligangL860'
+    #'用户名': 'ligang860119', '密码': 'ligangL860' 用户名': 'lishaofeng1989', '密码': 'Li8880165'
     #'用户名': 'gaoyingen', '密码': 'Gao1831850'

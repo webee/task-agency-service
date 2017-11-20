@@ -11,29 +11,6 @@ class Task(AbsFetchTask):
         <li>如若查询服务密码，可拨打服务热线12329修改。</li>""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
-
-    def _prepare(self):
-        """恢复状态，初始化结果"""
-        super()._prepare()
-        # state
-        # state: dict = self.state
-        # TODO: restore from state
-
-        # result
-        # result: dict = self.result
-        # TODO: restore from result
-
-    def _update_session_data(self):
-        """保存任务状态"""
-        super()._update_session_data()
-        # state
-        # state: dict = self.state
-        # TODO: update state
-
-        # result
-        # result: dict = self.result
-        # TODO: update temp result
-
     def _get_common_headers(self):
         return {}
 
@@ -90,7 +67,9 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    client = TaskTestClient(Task(SessionData()))
+
+    meta = {'账号': '6222108326064250','密码': '786042'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #联名卡登录 ：[{'账号': '6222803811824115177', '密码': '117173'}] [{'账号': '6222108326064250', '密码': '786042'}]
 
