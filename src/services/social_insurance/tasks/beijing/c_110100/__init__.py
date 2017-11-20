@@ -123,14 +123,14 @@ class Task(AbsFetchTask):
                 if resp.url != 'http://www.bjrbj.gov.cn/csibiz/indinfo/index.jsp':
                     data = BeautifulSoup(resp.content, "html.parser")
                     errormsg = data.findAll("table")[3].findAll("font")[0].text.replace("\r", "").replace("\n", "").replace("\t", "")
-                    raise InvalidParamsError(errormsg)
+                    raise InvalidParamsError(errormsg + "ERROR_URL:"+resp.url)
 
                 self.result['key'] = j_username
                 self.result['meta'] = {
                     '身份证编号': j_username,
                     '密码': j_password
                 }
-                return
+                returnS
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
             except Exception as e:

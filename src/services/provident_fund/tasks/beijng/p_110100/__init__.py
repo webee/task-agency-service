@@ -229,6 +229,14 @@ class Task(AbsFetchTask):
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             self.g.current_url = driver.current_url
 
+            # 部分登录页面可登录进去但是密码不安全提示
+            soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
+            companyList = soup.findAll("table", {"id": "new-mytable"})
+            error = soup.find("span", {"class": "tittle1"})
+            if companyList.__len__() <= 0 and error:
+                errorInfo = error.text.replace("\n", "")
+                raise InvalidParamsError(errorInfo)
+
     def _unit_fetch(self):
         try:
             # 初始化抓取信息
@@ -348,9 +356,7 @@ class Task(AbsFetchTask):
                                                 })
                         except:
                             pass
-
                         i = i + 1
-            detail_tag = result.findAll("table", {"id": "tab-style"})
             self.result_identity.update({
                 'task_name': self.task_info['city_name'],
                 'target_name': name,
