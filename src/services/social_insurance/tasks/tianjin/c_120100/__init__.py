@@ -132,15 +132,15 @@ class Task(AbsFetchTask):
                     'captchaWord': vc
                 }
                 resp = self.s.post(LOGIN_URL, data=data)
-                if resp.status_code != 200:
-                    raise InvalidParamsError("登录失败")
-                if resp.url.startswith(LOGIN_PAGE_URL + '?error'):
-                    soup = BeautifulSoup(resp.content, 'html.parser')
-                    divs = soup.select('body > div.alert.alert-danger')
-                    err_msg = "登录失败"
-                    if divs and len(divs) > 0:
-                        err_msg = divs[0].text
-                    raise InvalidParamsError(err_msg)
+                # if resp.text == "":
+                #     raise InvalidParamsError("登录失败")
+                # if resp.url.startswith(LOGIN_PAGE_URL + '?error'):
+                #     soup = BeautifulSoup(resp.content, 'html.parser')
+                #     divs = soup.select('body > div.alert.alert-danger')
+                #     err_msg = "登录失败"
+                #     if divs and len(divs) > 0:
+                #         err_msg = divs[0].text
+                #     raise InvalidParamsError(err_msg)
 
                 # 保存到meta
                 self.result_meta['用户名'] = params.get('用户名')
