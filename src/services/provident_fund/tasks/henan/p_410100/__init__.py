@@ -119,46 +119,50 @@ class Task(AbsFetchTask):
                 self.result_meta['用户姓名'] = account_name
                 self.result_meta['密码']=account_pass
 
+                status=""
                 soup = BeautifulSoup(resp.content, 'html.parser')
-                datas = soup.findAll('div', {'class': 'cx'})[0]
-                data = datas.findAll('p')
+                if soup.find('div', {'class': 'cx'})!=None:
+                    datas = soup.findAll('div', {'class': 'cx'})[0]
+                    data = datas.findAll('p')
+                    status=data[10].text.split('：')[1]
 
-                self.result['data']['baseInfo'] = {
-                    '姓名': data[3].text.split('：')[1],
-                    '证件号': self.result_meta['身份证号'],
-                    '证件类型':'身份证',
-                    '公积金账号': data[0].text.split('：')[1],
-                    '开户日期': data[2].text.split('：')[1],
-                    '缴存基数': data[4].text.split('：')[1],
-                    '月应缴额': data[5].text.split('：')[1],
-                    '个人缴存比例': data[6].text.split('：')[1],
-                    '单位缴存比例': data[7].text.split('：')[1],
-                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                    '城市名称': '郑州市',
-                    '城市编号': '410100'
-                }
+                    self.result['data']['baseInfo'] = {
+                        '姓名': data[3].text.split('：')[1],
+                        '证件号': self.result_meta['身份证号'],
+                        '证件类型':'身份证',
+                        '公积金账号': data[0].text.split('：')[1],
+                        '开户日期': data[2].text.split('：')[1],
+                        '缴存基数': data[4].text.split('：')[1],
+                        '月应缴额': data[5].text.split('：')[1],
+                        '个人缴存比例': data[6].text.split('：')[1],
+                        '单位缴存比例': data[7].text.split('：')[1],
+                        '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                        '城市名称': '郑州市',
+                        '城市编号': '410100'
+                    }
 
-                self.result_data['companyList'].append({
-                    "单位名称": data[1].text.split('：')[1],
-                    "单位登记号": "",
-                    "所属管理部编号": "",
-                    "所属管理部名称": "",
-                    "当前余额": float(data[8].text.split('：')[1]),
-                    "帐户状态": data[10].text.split('：')[1],
-                    "当年缴存金额": "",
-                    "当年提取金额": "",
-                    "上年结转余额": "",
-                    "最后业务日期": data[9].text.split('：')[1],
-                    "转出金额": ""
-                })
-
+                    self.result_data['companyList'].append({
+                        "单位名称": data[1].text.split('：')[1],
+                        "单位登记号": "",
+                        "所属管理部编号": "",
+                        "所属管理部名称": "",
+                        "当前余额": float(data[8].text.split('：')[1]),
+                        "帐户状态": data[10].text.split('：')[1],
+                        "当年缴存金额": "",
+                        "当年提取金额": "",
+                        "上年结转余额": "",
+                        "最后业务日期": data[9].text.split('：')[1],
+                        "转出金额": ""
+                    })
+                else:
+                    raise InvalidParamsError("登录失败，请检查账号和密码！")
 
                 # identity 信息
                 self.result['identity'] = {
                     "task_name": "郑州",
                     "target_name": self.result_meta['用户姓名'],
                     "target_id": self.result_meta['身份证号'],
-                    "status":  data[10].text.split('：')[1]
+                    "status":  status
                 }
 
                 return
