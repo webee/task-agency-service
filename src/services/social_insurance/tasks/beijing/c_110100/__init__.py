@@ -130,7 +130,7 @@ class Task(AbsFetchTask):
                     '身份证编号': j_username,
                     '密码': j_password
                 }
-                returnS
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
             except Exception as e:
