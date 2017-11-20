@@ -190,6 +190,8 @@ class Task(AbsFetchTask):
             arrstr = []
             years = ''
             months = ''
+            maxtime=''
+            y=1
             for row in tableinfo:
                 arr = []
                 cell = [i.text for i in row.find_all('td')]
@@ -215,6 +217,9 @@ class Task(AbsFetchTask):
                         '缴费单位': '',
                         '到账情况': cell[3]
                     }
+                    if y==1:
+                        maxtime=cell[0]
+                    y=y+1
                     arr.append(dicts)
                     self.result_data['old_age']['data'][years][months] = arr
             # print(arrstr)
@@ -222,13 +227,13 @@ class Task(AbsFetchTask):
             nowyears = time.strftime("%Y", time.localtime())
             jfscolder = int(arrstr[10].replace('至本年末实际缴费月数：', ''))
             ljjfolder = float(arrstr[9].replace('至本年末账户累计储存额：', ''))
-            for k, v in self.result_data['old_age']['data'][nowyears].items():
-                jfscolder = jfscolder + 1
-                ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+            if nowyears in self.result_data['old_age']['data'].keys():
+                for k, v in self.result_data['old_age']['data'][nowyears].items():
+                    jfscolder = jfscolder + 1
+                    ljjfolder = ljjfolder + float(v[0]['个人缴费'])
             self.result_data["baseInfo"].setdefault('缴费时长', jfscolder)
             self.result_data["baseInfo"].setdefault('个人养老累计缴费', ljjfolder)
-            self.result_data["baseInfo"].setdefault('最近缴费时间',
-                                                    nowyears + max(self.result_data['old_age']['data'][nowyears]))
+            self.result_data["baseInfo"].setdefault('最近缴费时间',maxtime)
             ksjfsj = min(self.result_data['old_age']['data'])
             self.result_data["baseInfo"].setdefault('开始缴费时间', ksjfsj + min(self.result_data['old_age']['data'][ksjfsj]))
             cbzt = arrstr[3].replace('参保状态：', '')
@@ -282,8 +287,9 @@ class Task(AbsFetchTask):
             # print(arrstr)
             nowyears = time.strftime("%Y", time.localtime())
             ljjfolder = float(arrstr[11].replace('个人账户余额：', ''))
-            for k, v in self.result_data['old_age']['data'][nowyears].items():
-                ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+            if nowyears in self.result_data['old_age']['data'].keys():
+                for k, v in self.result_data['old_age']['data'][nowyears].items():
+                    ljjfolder = ljjfolder + float(v[0]['个人缴费'])
             self.result_data["baseInfo"].setdefault('个人医疗累计缴费', ljjfolder)
             cbzt = arrstr[4].replace('参保状态：', '')
             if cbzt == '参保缴费':
@@ -414,3 +420,4 @@ if __name__ == "__main__":
     meta = {'身份证号': '330227198906162713', '密码': '362415'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
+#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984
