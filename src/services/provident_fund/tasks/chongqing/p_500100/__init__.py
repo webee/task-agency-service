@@ -250,16 +250,16 @@ class Task(AbsFetchTask):
             data['companyList'] = []
             enterdic = {
                 "单位名称": data['baseInfo']['单位名称'],
-                "单位登记号": "",
-                "所属管理部编号": "",
-                "所属管理部名称": "",
+                # "单位登记号": "",
+                # "所属管理部编号": "",
+                # "所属管理部名称": "",
                 "当前余额": data['baseInfo']['当前余额'],
                 "帐户状态": data['baseInfo']['帐户状态'],
                 #"当年缴存金额": 0,
-                "当年提取金额": 0,
+                # "当年提取金额": 0,
                 #"上年结转余额": 0,
-                "最后业务日期": maxtime,
-                "转出金额": 0
+                "最后业务日期": maxtime
+                # "转出金额": 0
             }
             data['companyList'].append(enterdic)
             return
