@@ -145,7 +145,9 @@ class Task(AbsFetchTask):
                 "发薪日": enterinfo['fxrq'],
                 "主管单位": enterinfo['zgdw'],
                 "单位传真": enterinfo['cz'],
-                "单位邮编": enterinfo['yb']
+                "单位邮编": enterinfo['yb'],
+                '帐户状态': info['zt'],
+                '当前余额': info['zhye']
             }
             data['companyList'].append(entdic)
             #明细
