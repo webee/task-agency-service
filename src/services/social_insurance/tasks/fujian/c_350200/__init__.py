@@ -168,27 +168,31 @@ class Task(AbsFetchTask):
 
             for b in range(len(sEI)):
                 td2 = sEI[b].findAll('td')
-                urlE = "https://app.xmhrss.gov.cn/UCenter/" + sEI[b].find('a')['href']
-                dateE = BeautifulSoup(self.s.get(urlE).content, 'html.parser').findAll("td")
-                years = re.sub('\s', '', dateE[14].text)[0:4]
-                months = re.sub('\s', '', dateE[14].text)[4:6]
-                basedataE.setdefault(years, {})
-                basedataE[years].setdefault(months, [])
+                if len(td2)>1:
+                    urlE = "https://app.xmhrss.gov.cn/UCenter/" + sEI[b].find('a')['href']
+                    dateE = BeautifulSoup(self.s.get(urlE).content, 'html.parser').findAll("td")
+                    years = re.sub('\s', '', dateE[14].text)[0:4]
+                    months = re.sub('\s', '', dateE[14].text)[4:6]
+                    basedataE.setdefault(years, {})
+                    basedataE[years].setdefault(months, [])
 
-                modelE = {
-                    '缴费时间': re.sub('\s', '', dateE[14].text),
-                    '缴费类型': re.sub('\s', '', dateE[10].text),
-                    '缴费基数': re.sub('\s', '', dateE[34].text),
-                    '公司缴费': float(re.sub('\s', '', dateE[28].text)),
-                    '个人缴费': float(re.sub('\s', '', dateE[32].text)),
-                    '缴费单位': re.sub('\s', '', dateE[4].text),
-                    '单位划入帐户': float(re.sub('\s', '', dateE[38].text)),
-                    '个人划入帐户': float(re.sub('\s', '', dateE[40].text))
-                }
+                    modelE = {
+                        '缴费时间': re.sub('\s', '', dateE[14].text),
+                        '缴费类型': re.sub('\s', '', dateE[10].text),
+                        '缴费基数': re.sub('\s', '', dateE[34].text),
+                        '公司缴费': float(re.sub('\s', '', dateE[28].text)),
+                        '个人缴费': float(re.sub('\s', '', dateE[32].text)),
+                        '缴费单位': re.sub('\s', '', dateE[4].text),
+                        '单位划入帐户': float(re.sub('\s', '', dateE[38].text)),
+                        '个人划入帐户': float(re.sub('\s', '', dateE[40].text))
+                    }
 
-                if ("已缴费" in re.sub('\s', '', dateE[0].text)):
-                    peroldTotal += float(re.sub('\s', '', dateE[32].text))
-                basedataE[years][months].append(modelE)
+                    if ("已缴费" in re.sub('\s', '', dateE[0].text)):
+                        peroldTotal += float(re.sub('\s', '', dateE[32].text))
+                    basedataE[years][months].append(modelE)
+                else:
+                    raise TaskNotImplementedError("未查询到数据！")
+
 
             self.result['data']["medical_care"] = {"data": {}}
             basedataH = self.result['data']["medical_care"]["data"]
