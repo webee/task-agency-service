@@ -1,4 +1,4 @@
-from services.service import SessionData
+import re
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
@@ -25,8 +25,18 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '账号' in params, '缺少账号'
-        assert '密码' in params, '缺少密码'
+        assert 'other' in params, '请选择登录方式'
+        if params["other"] == "1":
+            assert 'bh3' in params, '缺少个人账号'
+            assert 'mm3' in params, '缺少密码'
+        elif params["other"] == "2":
+            assert 'bh4' in params, '缺少身份证号码'
+            assert 'mm4' in params, '缺少密码'
+            r = r'(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)'
+            assert re.findall(r, params['bh1']), '请输入有效的身份证编号'
+        elif params["other"] == "3":
+            assert 'bh5' in params, '缺少缺少联名卡号'
+            assert 'mm5' in params, '缺少密码'
         # other check
         账号 = params['账号']
         密码 = params['密码']
@@ -53,8 +63,16 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input', placeholder='账号', value=params.get('账号', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='other',
+                 name='[{"tabName":"个人账号","tabCode":"1","isEnable":"1"},{"tabName":"身份证号","tabCode":"2","isEnable":"1"},{"tabName":"联名卡号","tabCode":"3","isEnable":"1"}]',
+                 cls='tab', value=params.get('类型Code', '')),
+            dict(key='bh3', name='个人账号', cls='input', placeholder='个人账号', value=params.get('个人账号', '')),
+            dict(key='mm3', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='bh4', name='身份证号', cls='input', tabCode="3", value=params.get('账号', '')),
+            dict(key='mm4', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),
+            dict(key='bh5', name='联名卡号', cls='input', tabCode="1", value=params.get('账号', '')),
+            dict(key='mm5', name='密码', cls='input:password', tabCode="1", value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="[3,1]", value=''),
         ], err_msg)
 
     def _unit_fetch(self):
