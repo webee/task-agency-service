@@ -181,7 +181,7 @@ class Task(AbsFetchTask):
             resp = self.s.post(url)
             soup = BeautifulSoup(str(resp.content, 'utf-8'), "html.parser")
             return soup
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 养老
@@ -260,7 +260,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -298,7 +298,7 @@ class Task(AbsFetchTask):
                                 data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗
@@ -377,7 +377,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -415,7 +415,7 @@ class Task(AbsFetchTask):
                                 data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 工伤
@@ -490,7 +490,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -528,7 +528,7 @@ class Task(AbsFetchTask):
                                 data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 生育
@@ -602,7 +602,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -640,7 +640,7 @@ class Task(AbsFetchTask):
                                 data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 失业
@@ -713,7 +713,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -751,7 +751,7 @@ class Task(AbsFetchTask):
                                 data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 缴费明细main方法
@@ -796,7 +796,7 @@ class Task(AbsFetchTask):
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
 
