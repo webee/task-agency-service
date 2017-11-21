@@ -1,6 +1,6 @@
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
-from services.errors import InvalidParamsError, TaskNotImplementedError
+from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError
 from services.commons import AbsFetchTask
 
 from bs4 import BeautifulSoup
@@ -246,36 +246,46 @@ class Task(AbsFetchTask):
             if "请明天再查" in a:
                 raise TaskNotAvailableError("您今天的缴费历史查询已经达到5次，请明天再查。")
 
-            sidata = yiliao.find('table', {'id': 'tableDataList'})
-            si_status = self._to_replace(sidata.findAll("tr")[1].findAll("td")[10].text)[0:2]  # 缴存状态
-            si_com = self._to_replace(sidata.findAll("tr")[2].findAll("td")[3].text)  # 缴费单位
-            yiliaoData = sidata.findAll("tr", {'temp': '职工社会医疗保险'})
-
             self.result_data['medical_care'] = {"data": {}}
             dataBaseH = self.result_data['medical_care']["data"]
             modelH = {}
-            for a in range(len(yiliaoData)):
-                td = yiliaoData[a].findAll("td")
-                permedicalTotal += float(re.findall(r"\d+\.?\d*", td[7].text)[0])
 
-                yearH = self._to_replace(td[1].text)[0:4]
-                monthH = self._to_replace(td[1].text)[4:6]
-                rangNum = int(self._to_replace(td[3].text))
-                HmoneyCount += rangNum
-                for a1 in range(-1, rangNum - 1):
-                    nowtime = datetime.date(int(yearH) + (int(monthH) + a1) // 12, (int(monthH) + a1) % 12 + 1,1).strftime('%Y%m')
-                    modelH = {
-                        '缴费单位': si_com,
-                        '缴费类型': si_status,
-                        '缴费时间': nowtime,
-                        '缴费基数': self._to_replace(td[9].text),
-                        '政府资助': re.findall(r"\d+\.?\d*", td[8].text)[0],
-                        '公司缴费': float(re.findall(r"\d+\.?\d*", td[6].text)[0]) / rangNum,
-                        '个人缴费': float(re.findall(r"\d+\.?\d*", td[7].text)[0]) / rangNum
-                    }
-                    dataBaseH.setdefault(nowtime[0:4], {})
-                    dataBaseH[nowtime[0:4]].setdefault(nowtime[4:6], [])
-                    dataBaseH[nowtime[0:4]][nowtime[4:6]].append(modelH)
+            si_status=""
+            sidata = yiliao.find('table', {'id': 'tableDataList'})
+            if 'alert' not in sidata.text:
+                if len(sidata.findAll("tr",{'class':'table_white_data'}))>1:
+                    si_status = self._to_replace(sidata.findAll("tr")[1].findAll("td")[10].text)[0:2]  # 缴存状态
+                    si_com = self._to_replace(sidata.findAll("tr")[2].findAll("td")[3].text)  # 缴费单位
+                    yiliaoData = sidata.findAll("tr", {'temp': '职工社会医疗保险'})
+
+                    for a in range(len(yiliaoData)):
+                        td = yiliaoData[a].findAll("td")
+                        permedicalTotal += float(re.findall(r"\d+\.?\d*", td[7].text)[0])
+
+                        yearH = self._to_replace(td[1].text)[0:4]
+                        monthH = self._to_replace(td[1].text)[4:6]
+                        rangNum = int(self._to_replace(td[3].text))
+                        HmoneyCount += rangNum
+                        for a1 in range(-1, rangNum - 1):
+                            nowtime = datetime.date(int(yearH) + (int(monthH) + a1) // 12, (int(monthH) + a1) % 12 + 1,1).strftime('%Y%m')
+                            modelH = {
+                                '缴费单位': si_com,
+                                '缴费类型': si_status,
+                                '缴费时间': nowtime,
+                                '缴费基数': self._to_replace(td[9].text),
+                                '政府资助': re.findall(r"\d+\.?\d*", td[8].text)[0],
+                                '公司缴费': float(re.findall(r"\d+\.?\d*", td[6].text)[0]) / rangNum,
+                                '个人缴费': float(re.findall(r"\d+\.?\d*", td[7].text)[0]) / rangNum
+                            }
+                            dataBaseH.setdefault(nowtime[0:4], {})
+                            dataBaseH[nowtime[0:4]].setdefault(nowtime[4:6], [])
+                            dataBaseH[nowtime[0:4]][nowtime[4:6]].append(modelH)
+                else:
+                    errormsg=sidata.findAll("tr",{'class':'table_white_data'})[0].text.split('！')[0].replace('\n','')
+                    raise TaskNotImplementedError(errormsg)
+            else:
+                errormsg2=sidata.text.split('(')[1].split(')')[0]
+                raise InvalidConditionError(errormsg2)
 
 
             # 养老保险明细
@@ -471,7 +481,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '522526197612020018', '密码': 'xiao687400'}
+    meta = {'账号': '430422199101085412', '密码': '3003847980'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
@@ -485,3 +495,5 @@ if __name__ == '__main__':
     # 522526197612020018   xiao687400
 
     # 360722199010034554   LI3003287730
+
+    # 522526197612020018   xiao687400
