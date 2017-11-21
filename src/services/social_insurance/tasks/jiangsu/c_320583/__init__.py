@@ -42,17 +42,17 @@ class Task(AbsFetchTask):
         # assert 'vc' in params, '缺少验证码'
         # other check
         身份证号 = params['身份证号']
-        密码 = params['密码']
+        社保编号 = params['社保编号']
 
         if len(身份证号) == 0:
             raise InvalidParamsError('身份证号为空，请输入身份证号')
         elif len(身份证号) < 15:
             raise InvalidParamsError('身份证号不正确，请重新输入')
 
-        if len(密码) == 0:
-            raise InvalidParamsError('密码为空，请输入密码！')
-        elif len(密码) < 6:
-            raise InvalidParamsError('密码不正确，请重新输入！')
+        if len(社保编号) == 0:
+            raise InvalidParamsError('社保编号为空，请输入社保编号！')
+        elif len(社保编号) < 6:
+            raise InvalidParamsError('社保编号不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
