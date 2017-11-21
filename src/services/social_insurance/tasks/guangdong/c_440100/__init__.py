@@ -253,7 +253,7 @@ class Task(AbsFetchTask):
             si_status=""
             sidata = yiliao.find('table', {'id': 'tableDataList'})
             if 'alert' not in sidata.text:
-                if len(sidata.findAll("tr",{'class':'table_white_data'}))>1:
+                if len(sidata.findAll("tr"))>1:
                     si_status = self._to_replace(sidata.findAll("tr")[1].findAll("td")[10].text)[0:2]  # 缴存状态
                     si_com = self._to_replace(sidata.findAll("tr")[2].findAll("td")[3].text)  # 缴费单位
                     yiliaoData = sidata.findAll("tr", {'temp': '职工社会医疗保险'})
@@ -281,11 +281,10 @@ class Task(AbsFetchTask):
                             dataBaseH[nowtime[0:4]].setdefault(nowtime[4:6], [])
                             dataBaseH[nowtime[0:4]][nowtime[4:6]].append(modelH)
                 else:
-                    errormsg=sidata.findAll("tr",{'class':'table_white_data'})[0].text.split('！')[0].replace('\n','')
-                    raise TaskNotImplementedError(errormsg)
+                    raise TaskNotImplementedError("未查询到数据！")
             else:
                 errormsg2=sidata.text.split('(')[1].split(')')[0]
-                raise InvalidConditionError(errormsg2)
+                raise TaskNotImplementedError(errormsg2)
 
 
             # 养老保险明细
@@ -295,7 +294,8 @@ class Task(AbsFetchTask):
             peroldTotal=0.0
             for b in range(len(sixian) - 3):
                 td2 = sixian[b].findAll("td")
-                peroldTotal += float(td2[5].text)
+                if(td2[5].text.strip()!=''):
+                    peroldTotal += float(td2[5].text)
 
                 yearE = td2[0].text[0:4]
                 monthE = td2[0].text[4:6]

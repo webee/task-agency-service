@@ -359,14 +359,30 @@ class Task(AbsFetchTask):
 
 
             # 五险状态
-            stype = json.loads(
-                self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/insure/" + str(s) + "").text)
+            stype = json.loads(self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/insure/" + str(s) + "").text)
+            yanglao="0"
+            yiliao="0"
+            shiye="0"
+            gongshang="0"
+            shengyu="0"
+            for wxt in range(len(stype)):
+                if stype[wxt]['insuranceCode']=="110":
+                    yanglao=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="210":
+                    shiye=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="310":
+                    yiliao=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="410":
+                    gongshang=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="510":
+                    shengyu=stype[wxt]['paymentState']
+
             social_Type = {
-                '养老': self._convert_type(stype[0]['paymentState']),
-                '医疗': self._convert_type(stype[2]['paymentState']),
-                '失业': self._convert_type(stype[1]['paymentState']),
-                '工伤': self._convert_type(stype[5]['paymentState']),
-                '生育': self._convert_type(stype[6]['paymentState'])
+                '养老': self._convert_type(yanglao),
+                '医疗': self._convert_type(yiliao),
+                '失业': self._convert_type(shiye),
+                '工伤': self._convert_type(gongshang),
+                '生育': self._convert_type(shengyu)
             }
 
 
