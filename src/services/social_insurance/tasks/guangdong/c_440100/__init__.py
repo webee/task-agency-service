@@ -297,22 +297,22 @@ class Task(AbsFetchTask):
                 if(td2[5].text.strip()!=''):
                     peroldTotal += float(td2[5].text)
 
-                yearE = td2[0].text[0:4]
-                monthE = td2[0].text[4:6]
-                rangNumE = int(td2[2].text)
-                for b1 in range(-1, rangNumE - 1):
-                    nowtime2 = datetime.date(int(yearE) + (int(monthE) + b1) // 12, (int(monthE) + b1) % 12 + 1,1).strftime('%Y%m')
-                    modelE = {
-                        '缴费单位': td2[11].text,
-                        '缴费类型': td2[12].text,
-                        '缴费时间': nowtime2,
-                        '缴费基数': td2[3].text,
-                        '公司缴费': float(td2[4].text) / rangNumE,
-                        '个人缴费': float(td2[5].text) / rangNumE
-                    }
-                    dataBaseE.setdefault(nowtime2[0:4], {})
-                    dataBaseE[nowtime2[0:4]].setdefault(nowtime2[4:6], [])
-                    dataBaseE[nowtime2[0:4]][nowtime2[4:6]].append(modelE)
+                    yearE = td2[0].text[0:4]
+                    monthE = td2[0].text[4:6]
+                    rangNumE = int(td2[2].text)
+                    for b1 in range(-1, rangNumE - 1):
+                        nowtime2 = datetime.date(int(yearE) + (int(monthE) + b1) // 12, (int(monthE) + b1) % 12 + 1,1).strftime('%Y%m')
+                        modelE = {
+                            '缴费单位': td2[11].text,
+                            '缴费类型': td2[12].text,
+                            '缴费时间': nowtime2,
+                            '缴费基数': td2[3].text,
+                            '公司缴费': float(td2[4].text) / rangNumE,
+                            '个人缴费': float(td2[5].text) / rangNumE
+                        }
+                        dataBaseE.setdefault(nowtime2[0:4], {})
+                        dataBaseE[nowtime2[0:4]].setdefault(nowtime2[4:6], [])
+                        dataBaseE[nowtime2[0:4]][nowtime2[4:6]].append(modelE)
 
 
             # 失业保险明细
@@ -321,22 +321,24 @@ class Task(AbsFetchTask):
             modelI = {}
             for c in range(len(sixian) - 3):
                 td3 = sixian[c].findAll("td")
-                yearI = td3[0].text[0:4]
-                monthI = td3[0].text[4:6]
-                rangNumI = int(td3[2].text)
-                for c1 in range(-1, rangNumI - 1):
-                    nowtime3 = datetime.date(int(yearI) + (int(monthI) + c1) // 12, (int(monthI) + c1) % 12 + 1,1).strftime('%Y%m')
-                    modelI = {
-                        '缴费单位': td3[11].text,
-                        '缴费类型': td3[12].text,
-                        '缴费时间': nowtime3,
-                        '缴费基数': td3[3].text,
-                        '公司缴费': float(td3[6].text) / rangNumI,
-                        '个人缴费': float(td3[7].text) / rangNumI
-                    }
-                    dataBaseI.setdefault(nowtime3[0:4], {})
-                    dataBaseI[nowtime3[0:4]].setdefault(nowtime3[4:6], [])
-                    dataBaseI[nowtime3[0:4]][nowtime3[4:6]].append(modelI)
+                if(td3[0].text.strip()!=""):
+                    yearI = td3[0].text[0:4]
+                    monthI = td3[0].text[4:6]
+                    rangNumI = int(td3[2].text)
+                    for c1 in range(-1, rangNumI - 1):
+                        nowtime3 = datetime.date(int(yearI) + (int(monthI) + c1) // 12, (int(monthI) + c1) % 12 + 1,
+                                                 1).strftime('%Y%m')
+                        modelI = {
+                            '缴费单位': td3[11].text,
+                            '缴费类型': td3[12].text,
+                            '缴费时间': nowtime3,
+                            '缴费基数': td3[3].text,
+                            '公司缴费': float(td3[6].text) / rangNumI,
+                            '个人缴费': float(td3[7].text) / rangNumI
+                        }
+                        dataBaseI.setdefault(nowtime3[0:4], {})
+                        dataBaseI[nowtime3[0:4]].setdefault(nowtime3[4:6], [])
+                        dataBaseI[nowtime3[0:4]][nowtime3[4:6]].append(modelI)
 
 
             # 工伤保险明细
@@ -345,22 +347,23 @@ class Task(AbsFetchTask):
             modelC={}
             for d in range(len(sixian) - 3):
                 td4 = sixian[d].findAll("td")
-                yearC = td4[0].text[0:4]
-                monthC = td4[0].text[4:6]
-                rangNumC = int(td4[2].text)
-                for d1 in range(-1, rangNumC - 1):
-                    nowtime4 = datetime.date(int(yearC) + (int(monthC) + d1) // 12, (int(monthC) + d1) % 12 + 1,1).strftime('%Y%m')
-                    modelC = {
-                        '缴费单位': td4[11].text,
-                        '缴费类型': td4[12].text,
-                        '缴费时间': nowtime4,
-                        '缴费基数': td4[3].text,
-                        '公司缴费': float(td4[8].text) / rangNumC,
-                        '个人缴费': '-'
-                    }
-                    dataBaseC.setdefault(nowtime4[0:4], {})
-                    dataBaseC[nowtime4[0:4]].setdefault(nowtime4[4:6], [])
-                    dataBaseC[nowtime4[0:4]][nowtime4[4:6]].append(modelC)
+                if (td4[0].text.strip() != ""):
+                    yearC = td4[0].text[0:4]
+                    monthC = td4[0].text[4:6]
+                    rangNumC = int(td4[2].text)
+                    for d1 in range(-1, rangNumC - 1):
+                        nowtime4 = datetime.date(int(yearC) + (int(monthC) + d1) // 12, (int(monthC) + d1) % 12 + 1,1).strftime('%Y%m')
+                        modelC = {
+                            '缴费单位': td4[11].text,
+                            '缴费类型': td4[12].text,
+                            '缴费时间': nowtime4,
+                            '缴费基数': td4[3].text,
+                            '公司缴费': float(td4[8].text) / rangNumC,
+                            '个人缴费': '-'
+                        }
+                        dataBaseC.setdefault(nowtime4[0:4], {})
+                        dataBaseC[nowtime4[0:4]].setdefault(nowtime4[4:6], [])
+                        dataBaseC[nowtime4[0:4]][nowtime4[4:6]].append(modelC)
 
 
             # 生育保险明细
@@ -369,22 +372,23 @@ class Task(AbsFetchTask):
             modelB = {}
             for f in range(len(sixian) - 3):
                 td5 = sixian[f].findAll("td")
-                yearB = td5[0].text[0:4]
-                monthB = td5[0].text[4:6]
-                rangNumB = int(td5[2].text)
-                for f1 in range(-1, rangNumB - 1):
-                    nowtime5 = datetime.date(int(yearB) + (int(monthB) + f1) // 12, (int(monthB) + f1) % 12 + 1,1).strftime('%Y%m')
-                    modelB = {
-                        '缴费单位': td5[11].text,
-                        '缴费类型': td5[12].text,
-                        '缴费时间': nowtime5,
-                        '缴费基数': td5[3].text,
-                        '公司缴费': float(td5[9].text) / rangNumB,
-                        '个人缴费': '-'
-                    }
-                    dataBaseB.setdefault(nowtime5[0:4], {})
-                    dataBaseB[nowtime5[0:4]].setdefault(nowtime5[4:6], [])
-                    dataBaseB[nowtime5[0:4]][nowtime5[4:6]].append(modelB)
+                if (td5[0].text.strip() != ""):
+                    yearB = td5[0].text[0:4]
+                    monthB = td5[0].text[4:6]
+                    rangNumB = int(td5[2].text)
+                    for f1 in range(-1, rangNumB - 1):
+                        nowtime5 = datetime.date(int(yearB) + (int(monthB) + f1) // 12, (int(monthB) + f1) % 12 + 1,1).strftime('%Y%m')
+                        modelB = {
+                            '缴费单位': td5[11].text,
+                            '缴费类型': td5[12].text,
+                            '缴费时间': nowtime5,
+                            '缴费基数': td5[3].text,
+                            '公司缴费': float(td5[9].text) / rangNumB,
+                            '个人缴费': '-'
+                        }
+                        dataBaseB.setdefault(nowtime5[0:4], {})
+                        dataBaseB[nowtime5[0:4]].setdefault(nowtime5[4:6], [])
+                        dataBaseB[nowtime5[0:4]][nowtime5[4:6]].append(modelB)
 
 
             # 大病保险明细
@@ -396,32 +400,35 @@ class Task(AbsFetchTask):
             if(len(dabingData)>0):
                 for q in range(len(dabingData)):
                     td6 = dabingData[q].findAll("td")
-                    yearQ = self._to_replace(td[1].text)[0:4]
-                    monthQ = self._to_replace(td[1].text)[4:6]
-                    rangNumQ = int(self._to_replace(td[3].text))
+                    if (td6[0].text.strip() != ""):
+                        yearQ = self._to_replace(td[1].text)[0:4]
+                        monthQ = self._to_replace(td[1].text)[4:6]
+                        rangNumQ = int(self._to_replace(td[3].text))
 
-                    for a1 in range(-1, rangNumQ - 1):
-                        nowtime6 = datetime.date(int(yearQ) + (int(monthQ) + a1) // 12, (int(monthQ) + a1) % 12 + 1,1).strftime('%Y%m')
-                        modelQ = {
-                            '缴费单位': si_com,
-                            '缴费类型': si_status,
-                            '缴费时间': nowtime6,
-                            '缴费基数': self._to_replace(td6[9].text),
-                            '政府资助': re.findall(r"\d+\.?\d*", td6[8].text)[0],
-                            '公司缴费': float(re.findall(r"\d+\.?\d*", td6[6].text)[0]) / rangNum,
-                            '个人缴费': float(re.findall(r"\d+\.?\d*", td6[7].text)[0]) / rangNum
-                        }
-                        dataBaseQ.setdefault(nowtime6[0:4], {})
-                        dataBaseQ[nowtime6[0:4]].setdefault(nowtime6[4:6], [])
-                        dataBaseQ[nowtime6[0:4]][nowtime6[4:6]].append(modelQ)
+                        for a1 in range(-1, rangNumQ - 1):
+                            nowtime6 = datetime.date(int(yearQ) + (int(monthQ) + a1) // 12, (int(monthQ) + a1) % 12 + 1,1).strftime('%Y%m')
+                            modelQ = {
+                                '缴费单位': si_com,
+                                '缴费类型': si_status,
+                                '缴费时间': nowtime6,
+                                '缴费基数': self._to_replace(td6[9].text),
+                                '政府资助': re.findall(r"\d+\.?\d*", td6[8].text)[0],
+                                '公司缴费': float(re.findall(r"\d+\.?\d*", td6[6].text)[0]) / rangNum,
+                                '个人缴费': float(re.findall(r"\d+\.?\d*", td6[7].text)[0]) / rangNum
+                            }
+                            dataBaseQ.setdefault(nowtime6[0:4], {})
+                            dataBaseQ[nowtime6[0:4]].setdefault(nowtime6[4:6], [])
+                            dataBaseQ[nowtime6[0:4]][nowtime6[4:6]].append(modelQ)
 
-
+            sixiantype=""
+            if(len(sixian)>=4):
+                sixiantype=sixian[len(sixian)-4].findAll("td")[12].text
             social_status={
                 '医疗':si_status,
-                '养老':sixian[len(sixian)-4].findAll("td")[12].text,
-                '失业':sixian[len(sixian)-4].findAll("td")[12].text,
-                '工伤':sixian[len(sixian)-4].findAll("td")[12].text,
-                '生育':sixian[len(sixian)-4].findAll("td")[12].text
+                '养老':sixiantype,
+                '失业':sixiantype,
+                '工伤':sixiantype,
+                '生育':sixiantype
             }
 
             # 缴费时长
@@ -481,7 +488,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '430422199101085412', '密码': '3003847980'}
+    meta = {'账号': '522526197612020018', '密码': 'xiao687400'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
@@ -496,4 +503,4 @@ if __name__ == '__main__':
 
     # 360722199010034554   LI3003287730
 
-    # 522526197612020018   xiao687400
+    # 430422199101085412  3003847980
