@@ -2,11 +2,16 @@
 import time
 import requests
 from bs4 import BeautifulSoup
+from services.proxyIP import get_proxy_ip
 from services.commons import AbsFetchTask
 from services.service import AskForParamsError
 from services.webdriver import new_driver, DriverRequestsCoordinator
-from services.proxyIP import GetIpThread
+
 from services.errors import InvalidParamsError, InvalidConditionError, PreconditionNotSatisfiedError
+
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
 
 
 LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
@@ -26,7 +31,6 @@ class value_is_number(object):
 
 
 class Task(AbsFetchTask):
-    proxies = GetIpThread().getip()
     task_info = dict(
         city_name="上海",
         help="""<li>用户名：为参保人身份证号</li>
@@ -45,11 +49,19 @@ class Task(AbsFetchTask):
 
     def _prepare(self, data=None):
         super()._prepare(data)
+        self.proxy = get_proxy_ip()
+        self.s.proxies.update({"http": "http://" + self.proxy})
         self.result_data['baseInfo'] = {}
+
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/sbsjb\wzb\/Bmblist12.jpg/g')
+        proxy = webdriver.Proxy()
+        proxy.proxy_type = ProxyType.MANUAL
+        proxy.http_proxy = self.proxy
+        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('"http://www.12333sh.gov.cn/xxxx')
         return driver
@@ -62,8 +74,8 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
-        ress = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", proxies={"http": "http://" + GetIpThread().getip()}, timeout=10)
-        resp = self.s.get(VC_URL, proxies={'http': 'http://' + GetIpThread().getip()}, timeout=10)
+        ress = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", timeout=10)
+        resp = self.s.get(VC_URL, timeout=10)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
@@ -189,8 +201,7 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-
-            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp", proxies={'http': 'http://' + GetIpThread().getip()})
+            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp")
             soup = BeautifulSoup(resp.content, 'html.parser')
             # years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
