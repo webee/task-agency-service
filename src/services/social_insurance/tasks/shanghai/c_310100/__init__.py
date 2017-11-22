@@ -1,25 +1,21 @@
 # 上海  社保信息
-from services.service import SessionData
-from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
-from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError, \
-    PreconditionNotSatisfiedError
-from services.commons import AbsFetchTask
 import time
+import requests
 from bs4 import BeautifulSoup
+from services.commons import AbsFetchTask
+from services.service import AskForParamsError
+from services.webdriver import new_driver, DriverRequestsCoordinator
+from services.proxyIP import GetIpThread
+from services.errors import InvalidParamsError, InvalidConditionError, PreconditionNotSatisfiedError
 
-from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
 LOGIN_SUCCESS_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0"
 VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist12.jsp"
-USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 
 
 class value_is_number(object):
-
     def __init__(self, locator):
         self.locator = locator
 
@@ -30,13 +26,13 @@ class value_is_number(object):
 
 
 class Task(AbsFetchTask):
+    proxies = GetIpThread().getip()
     task_info = dict(
         city_name="上海",
         help="""<li>用户名：为参保人身份证号</li>
         <li>密码：一般为6位数字；</li>
         <li>首次申请密码或遗忘网上登录密码，本人需携带有效身份证件至就近接到社区事务受理中心或就近社保分中心自助机申请办理。</li>
         """,
-
         developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
@@ -49,7 +45,7 @@ class Task(AbsFetchTask):
 
     def _prepare(self, data=None):
         super()._prepare(data)
-        self.result_data['baseInfo']={}
+        self.result_data['baseInfo'] = {}
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
@@ -66,8 +62,8 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
-        ress=self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp")
-        resp = self.s.get(VC_URL)
+        ress = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", proxies={"http": "http://" + GetIpThread().getip()}, timeout=10)
+        resp = self.s.get(VC_URL, proxies={'http': 'http://' + GetIpThread().getip()}, timeout=10)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
@@ -159,7 +155,6 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
-
     def _do_login(self, username, password, vc):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx() as driver:
@@ -188,24 +183,22 @@ class Task(AbsFetchTask):
             driver.execute_script('checkForm()')
             time.sleep(5)
 
-            if driver.current_url!="http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0":
+            if driver.current_url != "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0":
                 raise InvalidParamsError('登录失败，请重新登录！')
-
 
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
 
-            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp")
+            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp", proxies={'http': 'http://' + GetIpThread().getip()})
             soup = BeautifulSoup(resp.content, 'html.parser')
-            #years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
+            # years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
 
-            if(soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2')!=None):
-                moneyTime=soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text
+            if (soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2') != None):
+                moneyTime = soup.find('xml', {'id': 'dataisxxb_sum4'}).find('jsjs2').text
             else:
-                moneyTime=len(details)
-
+                moneyTime = len(details)
 
             # 社保缴费明细
             # 养老
@@ -214,7 +207,7 @@ class Task(AbsFetchTask):
             }
             dataBaseE = self.result_data['old_age']["data"]
             modelE = {}
-            personmoney= 0.00
+            personmoney = 0.00
 
             dt = soup.findAll("jfdwinfo")
 
@@ -233,8 +226,8 @@ class Task(AbsFetchTask):
                     '公司缴费': '-',
                     '个人缴费': details[a].find('jsjs4').text,
 
-                    #'实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
-                 }
+                    # '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
+                }
                 personmoney += float(details[a].find('jsjs4').text)
                 dataBaseE[yearE][monthE].append(modelE)
 
@@ -324,9 +317,8 @@ class Task(AbsFetchTask):
                 '开始缴费时间': details[0].find('jsjs1').text,
                 '个人养老累计缴费': personOldMoney,
                 '个人医疗累计缴费': '',
-                '账户状态':''
+                '账户状态': ''
             }
-
 
             return
         except InvalidConditionError as e:
@@ -340,7 +332,7 @@ class Task(AbsFetchTask):
 
     def _match_commapy(self, dtime, dt):
         rescom = ""
-        if(dt!=None):
+        if (dt != None):
             for tr in range(len(dt)):
                 trd = dt[tr].find('jfsj').text.split('-')
                 if (trd[0] <= dtime <= trd[1]):
