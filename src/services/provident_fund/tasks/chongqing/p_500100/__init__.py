@@ -216,6 +216,8 @@ class Task(AbsFetchTask):
                 typedate=cell[1].split('[')
                 hj=''
                 lx=cell[1]
+                if '结息' in lx:
+                    lx='结息'
                 if len(typedate) >1:
                     hj =typedate[1].replace(']', '')
                     lx=typedate[0]
