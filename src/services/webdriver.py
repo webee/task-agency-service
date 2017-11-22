@@ -1,12 +1,22 @@
 import os
 import logging
 import traceback
+import random
 from contextlib import contextmanager
 from selenium import webdriver
+# from selenium.webdriver.common.proxy import Proxy
+# from selenium.webdriver.common.proxy import ProxyType
 from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
 
 
 logger = logging.getLogger(__name__)
+# 免费代理IP
+# proxy = Proxy(
+#     {
+#         'proxyType': ProxyType.MANUAL,
+#         'httpProxy': "http://61.135.217.7:80"
+#     }
+# )
 
 
 def create_driver(user_agent=None):
@@ -68,6 +78,8 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     service_log_path = None
     if os.path.exists('/tmp'):
         service_log_path = '/tmp/ghostdriver.log'
+    # 把代理ip加入到技能中
+    # proxy.add_to_capabilities(caps)
     driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path=service_log_path)
     driver.set_window_size(1920, 1080)
     driver.implicitly_wait(10)
