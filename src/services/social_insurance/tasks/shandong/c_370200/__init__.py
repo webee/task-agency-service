@@ -18,6 +18,7 @@ medicalQuery_URL='http://221.215.38.136/grcx/work/m01/f1204/medicalQuery.action'
 unemployQuery_URL='http://221.215.38.136/grcx/work/m01/f1205/unemployQuery.action'
 STATUS_URL='http://221.215.38.136/grcx/work/m01/f1102/insuranceQuery.action'
 PASS_URl='http://221.215.38.136/grcx/pages/passwordReset/passwordReset.jsp'
+MB_URL='http://221.215.38.136/grcx/pages/findPassword/mbQuestion.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="青岛",
@@ -110,6 +111,8 @@ class Task(AbsFetchTask):
                     ))
                     if resp.url==PASS_URl:
                         raise InvalidParamsError('请登录官网修改密码 ！说明:1、为保证信息安全,密码不能为个人编号。2、密码长度需大于6位小于18位。')
+                    elif resp.url==MB_URL:
+                        raise InvalidParamsError('请登录官网修改密保 ！说明:注：1、请设置密保问题，密保问题不要随意泄露。2、密保问题作为找回密码的依据，请妥善保存。')
                     else:
                         soup = BeautifulSoup(resp.content, 'html.parser')
                         if soup.select('.text3'):
@@ -140,9 +143,11 @@ class Task(AbsFetchTask):
             #基本信息
             resp=self.s.get(BASEINFO_URl)
             soup=BeautifulSoup(resp.content,'html.parser')
-            zkindex=soup.select('select')[0]['value']
-            if zkindex:
-                zkindex=soup.find_all('option')[int(zkindex)].text
+            zkindex =''
+            if soup.select('select'):
+                zkindex=soup.select('select')[0]['value']
+                if zkindex:
+                    zkindex=soup.find_all('option')[int(zkindex)].text
 
             data['baseInfo']={
                 '个人编号' : soup.select('input')[0]['value'],

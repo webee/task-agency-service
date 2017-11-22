@@ -112,8 +112,8 @@ class Task(AbsFetchTask):
                 '手机号': info['sjhm'],
                 '开户日期': info['khrq'].replace('-',''),
                 '月应缴额': info['gze'],
-                '单位缴存比例': info['dwjcbl'],
-                '个人缴存比例': info['grjcbl'],
+                '单位缴存比例': info['dwjcbl']+'%',
+                '个人缴存比例': info['grjcbl']+'%',
                 '当前余额': info['zhye'],
                 '联名卡号': info['kh'],
                 '联名卡发卡行': info['hb'],
@@ -216,3 +216,4 @@ if __name__ == '__main__':
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
+#'身份证号': '370881198207145816', '密码': '080707'
