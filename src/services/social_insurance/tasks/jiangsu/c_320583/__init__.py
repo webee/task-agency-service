@@ -125,7 +125,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"] = {
                 "姓名": tds[2].text,
-                "社会保障号": tds[4].text,
+                "社保编号": tds[4].text,
                 "单位名称": tds[6].text,
                 "出生日期": tds[8].text,
                 "开始缴费时间": tds[10].text,

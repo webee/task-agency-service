@@ -13,10 +13,10 @@ from services.test.mock_site import TestSite
 from services.test.mock import UserAgent, LogRequestFilter
 
 LOGIN_PAGE_URL = 'http://public.tj.hrss.gov.cn/uaa/personlogin'
-MAIN_URL = 'http://public.tj.hrss.gov.cn/ehrss/si/person/ui/?code=gD3uyf'
-LOGIN_URL = "http://public.tj.hrss.gov.cn/uaa/api/person/idandmobile/login"
-VC_URL = "http://public.tj.hrss.gov.cn/uaa/captcha/img/"
-Detail_URL = "http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/payment/emp/"
+MAIN_URL = ''
+LOGIN_URL = "http://public.hrss.tj.gov.cn/uaa/personlogin#/personLogin"
+VC_URL = "http://public.hrss.tj.gov.cn/uaa/captcha/img/"
+Detail_URL = "http://public.hrss.tj.gov.cn/ehrss-si-person/api/rights/payment/emp/"
 
 test_site = TestSite()
 
@@ -45,9 +45,9 @@ class Task(AbsFetchTask):
 
     def _get_common_headers(self):
         return {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36',
-            'Accept-Encoding': 'gzip, deflate, sdch',
-            'Host': 'public.tj.hrss.gov.cn',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.79 Safari/537.36',
+            'Accept-Encoding': 'gzip, deflate',
+            'Host': 'public.hrss.tj.gov.cn',
         }
 
     def _query(self, params: dict):
@@ -59,9 +59,9 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         resps = self.s.get(VC_URL)
-        soup = BeautifulSoup(resps.text, 'html.parser')
-        vc_url = VC_URL + soup.text[7:].replace('"}', '')
-        self.state['CaptchaIds'] = soup.text[7:].replace('"}', '')
+        soup = resps.text.split(':')[1].replace('"','').replace('}','')
+        vc_url = VC_URL + soup
+        self.state['CaptchaIds'] = soup
         resp = self.s.get(vc_url)
         return dict(cls='data:image',content=resp.content,content_type=resp.headers['Content-Type'])
 
@@ -131,21 +131,23 @@ class Task(AbsFetchTask):
                     'captchaId': CaptchaId,
                     'captchaWord': vc
                 }
-                resp = self.s.post(LOGIN_URL, data=data)
-                if resp.status_code != 200:
-                    raise InvalidParamsError("登录失败")
-                if resp.url.startswith(LOGIN_PAGE_URL + '?error'):
-                    soup = BeautifulSoup(resp.content, 'html.parser')
-                    divs = soup.select('body > div.alert.alert-danger')
-                    err_msg = "登录失败"
-                    if divs and len(divs) > 0:
-                        err_msg = divs[0].text
-                    raise InvalidParamsError(err_msg)
-
-                # 保存到meta
-                self.result_meta['用户名'] = params.get('用户名')
-                self.result_meta['密码'] = params.get('密码')
-                return
+                resp = self.s.post("http://public.hrss.tj.gov.cn/uaa/api/person/idandmobile/login", data=data)
+                # if resp.text == "":
+                #     raise InvalidParamsError("登录失败")
+                # if resp.url.startswith(LOGIN_PAGE_URL + '?error'):
+                #     soup = BeautifulSoup(resp.content, 'html.parser')
+                #     divs = soup.select('body > div.alert.alert-danger')
+                #     err_msg = "登录失败"
+                #     if divs and len(divs) > 0:
+                #         err_msg = divs[0].text
+                #     raise InvalidParamsError(err_msg)
+                if 'http://public.hrss.tj.gov.cn/ehrss/si/person/ui/' not in resp.url:
+                    raise InvalidParamsError("登录失败，用户名或密码错误！")
+                else:
+                    # 保存到meta
+                    self.result_meta['用户名'] = params.get('用户名')
+                    self.result_meta['密码'] = params.get('密码')
+                    return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
@@ -170,7 +172,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             self.result['data']['baseInfo']={}
-            rest = self.s.get("http://public.tj.hrss.gov.cn/api/security/user")
+            rest = self.s.get("http://public.hrss.tj.gov.cn/api/security/user") #
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
             s2=json.loads(rest.text)["associatedPersons"][0]["personNumber"]
 
@@ -357,14 +359,30 @@ class Task(AbsFetchTask):
 
 
             # 五险状态
-            stype = json.loads(
-                self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/insure/" + str(s) + "").text)
+            stype = json.loads(self.s.get("http://public.tj.hrss.gov.cn/ehrss-si-person/api/rights/insure/" + str(s) + "").text)
+            yanglao="0"
+            yiliao="0"
+            shiye="0"
+            gongshang="0"
+            shengyu="0"
+            for wxt in range(len(stype)):
+                if stype[wxt]['insuranceCode']=="110":
+                    yanglao=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="210":
+                    shiye=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="310":
+                    yiliao=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="410":
+                    gongshang=stype[wxt]['paymentState']
+                elif stype[wxt]['insuranceCode']=="510":
+                    shengyu=stype[wxt]['paymentState']
+
             social_Type = {
-                '养老': self._convert_type(stype[0]['paymentState']),
-                '医疗': self._convert_type(stype[2]['paymentState']),
-                '失业': self._convert_type(stype[1]['paymentState']),
-                '工伤': self._convert_type(stype[5]['paymentState']),
-                '生育': self._convert_type(stype[6]['paymentState'])
+                '养老': self._convert_type(yanglao),
+                '医疗': self._convert_type(yiliao),
+                '失业': self._convert_type(shiye),
+                '工伤': self._convert_type(gongshang),
+                '生育': self._convert_type(shengyu)
             }
 
 

@@ -9,7 +9,7 @@ from services.errors import InvalidParamsError, TaskNotImplementedError, Invalid
     PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
 
-from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType, webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -55,6 +55,7 @@ class Task(AbsFetchTask):
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='')
+
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('http://www.gzgjj.gov.cn/xxxx')
         return driver
@@ -155,43 +156,45 @@ class Task(AbsFetchTask):
 
     def _do_login(self, id_card,user_name, password, vc):
         """使用web driver模拟登录过程"""
-        with self.dsc.get_driver_ctx() as driver:
-            # 打开登录页
-            driver.get(LoginUrl)
-            chooseType=driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td/table/tbody/tr/td[1]/table[2]/tbody/tr/td[2]/table/tbody/tr[1]/td/input[2]')
+        driver = webdriver.Ie()
+        # 打开登录页
+        driver.get(LoginUrl)
+        chooseType=driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td/table/tbody/tr/td[1]/table[2]/tbody/tr/td[2]/table/tbody/tr[1]/td/input[2]')
+        chooseType.click()
+        driver.execute_script("changeCert(2)")
 
-            choosejs='document.getElementById("id2").style.display="";'
-            driver.execute_script(choosejs)
-            js ='document.getElementById("seczjh").getElementsByTagName("param")'
-            driver.execute_script(js)
-            username_input = driver.find_element_by_xpath('//*[@id="zjh"]')
-            usernames=driver.find_element_by_xpath('//*[@id="name"]')
+        choosejs='document.getElementById("id2").style.display="";'
+        driver.execute_script(choosejs)
+        js ='document.getElementById("seczjh").getElementsByTagName("param")'
+        driver.execute_script(js)
+        username_input = driver.find_element_by_xpath('//*[@id="zjh"]')
+        usernames=driver.find_element_by_xpath('//*[@id="name"]')
 
-            password_input = driver.find_element_by_xpath('//*[@id="password"]')
-            vc_input = driver.find_element_by_xpath('//*[@id="captcha"]')
+        password_input = driver.find_element_by_xpath('//*[@id="password"]')
+        vc_input = driver.find_element_by_xpath('//*[@id="captcha"]')
 
-            # 证件号
-            # username_input.clear()
-            # username_input.send_keys(id_card)
+        # 证件号
+        # username_input.clear()
+        # username_input.send_keys(id_card)
 
-            # 姓名
-            usernames.clear()
-            usernames.send_keys(user_name)
+        # 姓名
+        usernames.clear()
+        usernames.send_keys(user_name)
 
-            # 密码
-            password_input.clear()
-            password_input.send_keys(password)
+        # 密码
+        password_input.clear()
+        password_input.send_keys(password)
 
-            # 验证码
-            vc_input.clear()
-            vc_input.send_keys(vc)
+        # 验证码
+        vc_input.clear()
+        vc_input.send_keys(vc)
 
-            # 登录
-            driver.execute_script("doLogin()")
-            # time.sleep(5)
+        # 登录
+        driver.execute_script("doLogin()")
+        # time.sleep(5)
 
-            if driver.current_url.startswith('https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp'):
-                raise InvalidParamsError('登录失败，请重新登录！')
+        if driver.current_url.startswith('https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp'):
+            raise InvalidParamsError('登录失败，请重新登录！')
 
 
     def _unit_fetch(self):

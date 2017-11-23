@@ -222,24 +222,27 @@ class Task(AbsFetchTask):
                 modelE = {}
                 peroldTotal=0.0
                 detailEI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=110")
-                sEI = json.loads(detailEI.text)['lists']['dg_payment']['list']
-                for a in range(len(sEI)):
-                    years = str(sEI[a]['aae002'])[0:4]
-                    months = str(sEI[a]['aae002'])[4:6]
-                    basedataE.setdefault(years, {})
-                    basedataE[years].setdefault(months, [])
+                if 'lists' in json.loads(detailEI.text):
+                    sEI = json.loads(detailEI.text)['lists']['dg_payment']['list']
+                    for a in range(len(sEI)):
+                        years = str(sEI[a]['aae002'])[0:4]
+                        months = str(sEI[a]['aae002'])[4:6]
+                        basedataE.setdefault(years, {})
+                        basedataE[years].setdefault(months, [])
 
-                    modelE = {
-                        '缴费单位': sEI[a]['aab004'],
-                        '缴费时间': sEI[a]['aae002'],
-                        '缴费类型':'',
-                        '缴费基数': sEI[a]['yac004'],
-                        '公司缴费': sEI[a]['dwjfje'],
-                        '个人缴费': sEI[a]['grjfje']
-                        #'缴费合计': sEI[a]['jfjezh']
-                    }
-                    peroldTotal += float(sEI[a]['grjfje'])
-                    basedataE[years][months].append(modelE)
+                        modelE = {
+                            '缴费单位': sEI[a]['aab004'],
+                            '缴费时间': sEI[a]['aae002'],
+                            '缴费类型':'',
+                            '缴费基数': sEI[a]['yac004'],
+                            '公司缴费': sEI[a]['dwjfje'],
+                            '个人缴费': sEI[a]['grjfje']
+                            #'缴费合计': sEI[a]['jfjezh']
+                        }
+                        peroldTotal += float(sEI[a]['grjfje'])
+                        basedataE[years][months].append(modelE)
+                else:
+                    sEI={}
 
 
                 self.result['data']["medical_care"] = {"data": {}}
@@ -248,24 +251,27 @@ class Task(AbsFetchTask):
                 permedicalTotal=0.0
                 # 社保明细-----医疗
                 detailHI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=310")
-                sHI = json.loads(detailHI.text)['lists']['dg_payment']['list']
-                for b in range(len(sHI)):
-                    yearH = str(sHI[b]['aae002'])[0:4]
-                    monthH = str(sHI[b]['aae002'])[4:6]
-                    basedataH.setdefault(yearH, {})
-                    basedataH[yearH].setdefault(monthH, [])
+                if 'lists' in json.loads(detailHI.text):
+                    sHI = json.loads(detailHI.text)['lists']['dg_payment']['list']
+                    for b in range(len(sHI)):
+                        yearH = str(sHI[b]['aae002'])[0:4]
+                        monthH = str(sHI[b]['aae002'])[4:6]
+                        basedataH.setdefault(yearH, {})
+                        basedataH[yearH].setdefault(monthH, [])
 
-                    modelH = {
-                        '缴费单位': sHI[b]['aab004'],
-                        '缴费时间': sHI[b]['aae002'],
-                        '缴费类型': '',
-                        '缴费基数': sHI[b]['yac004'],
-                        '公司缴费': sHI[b]['dwjfje'],
-                        '个人缴费': sHI[b]['hrzhje'],
-                        #'缴费合计': sHI[b]['jfjezh']
-                    }
-                    permedicalTotal += float(sHI[b]['hrzhje'])
-                    basedataH[yearH][monthH].append(modelH)
+                        modelH = {
+                            '缴费单位': sHI[b]['aab004'],
+                            '缴费时间': sHI[b]['aae002'],
+                            '缴费类型': '',
+                            '缴费基数': sHI[b]['yac004'],
+                            '公司缴费': sHI[b]['dwjfje'],
+                            '个人缴费': sHI[b]['hrzhje'],
+                            #'缴费合计': sHI[b]['jfjezh']
+                        }
+                        permedicalTotal += float(sHI[b]['hrzhje'])
+                        basedataH[yearH][monthH].append(modelH)
+                else:
+                    sHI={}
 
 
                 self.result['data']["unemployment"] = {"data": {}}
@@ -273,23 +279,26 @@ class Task(AbsFetchTask):
                 modelI = {}
                 # 社保明细-----失业
                 detailII = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=210")
-                sII = json.loads(detailII.text)['lists']['dg_payment']['list']
-                for d in range(len(sII)):
-                    yearI = str(sII[d]['aae002'])[0:4]
-                    monthI = str(sII[d]['aae002'])[4:6]
-                    basedataI.setdefault(yearI, {})
-                    basedataI[yearI].setdefault(monthI, [])
+                if 'lists' in json.loads(detailII.text):
+                    sII = json.loads(detailII.text)['lists']['dg_payment']['list']
+                    for d in range(len(sII)):
+                        yearI = str(sII[d]['aae002'])[0:4]
+                        monthI = str(sII[d]['aae002'])[4:6]
+                        basedataI.setdefault(yearI, {})
+                        basedataI[yearI].setdefault(monthI, [])
 
-                    modelI = {
-                        '缴费单位': sII[d]['aab004'],
-                        '缴费时间': sII[d]['aae002'],
-                        '缴费类型': '',
-                        '缴费基数': sII[d]['yac004'],
-                        '公司缴费': sII[d]['dwjfje'],
-                        '个人缴费': sII[d]['grjfje'],
-                        #'缴费合计': sII[d]['jfjezh']
-                    }
-                    basedataI[yearI][monthI].append(modelI)
+                        modelI = {
+                            '缴费单位': sII[d]['aab004'],
+                            '缴费时间': sII[d]['aae002'],
+                            '缴费类型': '',
+                            '缴费基数': sII[d]['yac004'],
+                            '公司缴费': sII[d]['dwjfje'],
+                            '个人缴费': sII[d]['grjfje'],
+                            #'缴费合计': sII[d]['jfjezh']
+                        }
+                        basedataI[yearI][monthI].append(modelI)
+                else:
+                    sII={}
 
 
                 self.result['data']["injuries"] = {"data": {}}
@@ -297,23 +306,26 @@ class Task(AbsFetchTask):
                 modelC = {}
                 # 社保明细-----工伤
                 detailCI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=410")
-                sCI = json.loads(detailCI.text)['lists']['dg_payment']['list']
-                for c in range(len(sCI)):
-                    yearC = str(sCI[c]['aae002'])[0:4]
-                    monthC = str(sCI[c]['aae002'])[4:6]
-                    basedataC.setdefault(yearC, {})
-                    basedataC[yearC].setdefault(monthC, [])
+                if 'lists' in json.loads(detailCI.text):
+                    sCI = json.loads(detailCI.text)['lists']['dg_payment']['list']
+                    for c in range(len(sCI)):
+                        yearC = str(sCI[c]['aae002'])[0:4]
+                        monthC = str(sCI[c]['aae002'])[4:6]
+                        basedataC.setdefault(yearC, {})
+                        basedataC[yearC].setdefault(monthC, [])
 
-                    modelC = {
-                        '缴费单位': sCI[c]['aab004'],
-                        '缴费时间': sCI[c]['aae002'],
-                        '缴费类型': '',
-                        '缴费基数': sCI[c]['yac004'],
-                        '公司缴费': sCI[c]['dwjfje'],
-                        '个人缴费': '-',
-                        #'缴费合计': sCI[c]['jfjezh']
-                    }
-                    basedataC[yearC][monthC].append(modelC)
+                        modelC = {
+                            '缴费单位': sCI[c]['aab004'],
+                            '缴费时间': sCI[c]['aae002'],
+                            '缴费类型': '',
+                            '缴费基数': sCI[c]['yac004'],
+                            '公司缴费': sCI[c]['dwjfje'],
+                            '个人缴费': '-',
+                            #'缴费合计': sCI[c]['jfjezh']
+                        }
+                        basedataC[yearC][monthC].append(modelC)
+                else:
+                    sCI={}
 
 
                 self.result['data']["maternity"] = {"data": {}}
@@ -321,58 +333,83 @@ class Task(AbsFetchTask):
                 modelB = {}
                 # 社保明细-----生育
                 detailBI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=510")
-                sBI = json.loads(detailBI.text)['lists']['dg_payment']['list']
-                for f in range(len(sBI)):
-                    yearB = str(sBI[f]['aae002'])[0:4]
-                    monthB = str(sBI[f]['aae002'])[4:6]
-                    basedataB.setdefault(yearB, {})
-                    basedataB[yearB].setdefault(monthB, [])
+                if 'lists' in json.loads(detailBI.text):
+                    sBI = json.loads(detailBI.text)['lists']['dg_payment']['list']
+                    for f in range(len(sBI)):
+                        yearB = str(sBI[f]['aae002'])[0:4]
+                        monthB = str(sBI[f]['aae002'])[4:6]
+                        basedataB.setdefault(yearB, {})
+                        basedataB[yearB].setdefault(monthB, [])
 
-                    modelB = {
-                        '缴费单位': sBI[f]['aab004'],
-                        '缴费时间': sBI[f]['aae002'],
-                        '缴费类型': '',
-                        '缴费基数': sBI[f]['yac004'],
-                        '公司缴费': sBI[f]['dwjfje'],
-                        '个人缴费': '-',
-                        #'缴费合计': sBI[f]['jfjezh']
-                    }
-                    basedataB[yearB][monthB].append(modelB)
+                        modelB = {
+                            '缴费单位': sBI[f]['aab004'],
+                            '缴费时间': sBI[f]['aae002'],
+                            '缴费类型': '',
+                            '缴费基数': sBI[f]['yac004'],
+                            '公司缴费': sBI[f]['dwjfje'],
+                            '个人缴费': '-',
+                            #'缴费合计': sBI[f]['jfjezh']
+                        }
+                        basedataB[yearB][monthB].append(modelB)
+                else:
+                    sBI = {}
+
 
                 # 大病缴费明细
                 self.result['data']["serious_illness"] = {"data": {}}
                 basedataS = self.result['data']["serious_illness"]["data"]
                 modelS = {}
                 detailSI = self.s.get(Detail_URL + "?dto['aae041']=" + startTime + "&dto['aae042']=" + endTime + "&dto['aae140_md5list']=&dto['aae140']=330")
-                sSI = json.loads(detailSI.text)['lists']['dg_payment']['list']
-                for q in range(len(sSI)):
-                    yearQ = str(sSI[q]['aae002'])[0:4]
-                    monthQ = str(sSI[q]['aae002'])[4:6]
-                    basedataS.setdefault(yearQ, {})
-                    basedataS[yearQ].setdefault(monthQ, [])
+                if 'lists' in json.loads(detailSI.text):
+                    sSI = json.loads(detailSI.text)['lists']['dg_payment']['list']
+                    for q in range(len(sSI)):
+                        yearQ = str(sSI[q]['aae002'])[0:4]
+                        monthQ = str(sSI[q]['aae002'])[4:6]
+                        basedataS.setdefault(yearQ, {})
+                        basedataS[yearQ].setdefault(monthQ, [])
 
-                    modelS = {
-                        '缴费单位': sSI[q]['aab004'],
-                        '缴费时间': sSI[q]['aae002'],
-                        '缴费类型': '',
-                        '缴费基数': sSI[q]['yac004'],
-                        '公司缴费': sSI[q]['dwjfje'],
-                        '个人缴费': '-'
-                    }
-                    basedataS[yearQ][monthQ].append(modelS)
+                        modelS = {
+                            '缴费单位': sSI[q]['aab004'],
+                            '缴费时间': sSI[q]['aae002'],
+                            '缴费类型': '',
+                            '缴费基数': sSI[q]['yac004'],
+                            '公司缴费': sSI[q]['dwjfje'],
+                            '个人缴费': '-'
+                        }
+                        basedataS[yearQ][monthQ].append(modelS)
 
 
                 # 六险状态
                 stype =self.s.get("https://gr.cdhrss.gov.cn:442/cdwsjb/personal/query/queryCZInsuranceInfoAction.do")
                 stypes=BeautifulSoup(stype.text,'html.parser').find('div',{'id':'SeInfo'})
                 stype2=json.loads(stypes.text.split('data')[40].split(';')[0].replace('=',''))['list']
+                yanglao="0"
+                yiliao="0"
+                shiye="0"
+                gongshang="0"
+                shengyu="0"
+                dabing="0"
+                for lx in range(len(stype2)):
+                    if(stype2[lx]['aae140']=="110"):
+                        yanglao=stype2[lx]['aac031']
+                    elif(stype2[lx]['aae140']=="310"):
+                        yiliao=stype2[lx]['aac031']
+                    elif(stype2[lx]['aae140']=="210"):
+                        shiye=stype2[lx]['aac031']
+                    elif(stype2[lx]['aae140']=="410"):
+                        gongshang=stype2[lx]['aac031']
+                    elif(stype2[lx]['aae140']=="510"):
+                        shengyu=stype2[lx]['aac031']
+                    elif(stype2[lx]['aae140']=="330"):
+                        dabing=stype2[lx]['aac031']
+
                 social_Type = {
-                    '养老': self._convert_type(stype2[0]['aac031']),
-                    '医疗': self._convert_type(stype2[2]['aac031']),
-                    '大病': self._convert_type(stype2[3]['aac031']),
-                    '失业': self._convert_type(stype2[1]['aac031']),
-                    '工伤': self._convert_type(stype2[4]['aac031']),
-                    '生育': self._convert_type(stype2[5]['aac031'])
+                    '养老': self._convert_type(yanglao),
+                    '医疗': self._convert_type(yiliao),
+                    '大病': self._convert_type(dabing),
+                    '失业': self._convert_type(shiye),
+                    '工伤': self._convert_type(gongshang),
+                    '生育': self._convert_type(shengyu)
                 }
 
 

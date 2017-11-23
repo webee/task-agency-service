@@ -318,7 +318,13 @@ class Task(AbsFetchTask):
 
                     # 状态
                     status=""
-                    if(sCI[len(sCI)-1].findAll("tr")[len(sCI[len(sCI)-1].findAll("tr"))-1].findAll("td")[2].find(type="text")["value"]=="正常缴费"):
+                    datatype={
+                        'method':'returnMain',
+                        '__usersession_uuid':uuid,
+                    }
+                    restype=self.s.post("http://60.216.99.138/hsp/systemOSP.do",datatype)
+                    resstatus=BeautifulSoup(restype.content,'html.parser').findAll("input",{'id':'rylb'})[0]['value']
+                    if '在职' in resstatus:
                         status="正常"
                     else:
                         status="异常"

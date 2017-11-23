@@ -1,6 +1,7 @@
 import os
 import logging
 import traceback
+import random
 from contextlib import contextmanager
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
@@ -63,12 +64,14 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     service_args.append('--ignore-ssl-errors=true')
     caps = {}
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
+
     caps["phantomjs.page.settings.userAgent"] = user_agent or "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
     caps["phantomjs.page.settings.loadImages"] = False
     service_log_path = None
     if os.path.exists('/tmp'):
         service_log_path = '/tmp/ghostdriver.log'
     driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path=service_log_path)
+
     driver.set_window_size(1920, 1080)
     driver.implicitly_wait(10)
 
