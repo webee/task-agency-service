@@ -1,16 +1,17 @@
+from services.service import SessionData, AbsTaskUnitSessionTask
 from bs4 import BeautifulSoup
-from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
-from services.errors import InvalidParamsError, TaskNotImplementedError
+from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
+from  services.errors import InvalidParamsError
 
-LOGIN_URL = 'http://wscx.xmgjj.gov.cn/xmgjjGR/index.jsp'
+LOGIN_URL = 'http://wscx.xmgjj.gov.cn/xmgjjGR/login.shtml'
 VC_URL = 'http://wscx.xmgjj.gov.cn/xmgjjGR/codeImage.shtml'
+INFO_URL='http://wscx.xmgjj.gov.cn/xmgjjGR/queryPersonXx.shtml'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="厦门",
         help="""<li>如您未在公积金网站查询过您的公积金信息，请到厦门公积金管理中心官网网完成“注册”然后再登录。</li>""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
-
     )
     def _get_common_headers(self):
         return {'User-Agent':'Mozilla/5.0 (iPad; CPU OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1'}
@@ -30,6 +31,8 @@ class Task(AbsFetchTask):
         assert params is not None, '缺少参数'
         assert '账号' in params, '缺少账号'
         assert '密码' in params, '缺少密码'
+        if self.g.fristtime:
+            assert 'vc' in params, '缺少验证码'
         # other check
         账号 = params['账号']
         密码 = params['密码']
@@ -41,8 +44,29 @@ class Task(AbsFetchTask):
             return
         raise InvalidParamsError('账号或密码错误')
 
-    def _unit_login(self, params: dict):
-        Frist_Time=False
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if '账号' not in params:
+                params['账号'] = meta.get('账号')
+            if '密码' not in params:
+                params['密码'] = meta.get('密码')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            if pr['key'] == '账号' and '账号' in meta:
+                continue
+            elif pr['key'] == '密码' and '密码' in meta:
+                continue
+            res.append(pr)
+        return res
+
+    def _unit_login(self, params=dict):
+        Frist_Time=False#self.g.fristtime
         err_msg = None
         if params:
             try:
@@ -50,7 +74,7 @@ class Task(AbsFetchTask):
                 id_num = params['账号']
                 password = params['密码']
                 vc=''
-                if Frist_Time:
+                if self.g.fristtime:
                     vc = params['vc']
                 data = dict(
                     securityCode2=vc,
@@ -62,21 +86,25 @@ class Task(AbsFetchTask):
                                    headers={'Content-Type': 'application/x-www-form-urlencoded'})
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
-
-                return_message = soup.select('#err_area')[0].find('font').text
-                if len(return_message.text) > 3:
+                if soup.select('#err_area'):
+                    return_message = soup.select('#err_area')[0].find('font').text
+                else:
+                    return_message=None
+                if return_message:
+                    self.g.fristtime=True
                     Frist_Time=True
-                    return_message = return_message.text.split(';')[0].split('"')[1]
                     raise InvalidParamsError(return_message)
                 else:
                     print("登录成功！")
 
-                self.result_key = params.get('账号')
+                self.result_key = id_num
                 # 保存到meta
-                self.result_meta['账号'] = params.get('账号')
-                self.result_meta['密码'] = params.get('密码')
+                self.result_meta['账号'] = id_num
+                self.result_meta['密码'] = password
+                self.result_identity['task_name'] = '厦门'
+                self.result_identity['target_id'] = id_num
 
-
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
