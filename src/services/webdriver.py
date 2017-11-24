@@ -62,6 +62,7 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     service_args.append('--load-images=no')
     service_args.append('--disk-cache=yes')
     service_args.append('--ignore-ssl-errors=true')
+    service_args.append('--ssl-protocol=TLSv1')
     caps = {}
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
 
