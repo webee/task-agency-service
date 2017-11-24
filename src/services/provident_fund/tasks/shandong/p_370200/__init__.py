@@ -68,7 +68,7 @@ class Task(AbsFetchTask):
                     'signdata':'',
                     '1': 'y'
                 }
-                resp = self.s.post(LOGIN_URL, data=data)
+                resp = self.s.post(LOGIN_URL, data=data,timeout=10)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 successinfo=json.loads(soup.text)
                 if successinfo['success']:
@@ -97,7 +97,7 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # 基本信息
-            resp = self.s.get(INFO_URL)
+            resp = self.s.get(INFO_URL,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             info = json.loads(soup.text)
             data = self.result_data
@@ -126,7 +126,7 @@ class Task(AbsFetchTask):
             self.result_identity['target_id'] = data['baseInfo']['证件号']
             self.result_identity['status'] = data['baseInfo']['帐户状态']
 
-            resp = self.s.get(ENTER_URL)
+            resp = self.s.get(ENTER_URL,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             enterinfo = json.loads(soup.text)
             data['companyList']=[]
@@ -161,7 +161,7 @@ class Task(AbsFetchTask):
                 'sort': 'csrq',
                 'order': 'desc'
             }
-            resp = self.s.post(MINGXI_URL,data=datas)
+            resp = self.s.post(MINGXI_URL,data=datas,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             mingxiinfo = json.loads(soup.text)
             data['detail'] = {}
@@ -207,7 +207,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         #vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL)
+        resp = self.s.get(VC_URL,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
     from services.client import TaskTestClient

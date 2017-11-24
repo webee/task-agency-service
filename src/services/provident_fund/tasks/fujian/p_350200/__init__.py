@@ -94,7 +94,6 @@ class Task(AbsFetchTask):
                 else:
                     return_message=None
                 if return_message:
-                    self.g.fristtime=True
                     Frist_Time=True
                     raise InvalidParamsError(return_message)
                 else:
