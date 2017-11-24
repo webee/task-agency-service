@@ -87,7 +87,7 @@ class Task(AbsFetchTask):
                     password=password
                 )
                 resp = self.s.post(LOGIN_URL, data=data,
-                                   headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                   headers={'Content-Type': 'application/x-www-form-urlencoded'},timeout=10)
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 if soup.select('#err_area'):
@@ -111,8 +111,6 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
-
-        self.g.fristtime =False
         if Frist_Time:
             vc = self._new_vc()
             raise AskForParamsError([
@@ -121,17 +119,17 @@ class Task(AbsFetchTask):
                 dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
             ], err_msg)
         else:
+            self.g.fristtime = False
             raise AskForParamsError([
                 dict(key='账号', name='账号', cls='input', placeholder='证件号码'),
                 dict(key='密码', name='密码', cls='input:password'),
-                dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
             ], err_msg)
 
     def _unit_fetch(self):
         try:
             data = self.result_data
             # 基本信息
-            resp = self.s.post(INFO_URL)
+            resp = self.s.post(INFO_URL,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             infos=json.loads(soup.text)
             data['baseInfo'] = {
@@ -167,22 +165,54 @@ class Task(AbsFetchTask):
                 'startDate': data['baseInfo']['开户日期'],
                 'endDate':time.strftime("%Y-%m-%d", time.localtime()).replace('-','')
             }
-            resp = self.s.post(MX_URL,data=datas)
+            resp = self.s.post(MX_URL,data=datas,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             infos = json.loads(soup.text)
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            for i in range(0,int(infos['totalRecords'])):
+                arr = []
+                dicinfo=infos['list'][i]
+                dic={
+                    '时间': dicinfo['bankAcctDate'],
+                    '单位名称': '',
+                    '支出': 0,
+                    '收入': float(dicinfo['creditAmt']),
+                    '汇缴年月':'',
+                    '余额': dicinfo['saveBal'],
+                    '类型': dicinfo['bankSumy']
+                }
+                times = dicinfo['bankAcctDate'].replace('年','').replace('月','').replace('日','')
+                if years != times[:4]:
+                    years = times[:4]
+                    data['detail']['data'][years] = {}
+                    if months != times[4:6]:
+                        months = times[4:6]
+                        data['detail']['data'][years][months] = {}
+                else:
+                    if months != times[4:6]:
+                        months = times[4:6]
+                        data['detail']['data'][years][months] = {}
+                    else:
+                        arr = data['detail']['data'][years][months]
+                arr.append(dic)
+                data['detail']['data'][years][months] = arr
+                print(arr)
 
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        resp = self.s.get(vc_url,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'账号': '350821199411230414', '密码': '20120305xin'}
+    meta = {'账号': '350821199411230414'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
