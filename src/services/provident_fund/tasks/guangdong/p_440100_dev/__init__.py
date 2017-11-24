@@ -134,7 +134,7 @@ class Task(AbsFetchTask):
                 account_pass = params.get("密码")
                 vc = params.get("vc")
 
-                self._do_login(id_num, username,account_pass, vc)
+                # self._do_login(id_num, username,account_pass, vc)
 
                 self.result_key = id_num
                 self.result_meta['证件号'] =id_num
