@@ -100,7 +100,7 @@ class Task(AbsFetchTask):
                     id_account=account_num,
                     searchpwd=password,
                     validcode=vc
-                ),verify=False)
+                ),verify=False,timeout=10)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 return_message = soup.find('input', {'name': 'return_message'})["value"]
 
@@ -168,7 +168,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get(vc_url,verify=False)
+        resp = self.s.get(vc_url,verify=False,timeout=10)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
