@@ -122,7 +122,7 @@ class Task(AbsFetchTask):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
-            driver.get(LOGIN_PAGE_URL)
+            driver.get(LOGIN_PAGE_URL,timeout=10)
 
             username_input = driver.find_element_by_xpath('//*[@id="txt_loginname"]')
             password_input = driver.find_element_by_xpath('//*[@id="txt_pwd"]')#pwdRow/td[2]/input[1]
@@ -173,7 +173,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             # 基本信息
-            resp = self.s.get(INFO_URL)
+            resp = self.s.get(INFO_URL,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             table = soup.find('table')
             data = self.result_data
@@ -197,7 +197,7 @@ class Task(AbsFetchTask):
             self.result_identity['status'] = data['baseInfo']['帐户状态']
 
             #公积金明细
-            resp = self.s.get(MINGXI_URL)
+            resp = self.s.get(MINGXI_URL,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             table = soup.find('table')
             data['detail'] = {}
@@ -270,7 +270,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         #vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL)
+        resp = self.s.get(VC_URL,timeout=10)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
     from services.client import TaskTestClient

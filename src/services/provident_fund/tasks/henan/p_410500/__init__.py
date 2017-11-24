@@ -108,7 +108,7 @@ class Task(AbsFetchTask):
                     password=password,
                     yzm=vc
                 )
-                resp = self.s.post(LOGIN_URL,data=parse.urlencode(data,encoding='gbk'),headers={'Content-Type':'application/x-www-form-urlencoded'})
+                resp = self.s.post(LOGIN_URL,data=parse.urlencode(data,encoding='gbk'),headers={'Content-Type':'application/x-www-form-urlencoded'},timeout=10)
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
@@ -129,7 +129,7 @@ class Task(AbsFetchTask):
                                  dwbm=self.dwbm,cxyd=self.cxyd)
 
                     resp2 = self.s.post(MAIN_URL, data=parse.urlencode(data2, encoding='gbk'),
-                                  headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                  headers={'Content-Type': 'application/x-www-form-urlencoded'},timeout=10)
                     soup2 = BeautifulSoup(resp2.content, 'html.parser')
                     self.html = str(resp2.content, 'gbk')
 
@@ -174,7 +174,7 @@ class Task(AbsFetchTask):
                 data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ','').replace('本年支取','当年提取金额').replace('月缴金额','月应缴额').replace('账户余额','当前余额'), cell[3].replace('\xa0',''))
             self.result_identity['status'] = data['baseInfo']['帐户状态']
 
-            resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
+            resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'},timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
@@ -199,7 +199,7 @@ class Task(AbsFetchTask):
                            'dwbm':self.dwbm,
                            'cxyd':cxydtwo1}
                 resp = self.s.post(GJJ_URL, data=parse.urlencode(data1, encoding='gbk'),
-                                  headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
+                                  headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'},timeout=5)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 tab=soup.select('table')[16]
                 tabtitle=tab.findAll('tr')[0]
@@ -264,7 +264,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        resp = self.s.get(vc_url,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
