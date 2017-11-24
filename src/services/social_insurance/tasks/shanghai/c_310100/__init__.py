@@ -313,6 +313,12 @@ class Task(AbsFetchTask):
             else:
                 personOldMoney = personmoney
 
+            startTime=""
+            recentTime=""
+            if(len(details)!=0):
+                startTime=details[0].find('jsjs1').text
+                recentTime=details[len(details) - 1].find('jsjs1').text
+
             self.result['data']['baseInfo'] = {
                 '姓名': soup.find('xm').text,
                 '身份证号': self.result_meta['用户名'],
@@ -320,8 +326,8 @@ class Task(AbsFetchTask):
                 '城市名称': '上海市',
                 '城市编号': '310100',
                 '缴费时长': moneyTime,
-                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
-                '开始缴费时间': details[0].find('jsjs1').text,
+                '最近缴费时间':recentTime ,
+                '开始缴费时间': startTime,
                 '个人养老累计缴费': personOldMoney,
                 '个人医疗累计缴费': '',
                 '账户状态':''
@@ -355,7 +361,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '321322199001067241', '密码': '123456'}
+    meta = {'用户名': '372901198109035010', '密码': '903503'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
