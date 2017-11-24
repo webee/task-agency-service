@@ -34,18 +34,16 @@ class Task(AbsFetchTask):
         assert params is not None, '缺少参数'
         assert '账号' in params, '缺少账号'
         assert '密码' in params, '缺少密码'
-        if self.g.fristtime:
+        if 'vc' in params:
             assert 'vc' in params, '缺少验证码'
         # other check
         账号 = params['账号']
         密码 = params['密码']
         if len(密码) < 4:
             raise InvalidParamsError('账号或密码错误')
-        if 账号.isdigit():
-            if len(账号) < 15:
-                raise InvalidParamsError('身份证错误')
-            return
-        raise InvalidParamsError('账号或密码错误')
+        if len(账号) < 15:
+            raise InvalidParamsError('身份证错误')
+
 
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -78,8 +76,9 @@ class Task(AbsFetchTask):
                 self.s.idnum=id_num
                 password = params['密码']
                 vc=''
-                if self.g.fristtime:
+                if 'vc' in params:
                     vc = params['vc']
+
                 data = dict(
                     securityCode2=vc,
                     securityCode=vc,
@@ -119,7 +118,7 @@ class Task(AbsFetchTask):
                 dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
             ], err_msg)
         else:
-            self.g.fristtime = False
+            #self.g.fristtime = False
             raise AskForParamsError([
                 dict(key='账号', name='账号', cls='input', placeholder='证件号码'),
                 dict(key='密码', name='密码', cls='input:password'),
