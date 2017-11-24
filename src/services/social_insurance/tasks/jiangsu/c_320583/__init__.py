@@ -291,7 +291,7 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        if data["old_age"]["data"][str(year)] == {}:
+                        if str(year) not in data["old_age"]["data"].keys():
                             data["old_age"]["data"][str(year)] = {}
                         for month in tempDoubt:
                             try:

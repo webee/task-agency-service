@@ -1,3 +1,5 @@
+import time
+import json
 from services.service import SessionData, AbsTaskUnitSessionTask
 from bs4 import BeautifulSoup
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
@@ -7,6 +9,7 @@ from  services.errors import InvalidParamsError
 LOGIN_URL = 'http://wscx.xmgjj.gov.cn/xmgjjGR/login.shtml'
 VC_URL = 'http://wscx.xmgjj.gov.cn/xmgjjGR/codeImage.shtml'
 INFO_URL='http://wscx.xmgjj.gov.cn/xmgjjGR/queryPersonXx.shtml'
+MX_URL='http://wscx.xmgjj.gov.cn/xmgjjGR/queryGrzhxxJson.shtml'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="厦门",
@@ -65,13 +68,14 @@ class Task(AbsFetchTask):
             res.append(pr)
         return res
 
-    def _unit_login(self, params=dict):
+    def _unit_login(self, params=None):
         Frist_Time=False#self.g.fristtime
         err_msg = None
-        if params:
+        if not self.is_start or params:
             try:
                 self._check_login_params(params)
                 id_num = params['账号']
+                self.s.idnum=id_num
                 password = params['密码']
                 vc=''
                 if self.g.fristtime:
@@ -83,7 +87,7 @@ class Task(AbsFetchTask):
                     password=password
                 )
                 resp = self.s.post(LOGIN_URL, data=data,
-                                   headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                   headers={'Content-Type': 'application/x-www-form-urlencoded'},timeout=10)
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 if soup.select('#err_area'):
@@ -107,7 +111,6 @@ class Task(AbsFetchTask):
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
-
         if Frist_Time:
             vc = self._new_vc()
             raise AskForParamsError([
@@ -116,27 +119,102 @@ class Task(AbsFetchTask):
                 dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
             ], err_msg)
         else:
+            self.g.fristtime = False
             raise AskForParamsError([
-                dict(key='账号', name='账号', cls='input', placeholder='证件号码', value=params.get('账号', '')),
-                dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+                dict(key='账号', name='账号', cls='input', placeholder='证件号码'),
+                dict(key='密码', name='密码', cls='input:password'),
             ], err_msg)
 
     def _unit_fetch(self):
         try:
-            # TODO: 执行任务，如果没有登录，则raise PermissionError
+            data = self.result_data
+            # 基本信息
+            resp = self.s.post(INFO_URL,timeout=5)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            infos=json.loads(soup.text)
+            data['baseInfo'] = {
+                '城市名称': '厦门',
+                '城市编号': '350200',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '证件类型': '身份证',
+                '证件号':self.s.idnum,
+                '个人账号':infos['Person']['custAcct'],
+                '姓名': infos['Person']['custName'],
+                '开户银行':infos['Person']['aaa103'],
+                '开户网点':infos['Person']['bankOrgName'],
+                '开户日期': infos['Person']['openDate'].replace('年','').replace('月','').replace('日','')
+            }
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            acctStatus='停缴'
+            if infos['Person']['acctStatus']=='0':
+                acctStatus='正常'
+            self.result_identity['status'] =acctStatus
+
+            data['companyList'] = []
+            diclist = {
+                '单位名称': infos['Person']['compName'],
+                '当前余额': infos['Person']['bal'],
+                '帐户状态': acctStatus,
+                '最后业务日期': infos['Person']['lastAutoAcctDate'].replace('年','').replace('月','').replace('日','')
+            }
+            data['companyList'].append(diclist)
+
+            # 明细信息
+            datas={
+                'custAcct': data['baseInfo']['个人账号'],
+                'startDate': data['baseInfo']['开户日期'],
+                'endDate':time.strftime("%Y-%m-%d", time.localtime()).replace('-','')
+            }
+            resp = self.s.post(MX_URL,data=datas,timeout=5)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            infos = json.loads(soup.text)
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            for i in range(0,int(infos['totalRecords'])):
+                arr = []
+                dicinfo=infos['list'][i]
+                dic={
+                    '时间': dicinfo['bankAcctDate'],
+                    '单位名称': '',
+                    '支出': 0,
+                    '收入': float(dicinfo['creditAmt']),
+                    '汇缴年月':'',
+                    '余额': dicinfo['saveBal'],
+                    '类型': dicinfo['bankSumy']
+                }
+                times = dicinfo['bankAcctDate'].replace('年','').replace('月','').replace('日','')
+                if years != times[:4]:
+                    years = times[:4]
+                    data['detail']['data'][years] = {}
+                    if months != times[4:6]:
+                        months = times[4:6]
+                        data['detail']['data'][years][months] = {}
+                else:
+                    if months != times[4:6]:
+                        months = times[4:6]
+                        data['detail']['data'][years][months] = {}
+                    else:
+                        arr = data['detail']['data'][years][months]
+                arr.append(dic)
+                data['detail']['data'][years][months] = arr
+                print(arr)
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        resp = self.s.get(vc_url,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'账号': '350821199411230414', '密码': '20120305xin'}
+    meta = {'账号': '350821199411230414'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
-    #账号：350821199411230414  密码：20120305xin
+    #账号：350821199411230414  密码：20120305xin 账号：430722199009274233 密码：hxp15268053044
+
