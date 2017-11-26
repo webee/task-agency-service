@@ -66,7 +66,7 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     caps = {}
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
 
-    caps["phantomjs.page.settings.userAgent"] = user_agent or "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
+    caps["phantomjs.page.settings.userAgent"] = user_agent or "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36"
     caps["phantomjs.page.settings.loadImages"] = False
     service_log_path = None
     if os.path.exists('/tmp'):

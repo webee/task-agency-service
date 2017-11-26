@@ -48,21 +48,7 @@ class Task(AbsFetchTask):
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT)
-
-        # 不加载验证码
-        script = """
-            var page = this;
-            page.onResourceRequested = function(requestData, networkRequest) {
-                var match = requestData.url.match(/PicCheckCode1/g);
-                if (match != null) {
-                    //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
-                    //networkRequest.cancel(); // or .abort()
-                    networkRequest.abort();
-                }
-            };
-        """
-        driver.execute('executePhantomScript', {'script': script, 'args': []})
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/PicCheckCode1/g')
         return driver
 
     def _setup_task_units(self):
