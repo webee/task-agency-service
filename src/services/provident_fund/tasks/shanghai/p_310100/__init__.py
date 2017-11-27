@@ -15,21 +15,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-class value_is_number(object):
-    """判断元素value是数字"""
+# class value_is_number(object):
+#     """判断元素value是数字"""
+#
+#     def __init__(self, locator):
+#         self.locator = locator
+#
+#     def __call__(self, driver):
+#         element = driver.find_element(*self.locator)
+#         val = element.get_attribute('value')
+#         return val and val.isnumeric()
 
-    def __init__(self, locator):
-        self.locator = locator
 
-    def __call__(self, driver):
-        element = driver.find_element(*self.locator)
-        val = element.get_attribute('value')
-        return val and val.isnumeric()
-
-
-USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
-LOGIN_PAGE_URL = 'https://persons.shgjj.com/'
-MAIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/main_menu.jsp'
+# USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
+# LOGIN_PAGE_URL = 'https://persons.shgjj.com/'
 LOGIN_URL = 'https://persons.shgjj.com/MainServlet'
 VC_URL = 'https://persons.shgjj.com/VerifyImageServlet'
 GJJMX_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/gjjmxcx/gjjmx_cx.jsp'
@@ -88,15 +87,15 @@ class Task(AbsFetchTask):
                 params['密码'] = meta.get('密码')
         return params
 
-    def _prepare(self, data=None):
-        super()._prepare(data)
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
-
-    def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
-        driver.get(LOGIN_PAGE_URL)
-
-        return driver
+    # def _prepare(self, data=None):
+    #     super()._prepare(data)
+    #     self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+    #
+    # def _create_driver(self):
+    #     driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
+    #     driver.get(LOGIN_PAGE_URL)
+    #
+    #     return driver
 
     def _param_requirements_handler(self, param_requirements, details):
         meta = self.prepared_meta
@@ -136,7 +135,7 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
                                                                   'Cache-Control': 'max-age=0',
-                                                                  'Upgrade-Insecure-Requests': '1'})
+                                                                  'Upgrade-Insecure-Requests': '1'},timeout=10)
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
                 errormsg = soup.findAll('font')[0].text
@@ -165,55 +164,55 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
-    def _do_login(self, username, password, vc):
-        """使用web driver模拟登录过程"""
-        with self.dsc.get_driver_ctx() as driver:
-            # 打开登录页
-            driver.get(LOGIN_PAGE_URL)
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            username_input = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]/td[2]/input')
-            password_input = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[3]/td[2]/input')
-            vc_input = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[4]/td[2]/input')
-            submit_btn = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[5]/td[2]/input[1]')
-            ok = driver.find_element_by_name("SUBMIT")
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            # 用户名
-            username_input.clear()
-            username_input.send_keys(username)
-
-            # 密码
-            password_input.clear()
-            password_input.send_keys(password)
-            vc_input.clear()
-            vc_input.send_keys(vc)
-
-            #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-
-            #login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-            # 提交
-
-            ok.click()
-            submit_btn.click()
-            time.sleep(5)
-
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            if driver.current_url != LOGIN_PAGE_URL:
-                print('登录成功')
-            else:
-                # FIXME: 尝试处理alert
-
-                err_msg = driver.find_elements_by_class_name('error')[0].text
-                #err_msg = '登录失败，请检查输入'
-                #alert = driver.switch_to.alert
-                try:
-                    err_msg =err_msg #alert.text
-                    # alert.accept()
-                finally:
-                    raise InvalidParamsError(err_msg)
+    # def _do_login(self, username, password, vc):
+    #     """使用web driver模拟登录过程"""
+    #     with self.dsc.get_driver_ctx() as driver:
+    #         # 打开登录页
+    #         driver.get(LOGIN_PAGE_URL)
+    #         Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #         username_input = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]/td[2]/input')
+    #         password_input = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[3]/td[2]/input')
+    #         vc_input = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[4]/td[2]/input')
+    #         submit_btn = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[5]/td[2]/input[1]')
+    #         ok = driver.find_element_by_name("SUBMIT")
+    #         Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #         # 用户名
+    #         username_input.clear()
+    #         username_input.send_keys(username)
+    #
+    #         # 密码
+    #         password_input.clear()
+    #         password_input.send_keys(password)
+    #         vc_input.clear()
+    #         vc_input.send_keys(vc)
+    #
+    #         #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #
+    #         #login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+    #         # 提交
+    #
+    #         ok.click()
+    #         submit_btn.click()
+    #         time.sleep(5)
+    #
+    #         Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #         if driver.current_url != LOGIN_PAGE_URL:
+    #             print('登录成功')
+    #         else:
+    #             # FIXME: 尝试处理alert
+    #
+    #             err_msg = driver.find_elements_by_class_name('error')[0].text
+    #             #err_msg = '登录失败，请检查输入'
+    #             #alert = driver.switch_to.alert
+    #             try:
+    #                 err_msg =err_msg #alert.text
+    #                 # alert.accept()
+    #             finally:
+    #                 raise InvalidParamsError(err_msg)
 
     def _unit_fetch_name(self):
         try:
@@ -241,7 +240,7 @@ class Task(AbsFetchTask):
             self.result_identity['status'] = data['baseInfo']['账户状态']
             # 内容
             infourl = LOGIN_URL + '?ID=11'
-            resp = self.s.get(infourl)
+            resp = self.s.get(infourl,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
@@ -340,8 +339,8 @@ class Task(AbsFetchTask):
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
-        vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        #vc_url = VC_URL  + str(int(time.time() * 1000))
+        resp = self.s.get(VC_URL,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
