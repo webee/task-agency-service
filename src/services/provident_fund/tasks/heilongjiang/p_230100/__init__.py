@@ -44,12 +44,18 @@ class Task(AbsFetchTask):
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         身份证号 = params['身份证号']
-        个人账号 = params['密码']
+        个人账号 = params['个人账号']
+        密码 = params['密码']
 
         if len(身份证号) == 0:
             raise InvalidParamsError('身份证号为空，请输入身份证号')
         elif len(身份证号) < 15:
             raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入')
 
         if len(个人账号) == 0:
             raise InvalidParamsError('个人账号为空，请输入个人账号！')
@@ -174,8 +180,9 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '230121199412264821','个人账号':'801016473025', '密码': '111111'}
+    meta = {'身份证号': '230206197710101118','个人账号':'7877', '密码': '123456'}
 
     client = TaskTestClient(Task(prepare_data = dict(meta=meta)))
     client.run()
 #{'身份证号': '230223197310180837','个人账号':'801016453429', '密码': '111111'}
+#'身份证号': '230121199412264821','个人账号':'801016473025', '密码': '111111'

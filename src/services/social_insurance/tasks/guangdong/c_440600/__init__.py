@@ -270,8 +270,12 @@ class Task(AbsFetchTask):
                 if v == 'medical_care':
                     data['baseInfo'].setdefault('个人医疗累计缴费', gryilsum)
 
-            data['baseInfo'].setdefault('最近缴费时间', max(arrtime).replace(' ', ''))
-            data['baseInfo'].setdefault('开始缴费时间', min(arrtime).replace(' ', ''))
+            if len(arrtime)>0:
+                data['baseInfo'].setdefault('最近缴费时间', max(arrtime).replace(' ', ''))
+                data['baseInfo'].setdefault('开始缴费时间', min(arrtime).replace(' ', ''))
+            else:
+                data['baseInfo'].setdefault('最近缴费时间','')
+                data['baseInfo'].setdefault('开始缴费时间','')
 
             return
         except PermissionError as e:

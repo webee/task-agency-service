@@ -118,6 +118,8 @@ class Task(AbsFetchTask):
                 username=params['用户名']
                 password =params['密码']
                 vc = params['vc']
+                resps=self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/ggfwpf/login/yx/views/public/login/login_comm.html')
+                soup = BeautifulSoup(resps.content, 'html.parser')
                 self._do_login(username, password, vc)
 
                 # 登录成功
