@@ -60,7 +60,6 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_IMAGE_URL + str(int(time.time()) * 1000)
-        requests.packages.urllib3.disable_warnings()
         resp = self.s.get(vc_url, verify=False)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
