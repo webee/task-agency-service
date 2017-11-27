@@ -4,7 +4,11 @@ import traceback
 import random
 from contextlib import contextmanager
 from selenium import webdriver
+
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
 from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
+
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +76,12 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     if os.path.exists('/tmp'):
         service_log_path = '/tmp/ghostdriver.log'
     driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path=service_log_path)
+
+    # 还原代理
+    proxy = webdriver.Proxy()
+    proxy.proxy_type = ProxyType.DIRECT
+    proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+    driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
 
     driver.set_window_size(1920, 1080)
     driver.implicitly_wait(10)

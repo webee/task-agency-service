@@ -1,3 +1,4 @@
+
 # cff---广州--公积金账号采集
 
 import time
@@ -156,7 +157,7 @@ class Task(AbsFetchTask):
 
     def _do_login(self, id_card,user_name, password, vc):
         """使用web driver模拟登录过程"""
-        driver = webdriver.Ie()
+        driver = webdriver.Ie().iedriver
         # 打开登录页
         driver.get(LoginUrl)
         chooseType=driver.find_element_by_xpath('/html/body/form/table[2]/tbody/tr[2]/td/table/tbody/tr/td[1]/table[2]/tbody/tr/td[2]/table/tbody/tr[1]/td/input[2]')
