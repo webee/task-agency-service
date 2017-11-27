@@ -57,11 +57,12 @@ class Task(AbsFetchTask):
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/sbsjb\wzb\/Bmblist12.jpg/g')
-        proxy = webdriver.Proxy()
-        proxy.proxy_type = ProxyType.MANUAL
-        proxy.http_proxy = self.proxy
-        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
-        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        # proxy = webdriver.Proxy()
+        # proxy.proxy_type = ProxyType.MANUAL
+        # proxy.http_proxy = self.proxy
+        # proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        # driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.service.service_args.append('--proxy=http://' + get_proxy_ip())
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('"http://www.12333sh.gov.cn/xxxx')
         return driver

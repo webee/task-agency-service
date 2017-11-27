@@ -66,7 +66,7 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     service_args.append('--load-images=no')
     service_args.append('--disk-cache=yes')
     service_args.append('--ignore-ssl-errors=true')
-    service_args.append('--ssl-protocol=TLSv1')
+
     caps = {}
     caps.update(webdriver.DesiredCapabilities.PHANTOMJS)
 
@@ -76,12 +76,6 @@ def new_phantomjs_driver(*args, user_agent=None, js_re_ignore='/^$/g', **kwargs)
     if os.path.exists('/tmp'):
         service_log_path = '/tmp/ghostdriver.log'
     driver = webdriver.PhantomJS(service_args=service_args, desired_capabilities=caps, service_log_path=service_log_path)
-
-    # 还原代理
-    proxy = webdriver.Proxy()
-    proxy.proxy_type = ProxyType.DIRECT
-    proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
-    driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
 
     driver.set_window_size(1920, 1080)
     driver.implicitly_wait(10)
