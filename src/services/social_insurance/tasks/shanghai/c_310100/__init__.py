@@ -13,6 +13,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
+
 LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
 LOGIN_SUCCESS_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0"
 VC_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/Bmblist12.jsp"
@@ -57,7 +62,15 @@ class Task(AbsFetchTask):
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/sbsjb\wzb\/Bmblist12.jpg/g')
-        driver.service.service_args.append('--proxy=http://' + get_proxy_ip())
+        # driver.service.service_args.append('--proxy='+get_proxy_ip()+'')
+        # driver.service.service_args.append('--proxy-type=http')
+
+        proxy = webdriver.Proxy()
+        proxy.proxy_type = ProxyType.MANUAL
+        proxy.http_proxy = get_proxy_ip()
+        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('"http://www.12333sh.gov.cn/xxxx')
         return driver
