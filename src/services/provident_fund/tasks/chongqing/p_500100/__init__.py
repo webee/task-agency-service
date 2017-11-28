@@ -122,7 +122,7 @@ class Task(AbsFetchTask):
         """使用web driver模拟登录过程"""
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
-            driver.get(LOGIN_PAGE_URL,timeout=10)
+            driver.get(LOGIN_PAGE_URL)
 
             username_input = driver.find_element_by_xpath('//*[@id="txt_loginname"]')
             password_input = driver.find_element_by_xpath('//*[@id="txt_pwd"]')#pwdRow/td[2]/input[1]
@@ -275,7 +275,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '15123133361', '密码': 'haoran'}
+    meta = {'账号': '510231198107191540', '密码': '154000'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #账号': '15826126132', '密码': 'qinyu20070207'  账号': '15123133361', '密码': 'haoran'

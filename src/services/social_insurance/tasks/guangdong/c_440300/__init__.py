@@ -118,8 +118,6 @@ class Task(AbsFetchTask):
                 username=params['用户名']
                 password =params['密码']
                 vc = params['vc']
-                resps=self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/ggfwpf/login/yx/views/public/login/login_comm.html')
-                soup = BeautifulSoup(resps.content, 'html.parser')
                 self._do_login(username, password, vc)
 
                 # 登录成功
@@ -133,7 +131,7 @@ class Task(AbsFetchTask):
                                             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                             'Accept': 'application / json, text / plain, * / *',
                                             'Token': self.s.Token,
-                                            'Connection': 'keep - alive'})
+                                            'Connection': 'keep - alive'},timeout=15)
                 self.s.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
 
                 self.result_key = username
@@ -181,20 +179,27 @@ class Task(AbsFetchTask):
             #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             # 提交
             submit_btn.click()
-            time.sleep(2)
-            WebDriverWait(driver, 10).until(
-                lambda driver:
-                    EC.invisibility_of_element_located((By.XPATH, 'html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]'))(driver)
-                or EC.element_to_be_clickable((By.XPATH, '//*[@id="div_dialog_login"]/div/div/div/form/div[5]/input[1]'))(driver))
-
-            login_btn = driver.find_element_by_xpath('html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]')
-            s = login_btn.get_attribute('style')
+            time.sleep(5)
+            login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+            soup = BeautifulSoup(login_page_html, 'html.parser')
+            # WebDriverWait(driver, 10).until(
+            #     lambda driver:
+            #         EC.invisibility_of_element_located((By.XPATH, 'html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]'))(driver)
+            #     or EC.element_to_be_clickable((By.XPATH, '//*[@id="div_dialog_login"]/div/div/div/form/div[5]/input[1]'))(driver))
+            #
+            # login_btn = driver.find_element_by_xpath(
+            #     'html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]')
+            #
+            # s = login_btn.get_attribute('style')
             #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            if not s:
-                # failed
-                err_msg = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[3]/font').text
+            # if not s:
+            #     # failed
+            #     err_msg = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[3]/font').text
+            #     raise InvalidParamsError(err_msg)
+            #     # TODO
+            if len(soup.select('.ng-binding')[1].text)==16:    #len(soup.findAll('a')[13].attrs)
+                err_msg =soup.select('.ng-binding')[2].text
                 raise InvalidParamsError(err_msg)
-                # TODO
             else:
                 # success
                 print('success')
@@ -240,7 +245,7 @@ class Task(AbsFetchTask):
                                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                         'Accept': 'application / json, text / plain, * / *',
                                         'Token': self.s.Token,
-                                        'Connection': 'keep - alive'})
+                                        'Connection': 'keep - alive'},timeout=5)
 
             self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
             '''第二次'''
@@ -258,7 +263,7 @@ class Task(AbsFetchTask):
                                                      'Token':self.s.Token,
                                                      'Referer':'https://seyb.szsi.gov.cn/web/ggfw/app/index.html' ,
                                                      'Origin':'https://seyb.szsi.gov.cn',
-                                                     'Host':'seyb.szsi.gov.cn'})
+                                                     'Host':'seyb.szsi.gov.cn'},timeout=5)
             #print(resps.text)
             soup = BeautifulSoup(resps.content, 'html.parser')
             self.s.Token =resps.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
@@ -306,7 +311,7 @@ class Task(AbsFetchTask):
                                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                         'Accept': 'application / json, text / plain, * / *',
                                         'Token': self.g.Token,
-                                        'Connection': 'keep - alive'})
+                                        'Connection': 'keep - alive'},timeout=5)
             self.s.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
 
             #TODO: 执行任务，如果没有登录，则raise PermissionError
@@ -439,7 +444,7 @@ class Task(AbsFetchTask):
 
     # 刷新验证码
     def _new_vc(self):
-        resp = self.s.get(VC_URL)
+        resp = self.s.get(VC_URL,timeout=10)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
 if __name__ == '__main__':
