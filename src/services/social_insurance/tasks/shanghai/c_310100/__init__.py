@@ -1,18 +1,21 @@
 # 上海  社保信息
+from services.service import SessionData
+from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
+from services.errors import InvalidParamsError, TaskNotImplementedError, InvalidConditionError, \
+    PreconditionNotSatisfiedError
+from services.commons import AbsFetchTask
 import time
-import requests
 from bs4 import BeautifulSoup
 from services.proxyIP import get_proxy_ip
-from services.commons import AbsFetchTask
-from services.service import AskForParamsError
-from services.webdriver import new_driver, DriverRequestsCoordinator
 
-from services.errors import InvalidParamsError, InvalidConditionError, PreconditionNotSatisfiedError
+from services.webdriver import new_driver, DriverRequestsCoordinator, DriverType
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from selenium import webdriver
 from selenium.webdriver.common.proxy import Proxy
 from selenium.webdriver.common.proxy import ProxyType
-
 
 LOGIN_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/226.jsp"
 LOGIN_SUCCESS_URL = "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0"
@@ -37,6 +40,7 @@ class Task(AbsFetchTask):
         <li>密码：一般为6位数字；</li>
         <li>首次申请密码或遗忘网上登录密码，本人需携带有效身份证件至就近接到社区事务受理中心或就近社保分中心自助机申请办理。</li>
         """,
+
         developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
     )
 
@@ -50,18 +54,25 @@ class Task(AbsFetchTask):
     def _prepare(self, data=None):
         super()._prepare(data)
         self.proxy = get_proxy_ip()
-        self.s.proxies.update({"http": "http://" + self.proxy})
         self.result_data['baseInfo'] = {}
-
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/sbsjb\wzb\/Bmblist12.jpg/g')
+        # driver.service.service_args.append('--proxy='+get_proxy_ip()+'')
+        # driver.service.service_args.append('--proxy-type=socks5')
+
         proxy = webdriver.Proxy()
         proxy.proxy_type = ProxyType.MANUAL
-        proxy.http_proxy = self.proxy
+        proxy.http_proxy = get_proxy_ip()
         proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
         driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+
+        # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        driver.set_page_load_timeout(20)
+        # 设置10秒脚本超时时间
+        driver.set_script_timeout(20)
+
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('"http://www.12333sh.gov.cn/xxxx')
         return driver
@@ -74,8 +85,9 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
-        ress = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", timeout=10)
-        resp = self.s.get(VC_URL, timeout=10)
+        ress = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", timeout=10,
+                          proxies={"http": "http://" + self.proxy})
+        resp = self.s.get(VC_URL, timeout=10, proxies={"http": "http://" + self.proxy})
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
@@ -201,7 +213,9 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp")
+
+            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp",
+                              proxies={"http": "http://" + self.proxy}, timeout=10)
             soup = BeautifulSoup(resp.content, 'html.parser')
             # years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
@@ -317,6 +331,12 @@ class Task(AbsFetchTask):
             else:
                 personOldMoney = personmoney
 
+            startTime = ""
+            recentTime = ""
+            if (len(details) != 0):
+                startTime = details[0].find('jsjs1').text
+                recentTime = details[len(details) - 1].find('jsjs1').text
+
             self.result['data']['baseInfo'] = {
                 '姓名': soup.find('xm').text,
                 '身份证号': self.result_meta['用户名'],
@@ -324,8 +344,8 @@ class Task(AbsFetchTask):
                 '城市名称': '上海市',
                 '城市编号': '310100',
                 '缴费时长': moneyTime,
-                '最近缴费时间': details[len(details) - 1].find('jsjs1').text,
-                '开始缴费时间': details[0].find('jsjs1').text,
+                '最近缴费时间': recentTime,
+                '开始缴费时间': startTime,
                 '个人养老累计缴费': personOldMoney,
                 '个人医疗累计缴费': '',
                 '账户状态': ''
