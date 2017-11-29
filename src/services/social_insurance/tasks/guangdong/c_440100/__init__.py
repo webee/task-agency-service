@@ -15,6 +15,11 @@ import json
 import re
 import datetime
 
+
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
+
 LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/login"
 VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
@@ -73,6 +78,14 @@ class Task(AbsFetchTask):
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/cas\/captcha.jpg/g')
+        proxy = webdriver.Proxy()
+        proxy.proxy_type = ProxyType.DIRECT
+        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        driver.set_page_load_timeout(13)
+        # 设置10秒脚本超时时间
+        driver.set_script_timeout(13)
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('http://gzlss.hrssgz.gov.cn/xxxx')
         return driver

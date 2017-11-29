@@ -15,6 +15,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
+
 
 class value_is_number(object):
     """判断元素value是数字"""
@@ -58,6 +62,14 @@ class Task(AbsFetchTask):
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT,js_re_ignore='/web\/ImageCheck.jpg/g')
+        proxy = webdriver.Proxy()
+        proxy.proxy_type = ProxyType.DIRECT
+        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        driver.set_page_load_timeout(13)
+        # 设置10秒脚本超时时间
+        driver.set_script_timeout(13)
         driver.get(LOGIN_PAGE_URL)
 
         return driver

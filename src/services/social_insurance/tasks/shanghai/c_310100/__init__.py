@@ -56,14 +56,17 @@ class Task(AbsFetchTask):
     def _prepare(self, data=None):
         super()._prepare(data)
         self.proxy = get_proxy_ip()
-        self.s.proxies.update({"http": "http://" + self.proxy})
         self.result_data['baseInfo']={}
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/sbsjb\wzb\/Bmblist12.jpg/g')
         # driver.service.service_args.append('--proxy='+get_proxy_ip()+'')
-        # driver.service.service_args.append('--proxy-type=http')
+        # driver.service.service_args.append('--proxy-type=socks5')
+        # # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        # driver.set_page_load_timeout(10)
+        # # 设置10秒脚本超时时间
+        # driver.set_script_timeout(10)
 
         proxy = webdriver.Proxy()
         proxy.proxy_type = ProxyType.MANUAL
@@ -83,8 +86,8 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
-        ress=self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", timeout=10)
-        resp = self.s.get(VC_URL, timeout=10)
+        ress=self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp", timeout=10, proxies={"http": "http://" + self.proxy})
+        resp = self.s.get(VC_URL, timeout=10, proxies={"http": "http://" + self.proxy})
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
@@ -213,7 +216,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
 
-            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp")
+            resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp", proxies={"http": "http://" + self.proxy}, timeout=10)
             soup = BeautifulSoup(resp.content, 'html.parser')
             #years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
@@ -378,7 +381,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '372901198109035010', '密码': '903503'}
+    meta = {'用户名': '321322199001067241', '密码': '123456'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
