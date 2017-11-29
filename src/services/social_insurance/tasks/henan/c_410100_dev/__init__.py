@@ -8,8 +8,8 @@ from services.commons import AbsFetchTask
 
 VC_URL='http://218.28.166.74:8080/zzsbonline/captcha.png?'
 LOGIN_URL='http://218.28.166.74:8080/zzsbonline/usersAction!userLogin'
-INFO_URL='http://wsbs.zjhz.hrss.gov.cn/person/personInfo/index.html'
-MX_URL='http://wsbs.zjhz.hrss.gov.cn/unit/web_zgjf_query/web_zgjf_doQuery.html'
+INFO_URL='http://218.28.166.74:8080/zzsbonline/searchinfoAction'
+#MX_URL='http://wsbs.zjhz.hrss.gov.cn/unit/web_zgjf_query/web_zgjf_doQuery.html'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="郑州",
@@ -113,6 +113,9 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
+            resp = self.s.get(INFO_URL)
+            vctext = BeautifulSoup(resp.content, 'html.parser')
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
