@@ -15,17 +15,22 @@ import json
 import re
 import datetime
 
+
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
+
 LOGIN_URL = "http://gzlss.hrssgz.gov.cn/cas/login"
 VC_URL = "http://gzlss.hrssgz.gov.cn/cas/captcha.jpg"
-USER_AGENT="Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
-User_BaseInfo="http://gzlss.hrssgz.gov.cn/gzlss_web/business/authentication/menu/getMenusByParentId.xhtml?parentId=SECOND-ZZCXUN"
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
+User_BaseInfo = "http://gzlss.hrssgz.gov.cn/gzlss_web/business/authentication/menu/getMenusByParentId.xhtml?parentId=SECOND-ZZCXUN"
 # Medical_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/authentication/menu/getMenusByParentId.xhtml?parentId=SECOND-ZZHUCX"
-Search_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/getPersonPayHistoryInfoByPage.xhtml?querylog=true&businessocde=SBGRJFLSCX&visitterminal=PC"
-Sixian_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/viewPage/viewPersonPayHistoryInfo.xhtml?xzType=1&startStr=&endStr=&querylog=true&businessocde=291QB-GRJFLS&visitterminal=PC&aac001="
-Yiliao_URL="http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/getHealthcarePersonPayHistorySumup.xhtml?query=1&querylog=true&businessocde=291QB_YBGRJFLSCX&visitterminal=PC&aac001="
+Search_URL = "http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/getPersonPayHistoryInfoByPage.xhtml?querylog=true&businessocde=SBGRJFLSCX&visitterminal=PC"
+Sixian_URL = "http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/viewPage/viewPersonPayHistoryInfo.xhtml?xzType=1&startStr=&endStr=&querylog=true&businessocde=291QB-GRJFLS&visitterminal=PC&aac001="
+Yiliao_URL = "http://gzlss.hrssgz.gov.cn/gzlss_web/business/front/foundationcentre/getHealthcarePersonPayHistorySumup.xhtml?query=1&querylog=true&businessocde=291QB_YBGRJFLSCX&visitterminal=PC&aac001="
+
 
 class value_is_number(object):
-
     def __init__(self, locator):
         self.locator = locator
 
@@ -33,6 +38,7 @@ class value_is_number(object):
         element = driver.find_element(*self.locator)
         val = element.get_attribute('value')
         return val and val.isnumeric()
+
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -47,16 +53,16 @@ class Task(AbsFetchTask):
 
     def _get_common_headers(self):
         return {
-            'User-Agent':USER_AGENT,
+            'User-Agent': USER_AGENT,
             # 'Accept-Encoding':'gzip, deflate, sdch',
             # 'X-Requested-With': 'XMLHttpRequest',
             # 'Host':'gzlss.hrssgz.gov.cn'
         }
 
-    def _prepare(self,data=None):
+    def _prepare(self, data=None):
         """恢复状态，初始化结果"""
         super()._prepare(data)
-        self.result_data['baseInfo']={}
+        self.result_data['baseInfo'] = {}
         # state
         # state: dict = self.state
         # TODO: restore from state
@@ -68,10 +74,18 @@ class Task(AbsFetchTask):
 
     def _create_chrome_driver(self):
         driver = new_driver(user_agent=USER_AGENT, driver_type=DriverType.CHROME)
-        return  driver
+        return driver
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/cas\/captcha.jpg/g')
+        # proxy = webdriver.Proxy()
+        # proxy.proxy_type = ProxyType.DIRECT
+        # proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        # driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        # # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        driver.set_page_load_timeout(20)
+        # 设置10秒脚本超时时间
+        driver.set_script_timeout(20)
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('http://gzlss.hrssgz.gov.cn/xxxx')
         return driver
@@ -139,8 +153,8 @@ class Task(AbsFetchTask):
         datas = {
             'usertype': "2",
             'lt': lt,
-            #'username': params.get('账号'),
-            #'password': params.get('密码'),
+            # 'username': params.get('账号'),
+            # 'password': params.get('密码'),
             '_eventId': 'submit'
         }
 
@@ -155,8 +169,8 @@ class Task(AbsFetchTask):
             try:
                 self._check_login_params(params)
 
-                id_num=params['账号']
-                pass_word=params['密码']
+                id_num = params['账号']
+                pass_word = params['密码']
                 vc = params['vc']
 
                 self._do_login(id_num, pass_word, vc)
@@ -186,7 +200,7 @@ class Task(AbsFetchTask):
             username_input = driver.find_element_by_xpath('//*[@id="loginName"]')
             password_input = driver.find_element_by_xpath('//*[@id="loginPassword"]')
             vc_input = driver.find_element_by_xpath('//*[@id="validateCode"]')
-            user_type=driver.find_element_by_xpath('//*[@id="usertype2"]')
+            user_type = driver.find_element_by_xpath('//*[@id="usertype2"]')
 
             # 用户名
             username_input.clear()
@@ -212,34 +226,36 @@ class Task(AbsFetchTask):
                 finally:
                     raise InvalidParamsError(err_msg)
 
-            # 登录成功
+                    # 登录成功
 
-    def _to_replace(self,con):
-        res=con.replace('\r','').replace('\n','').replace('\t','')
+    def _to_replace(self, con):
+        res = con.replace('\r', '').replace('\n', '').replace('\t', '')
         return res
 
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-            s=json.loads(self.s.get(User_BaseInfo).text)   # 个人信息导航
-            s2=s[0]['url']
-            res=self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web"+s2)   # 个人基础信息
+            s = json.loads(self.s.get(User_BaseInfo).text)  # 个人信息导航
+            s2 = s[0]['url']
+            res = self.s.get("http://gzlss.hrssgz.gov.cn/gzlss_web" + s2)  # 个人基础信息
 
-            if(len(BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'}))<=0):
+            if (len(BeautifulSoup(res.text, 'html.parser').findAll('table', {'class': 'comitTable'})) <= 0):
                 raise TaskNotAvailableError("网络异常，请重新登录")
                 return
 
-            redata=BeautifulSoup(res.text,'html.parser').findAll('table',{'class':'comitTable'})[0]   # 姓名等信息
-            redata2 = BeautifulSoup(res.text,'html.parser').findAll('table', {'class': 'comitTable'})[1]   #民族等信息
-
+            redata = BeautifulSoup(res.text, 'html.parser').findAll('table', {'class': 'comitTable'})[0]  # 姓名等信息
+            redata2 = BeautifulSoup(res.text, 'html.parser').findAll('table', {'class': 'comitTable'})[1]  # 民族等信息
 
             # 社保明细
-            userNum=BeautifulSoup(self.s.get(Search_URL).text,'html.parser').find('select',{'id':'aac001'}).text.replace('\n','')   # 员工编号
-            sixian=BeautifulSoup(self.s.get(Sixian_URL+userNum).text,'html.parser').find('table').findAll("tr",{'class':'table_white_data'})
+            userNum = BeautifulSoup(self.s.get(Search_URL).text, 'html.parser').find('select',
+                                                                                     {'id': 'aac001'}).text.replace(
+                '\n', '')  # 员工编号
+            sixian = BeautifulSoup(self.s.get(Sixian_URL + userNum).text, 'html.parser').find('table').findAll("tr", {
+                'class': 'table_white_data'})
 
             # 医疗保险明细
-            permedicalTotal=0.0
-            HmoneyCount=0
+            permedicalTotal = 0.0
+            HmoneyCount = 0
             paraURL = "&startStr=199001&endStr=" + time.strftime('%Y%m', time.localtime()) + ""  # 医疗保险地址参数
             yiliao = BeautifulSoup(self.s.get(Yiliao_URL + userNum + paraURL).text, 'html.parser')
             a = yiliao.find('table', {'id': 'tableDataList'}).find('script').text
@@ -250,10 +266,10 @@ class Task(AbsFetchTask):
             dataBaseH = self.result_data['medical_care']["data"]
             modelH = {}
 
-            si_status=""
+            si_status = ""
             sidata = yiliao.find('table', {'id': 'tableDataList'})
             if 'alert' not in sidata.text:
-                if len(sidata.findAll("tr"))>1:
+                if len(sidata.findAll("tr")) > 1:
                     si_status = self._to_replace(sidata.findAll("tr")[1].findAll("td")[10].text)[0:2]  # 缴存状态
                     si_com = self._to_replace(sidata.findAll("tr")[2].findAll("td")[3].text)  # 缴费单位
                     yiliaoData = sidata.findAll("tr", {'temp': '职工社会医疗保险'})
@@ -267,7 +283,8 @@ class Task(AbsFetchTask):
                         rangNum = int(self._to_replace(td[3].text))
                         HmoneyCount += rangNum
                         for a1 in range(-1, rangNum - 1):
-                            nowtime = datetime.date(int(yearH) + (int(monthH) + a1) // 12, (int(monthH) + a1) % 12 + 1,1).strftime('%Y%m')
+                            nowtime = datetime.date(int(yearH) + (int(monthH) + a1) // 12, (int(monthH) + a1) % 12 + 1,
+                                                    1).strftime('%Y%m')
                             modelH = {
                                 '缴费单位': si_com,
                                 '缴费类型': si_status,
@@ -283,25 +300,25 @@ class Task(AbsFetchTask):
                 else:
                     raise TaskNotImplementedError("未查询到数据！")
             else:
-                errormsg2=sidata.text.split('(')[1].split(')')[0]
+                errormsg2 = sidata.text.split('(')[1].split(')')[0]
                 raise TaskNotImplementedError(errormsg2)
-
 
             # 养老保险明细
             self.result_data['old_age'] = {"data": {}}
             dataBaseE = self.result_data['old_age']["data"]
             modelE = {}
-            peroldTotal=0.0
+            peroldTotal = 0.0
             for b in range(len(sixian) - 3):
                 td2 = sixian[b].findAll("td")
-                if(td2[5].text.strip()!=''):
+                if (td2[5].text.strip() != ''):
                     peroldTotal += float(td2[5].text)
 
                     yearE = td2[0].text[0:4]
                     monthE = td2[0].text[4:6]
                     rangNumE = int(td2[2].text)
                     for b1 in range(-1, rangNumE - 1):
-                        nowtime2 = datetime.date(int(yearE) + (int(monthE) + b1) // 12, (int(monthE) + b1) % 12 + 1,1).strftime('%Y%m')
+                        nowtime2 = datetime.date(int(yearE) + (int(monthE) + b1) // 12, (int(monthE) + b1) % 12 + 1,
+                                                 1).strftime('%Y%m')
                         modelE = {
                             '缴费单位': td2[11].text,
                             '缴费类型': td2[12].text,
@@ -314,14 +331,13 @@ class Task(AbsFetchTask):
                         dataBaseE[nowtime2[0:4]].setdefault(nowtime2[4:6], [])
                         dataBaseE[nowtime2[0:4]][nowtime2[4:6]].append(modelE)
 
-
             # 失业保险明细
             self.result_data['unemployment'] = {"data": {}}
             dataBaseI = self.result_data['unemployment']["data"]
             modelI = {}
             for c in range(len(sixian) - 3):
                 td3 = sixian[c].findAll("td")
-                if(td3[0].text.strip()!=""):
+                if (td3[0].text.strip() != ""):
                     yearI = td3[0].text[0:4]
                     monthI = td3[0].text[4:6]
                     rangNumI = int(td3[2].text)
@@ -340,11 +356,10 @@ class Task(AbsFetchTask):
                         dataBaseI[nowtime3[0:4]].setdefault(nowtime3[4:6], [])
                         dataBaseI[nowtime3[0:4]][nowtime3[4:6]].append(modelI)
 
-
             # 工伤保险明细
             self.result_data['injuries'] = {"data": {}}
-            dataBaseC=self.result_data['injuries']["data"]
-            modelC={}
+            dataBaseC = self.result_data['injuries']["data"]
+            modelC = {}
             for d in range(len(sixian) - 3):
                 td4 = sixian[d].findAll("td")
                 if (td4[0].text.strip() != ""):
@@ -352,7 +367,8 @@ class Task(AbsFetchTask):
                     monthC = td4[0].text[4:6]
                     rangNumC = int(td4[2].text)
                     for d1 in range(-1, rangNumC - 1):
-                        nowtime4 = datetime.date(int(yearC) + (int(monthC) + d1) // 12, (int(monthC) + d1) % 12 + 1,1).strftime('%Y%m')
+                        nowtime4 = datetime.date(int(yearC) + (int(monthC) + d1) // 12, (int(monthC) + d1) % 12 + 1,
+                                                 1).strftime('%Y%m')
                         modelC = {
                             '缴费单位': td4[11].text,
                             '缴费类型': td4[12].text,
@@ -365,7 +381,6 @@ class Task(AbsFetchTask):
                         dataBaseC[nowtime4[0:4]].setdefault(nowtime4[4:6], [])
                         dataBaseC[nowtime4[0:4]][nowtime4[4:6]].append(modelC)
 
-
             # 生育保险明细
             self.result_data['maternity'] = {"data": {}}
             dataBaseB = self.result_data['maternity']["data"]
@@ -377,7 +392,8 @@ class Task(AbsFetchTask):
                     monthB = td5[0].text[4:6]
                     rangNumB = int(td5[2].text)
                     for f1 in range(-1, rangNumB - 1):
-                        nowtime5 = datetime.date(int(yearB) + (int(monthB) + f1) // 12, (int(monthB) + f1) % 12 + 1,1).strftime('%Y%m')
+                        nowtime5 = datetime.date(int(yearB) + (int(monthB) + f1) // 12, (int(monthB) + f1) % 12 + 1,
+                                                 1).strftime('%Y%m')
                         modelB = {
                             '缴费单位': td5[11].text,
                             '缴费类型': td5[12].text,
@@ -390,14 +406,13 @@ class Task(AbsFetchTask):
                         dataBaseB[nowtime5[0:4]].setdefault(nowtime5[4:6], [])
                         dataBaseB[nowtime5[0:4]][nowtime5[4:6]].append(modelB)
 
-
             # 大病保险明细
             dabingData = sidata.findAll("tr", {'temp': '重大疾病医疗补助'})
             self.result_data['serious_illness'] = {"data": {}}
             dataBaseQ = self.result_data['serious_illness']["data"]
             modelQ = {}
 
-            if(len(dabingData)>0):
+            if (len(dabingData) > 0):
                 for q in range(len(dabingData)):
                     td6 = dabingData[q].findAll("td")
                     if (td6[0].text.strip() != ""):
@@ -406,7 +421,8 @@ class Task(AbsFetchTask):
                         rangNumQ = int(self._to_replace(td[3].text))
 
                         for a1 in range(-1, rangNumQ - 1):
-                            nowtime6 = datetime.date(int(yearQ) + (int(monthQ) + a1) // 12, (int(monthQ) + a1) % 12 + 1,1).strftime('%Y%m')
+                            nowtime6 = datetime.date(int(yearQ) + (int(monthQ) + a1) // 12, (int(monthQ) + a1) % 12 + 1,
+                                                     1).strftime('%Y%m')
                             modelQ = {
                                 '缴费单位': si_com,
                                 '缴费类型': si_status,
@@ -420,24 +436,24 @@ class Task(AbsFetchTask):
                             dataBaseQ[nowtime6[0:4]].setdefault(nowtime6[4:6], [])
                             dataBaseQ[nowtime6[0:4]][nowtime6[4:6]].append(modelQ)
 
-            sixiantype=""
-            if(len(sixian)>=4):
-                sixiantype=sixian[len(sixian)-4].findAll("td")[12].text
-            social_status={
-                '医疗':si_status,
-                '养老':sixiantype,
-                '失业':sixiantype,
-                '工伤':sixiantype,
-                '生育':sixiantype
+            sixiantype = ""
+            if (len(sixian) >= 4):
+                sixiantype = sixian[len(sixian) - 4].findAll("td")[12].text
+            social_status = {
+                '医疗': si_status,
+                '养老': sixiantype,
+                '失业': sixiantype,
+                '工伤': sixiantype,
+                '生育': sixiantype
             }
 
             # 缴费时长
-            EmoneyCount=sixian[len(sixian)-3].findAll("td")[1].text
-            EmoneyCount2=sixian[len(sixian)-3].findAll("td")[2].text
-            EmoneyCount3=sixian[len(sixian)-3].findAll("td")[3].text
-            EmoneyCount4=sixian[len(sixian)-3].findAll("td")[4].text
-            rescount=[EmoneyCount,EmoneyCount2,EmoneyCount3,EmoneyCount4]
-            moneyCount=max(rescount)
+            EmoneyCount = sixian[len(sixian) - 3].findAll("td")[1].text
+            EmoneyCount2 = sixian[len(sixian) - 3].findAll("td")[2].text
+            EmoneyCount3 = sixian[len(sixian) - 3].findAll("td")[3].text
+            EmoneyCount4 = sixian[len(sixian) - 3].findAll("td")[4].text
+            rescount = [EmoneyCount, EmoneyCount2, EmoneyCount3, EmoneyCount4]
+            moneyCount = max(rescount)
 
             # 个人基本信息
             self.result_data['baseInfo'] = {
@@ -447,17 +463,17 @@ class Task(AbsFetchTask):
                 '城市名称': '广州市',
                 '城市编号': '440100',
                 '缴费时长': moneyCount,
-                '最近缴费时间':sixian[len(sixian)-4].findAll("td")[1].text,
+                '最近缴费时间': sixian[len(sixian) - 4].findAll("td")[1].text,
                 '开始缴费时间': sixian[0].findAll("td")[0].text,
-                '个人养老累计缴费':peroldTotal,
+                '个人养老累计缴费': peroldTotal,
                 '个人医疗累计缴费': permedicalTotal,
                 '五险状态': social_status,
-                '账户状态':social_status['养老'],
+                '账户状态': social_status['养老'],
 
                 '个人编号': redata.find('input', {'id': 'aac001'})['value'],
                 # '性别': redata.find('input', {'id': 'aac004ss'})['value'],
-                #'民族': redata2.find('select', {'id': 'aac005'}).find(selected="selected").text.replace('\r', '').replace('\n', '').replace('\t', ''),
-                #'户口性质': redata.find('input', {'id': 'aac009ss'})['value'],
+                # '民族': redata2.find('select', {'id': 'aac005'}).find(selected="selected").text.replace('\r', '').replace('\n', '').replace('\t', ''),
+                # '户口性质': redata.find('input', {'id': 'aac009ss'})['value'],
                 # '出生日期': redata.find('input', {'id': 'aac006ss'})['value'],
                 # '单位名称': redata.find('input', {'id': 'aab069ss'})['value'],
                 # '地址': redata2.find('input', {'id': 'bab306'})['value'],
@@ -492,7 +508,7 @@ if __name__ == '__main__':
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
-    #file=open("D:/789654321.html",'r')
+    # file=open("D:/789654321.html",'r')
 
 
     # 441481198701204831 '密码': taifaikcoi168

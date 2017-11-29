@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
+from services.errors import InvalidParamsError
 
 MAIN_URL = 'http://221.215.38.136/grcx/work/index.do?method=level2Menu&topMenuId=1000'
 LOGINONE_URL = 'http://221.215.38.136/grcx/work/m01/logincheck/valid.action'
@@ -16,11 +17,14 @@ OLDQuery_URL='http://221.215.38.136/grcx/work/m01/f1203/oldQuery.action'
 medicalQuery_URL='http://221.215.38.136/grcx/work/m01/f1204/medicalQuery.action'
 unemployQuery_URL='http://221.215.38.136/grcx/work/m01/f1205/unemployQuery.action'
 STATUS_URL='http://221.215.38.136/grcx/work/m01/f1102/insuranceQuery.action'
+PASS_URl='http://221.215.38.136/grcx/pages/passwordReset/passwordReset.jsp'
+MB_URL='http://221.215.38.136/grcx/pages/findPassword/mbQuestion.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="青岛",
         help="""<li>首次登录初始密码为老卡的个人编号（磁条）或新卡的社会保障卡号（芯片）；如果老卡（磁条）的个人编号最前一位是0，输入密码时需去掉0。</li>
-            <li>如忘记密码，可到青岛社保网上查询平台中的“忘记密码”进行密码重置或到参保所在社会保险经办机构申请密码初始化。</li>"""
+            <li>如忘记密码，可到青岛社保网上查询平台中的“忘记密码”进行密码重置或到参保所在社会保险经办机构申请密码初始化。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
     def _get_common_headers(self):
         return { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36'
@@ -42,6 +46,18 @@ class Task(AbsFetchTask):
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        密码 = params['密码']
+
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -78,7 +94,7 @@ class Task(AbsFetchTask):
                  ))
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 if len(soup.text)>0:
-                    raise Exception(soup.text)
+                    raise InvalidParamsError(soup.text)
                 else:
                     m = hashlib.md5()
                     m.update(password.encode(encoding='utf-8'))
@@ -93,13 +109,17 @@ class Task(AbsFetchTask):
                         password=hashpsw,
                         kc02flag=''
                     ))
-                    soup = BeautifulSoup(resp.content, 'html.parser')
-
-                    if soup.select('.text3'):
-                        return_message=soup.select('.text3')[0].text
-                        raise Exception(return_message)
+                    if resp.url==PASS_URl:
+                        raise InvalidParamsError('请登录官网修改密码 ！说明:1、为保证信息安全,密码不能为个人编号。2、密码长度需大于6位小于18位。')
+                    elif resp.url==MB_URL:
+                        raise InvalidParamsError('请登录官网修改密保 ！说明:注：1、请设置密保问题，密保问题不要随意泄露。2、密保问题作为找回密码的依据，请妥善保存。')
                     else:
-                        print("登录成功！")
+                        soup = BeautifulSoup(resp.content, 'html.parser')
+                        if soup.select('.text3'):
+                            return_message=soup.select('.text3')[0].text
+                            raise InvalidParamsError(return_message)
+                        else:
+                            print("登录成功！")
 
                 self.result_key = id_num
                 self.result_meta['身份证号'] = id_num
@@ -107,7 +127,7 @@ class Task(AbsFetchTask):
                 self.result_identity['task_name'] = '青岛'
                 self.result_identity['target_id'] = id_num
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()
@@ -123,9 +143,14 @@ class Task(AbsFetchTask):
             #基本信息
             resp=self.s.get(BASEINFO_URl)
             soup=BeautifulSoup(resp.content,'html.parser')
-            zkindex=soup.select('select')[0]['value']
+            zkindex =''
+            if soup.select('select'):
+                zkindex=soup.select('select')[0]['value']
+                if zkindex:
+                    zkindex=soup.find_all('option')[int(zkindex)].text
+
             data['baseInfo']={
-                '社保编号' : soup.select('input')[0]['value'],
+                '个人编号' : soup.select('input')[0]['value'],
                 '姓名': soup.select('input')[1]['value'],
                 '身份证号': soup.select('input')[2]['value'],
                 '性别':soup.select('input')[3]['value'],
@@ -134,7 +159,7 @@ class Task(AbsFetchTask):
                 '人员状态': soup.select('input')[6]['value'],
                 '民 族': soup.select('input')[7]['value'],
                 '特殊工种': soup.select('input')[8]['value'],
-                '制卡状态': soup.find_all('option')[int(zkindex)].text,
+                '制卡状态':zkindex ,
                 '发卡银行': soup.select('input')[9]['value'],
                 '银行地址': soup.select('input')[10]['value'],
                 '联系电话': soup.select('input')[11]['value'],
@@ -172,7 +197,9 @@ class Task(AbsFetchTask):
             resp = self.s.get(pageOLDQuery_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             pages = len(soup.select('.mypagelink')[0].findAll('a'))
-            for i in range(1,pages):
+            if pages==0:
+                pages=1
+            for i in range(1,pages+1):
                 pageOLDQuery_URL=OLDQuery_URL+'?aac001=80161738&page_active=oldQuery&page_oldQuery='+str(i)
                 resp=self.s.get(pageOLDQuery_URL)
                 soup=BeautifulSoup(resp.content,'html.parser')
@@ -216,9 +243,10 @@ class Task(AbsFetchTask):
                             else:
                                 arrtime.append(monthkeys)
                                 data['old_age']['data'][yearkeys].setdefault(monthkeys[-2:],arr)
-            data['baseInfo'].setdefault('缴费时长',str(len(arrtime)))
-            data['baseInfo'].setdefault('最近缴费时间',max(arrtime))
-            data['baseInfo'].setdefault('开始缴费时间',min(arrtime))
+            if len(arrtime)>1:
+                data['baseInfo'].setdefault('缴费时长',str(len(arrtime)))
+                data['baseInfo'].setdefault('最近缴费时间',max(arrtime))
+                data['baseInfo'].setdefault('开始缴费时间',min(arrtime))
             data['baseInfo'].setdefault('个人养老累计缴费', oldsum)
             #医疗明细信息
             data['medical_care'] = {}
@@ -228,7 +256,9 @@ class Task(AbsFetchTask):
             resp = self.s.get(medicalQuery_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             pages = len(soup.select('.mypagelink')[0].findAll('a'))
-            for i in range(1, pages):
+            if pages==0:
+                pages=1
+            for i in range(1, pages+1):
                 pageOLDQuery_URL = medicalQuery_URL + '?aac001=80161738&page_active=medicalQuery&page_medicalQuery=' + str(i)
                 resp = self.s.get(pageOLDQuery_URL)
                 soup = BeautifulSoup(resp.content, 'html.parser')
@@ -279,7 +309,9 @@ class Task(AbsFetchTask):
             resp = self.s.get(unemployQuery_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
             pages = len(soup.select('.mypagelink')[0].findAll('a'))
-            for i in range(1, pages):
+            if pages==0:
+                pages=1
+            for i in range(1, pages+1):
                 pageunemployQuery_URL = unemployQuery_URL + '?aac001=80161738&page_active=unemployQuery&page_unemployQuery=' + str(
                     i)
                 resp = self.s.get(pageunemployQuery_URL)
@@ -336,3 +368,5 @@ if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task())
     client.run()
+
+#修改密码账号    370682199602031616   u26193005

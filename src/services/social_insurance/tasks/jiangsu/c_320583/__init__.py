@@ -17,7 +17,8 @@ class Task(AbsFetchTask):
         help="""<li>医保病例手册（2005年11月后发放）首页“个人编号”。</li>
         <li>由定点医院或药店出具发票上的8位数字的“社会保障号码”、“保险号”。</li>
         <li>“职工社会保险个人权益记录单”及“社会保险参保证明”上的社保编号。</li>
-        <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>"""
+        <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>""",
+        developers=[{'name': '卜圆圆', 'email': 'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -40,7 +41,18 @@ class Task(AbsFetchTask):
         assert '社保编号' in params, '缺少社保编号'
         # assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        社保编号 = params['社保编号']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(社保编号) == 0:
+            raise InvalidParamsError('社保编号为空，请输入社保编号！')
+        elif len(社保编号) < 6:
+            raise InvalidParamsError('社保编号不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -81,7 +93,7 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data)
                 if resp.url != MAIN_URL:
-                    raise Exception("登录失败！请重新登录")
+                    raise InvalidParamsError("登录失败！请重新登录")
 
                 self.result_key = txtIdCard
                 # 保存到meta
@@ -93,8 +105,6 @@ class Task(AbsFetchTask):
 
                 return
             except (AssertionError, InvalidParamsError) as e:
-                err_msg = str(e)
-            except Exception as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
@@ -117,7 +127,7 @@ class Task(AbsFetchTask):
                 "姓名": tds[2].text,
                 "社保编号": tds[4].text,
                 "单位名称": tds[6].text,
-                "出生年月": tds[8].text,
+                "出生日期": tds[8].text,
                 "开始缴费时间": tds[10].text,
                 "当前账户状态": tds[12].text,
                 "身份证号": self.result['key'],
@@ -171,7 +181,7 @@ class Task(AbsFetchTask):
             resp = self.s.post(url)
             soup = BeautifulSoup(str(resp.content, 'utf-8'), "html.parser")
             return soup
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 养老
@@ -250,7 +260,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -281,14 +291,14 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        if data["old_age"]["data"][str(year)] == {}:
+                        if str(year) not in data["old_age"]["data"].keys():
                             data["old_age"]["data"][str(year)] = {}
                         for month in tempDoubt:
                             try:
                                 data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["old_age"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗
@@ -367,7 +377,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -405,7 +415,7 @@ class Task(AbsFetchTask):
                                 data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["medical_care"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 工伤
@@ -480,7 +490,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -518,7 +528,7 @@ class Task(AbsFetchTask):
                                 data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["injuries"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 生育
@@ -592,7 +602,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -630,7 +640,7 @@ class Task(AbsFetchTask):
                                 data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["maternity"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 失业
@@ -703,7 +713,7 @@ class Task(AbsFetchTask):
                             normal.append(obj)
                         else:
                             doubt.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -741,7 +751,7 @@ class Task(AbsFetchTask):
                                 data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])].append(month)
                             except:
                                 data["unemployment"]["data"][str(year)][str(month["缴费时间"][5:])] = [month]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 缴费明细main方法
@@ -786,7 +796,7 @@ class Task(AbsFetchTask):
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
 

@@ -1,9 +1,7 @@
 import re
 import bs4
 import time
-import io
-from PIL import Image
-import json
+import requests
 import datetime
 from urllib import parse
 from services.webdriver import new_driver, DriverRequestsCoordinator
@@ -11,6 +9,9 @@ from services.commons import AbsFetchTask
 from services.errors import InvalidParamsError, AskForParamsError, InvalidConditionError, PreconditionNotSatisfiedError
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0'
 LOGIN_PAGE_URL = 'https://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
@@ -33,7 +34,8 @@ class Task(AbsFetchTask):
         city_name="北京市",
         expect_time=10,
         help="""<li>首次登陆查询功能，验证方式必须选择联名卡号；初始密码为身份证后四位阿拉伯数字+00。为了保证您的个人信息安全，请您及时修改初始密码，如有问题请拨打“住房公积金热线12329”咨询</li>
-            """
+            """,
+        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -47,21 +49,15 @@ class Task(AbsFetchTask):
         self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
 
     def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT)
-
-        # 不加载验证码
-        script = """
-            var page = this;
-            page.onResourceRequested = function(requestData, networkRequest) {
-                var match = requestData.url.match(/PicCheckCode1/g);
-                if (match != null) {
-                    //console.log('Request (#' + requestData.id + '): ' + JSON.stringify(requestData));
-                    //networkRequest.cancel(); // or .abort()
-                    networkRequest.abort();
-                }
-            };
-        """
-        driver.execute('executePhantomScript', {'script': script, 'args': []})
+        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/PicCheckCode1/g')
+        proxy = webdriver.Proxy()
+        proxy.proxy_type = ProxyType.DIRECT
+        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        driver.set_page_load_timeout(13)
+        # 设置10秒脚本超时时间
+        driver.set_script_timeout(13)
         return driver
 
     def _setup_task_units(self):
@@ -228,6 +224,14 @@ class Task(AbsFetchTask):
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             self.g.current_url = driver.current_url
 
+            # 部分登录页面可登录进去但是密码不安全提示
+            soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
+            companyList = soup.findAll("table", {"id": "new-mytable"})
+            error = soup.find("span", {"class": "tittle1"})
+            if companyList.__len__() <= 0 and error:
+                errorInfo = error.text.replace("\n", "")
+                raise InvalidParamsError(errorInfo)
+
     def _unit_fetch(self):
         try:
             # 初始化抓取信息
@@ -285,6 +289,9 @@ class Task(AbsFetchTask):
                                     })
 
                                 detail_tag = result.findAll("span", {"class": "style2"})
+                                # 20177月份后数据不太准确
+                                temp_detail = result.findAll("table", {"id": "tab-style"})
+                                temp_all_date = []
                                 if len(detail_tag) > 0:
                                     detail_a = detail_tag[1].findAll("a")[0]
                                     detail_link = detail_a.attrs['onclick'].split("'")[1]
@@ -307,6 +314,7 @@ class Task(AbsFetchTask):
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]]
                                                 except KeyError:
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
+                                                temp_all_date.append(date)
                                                 self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
                                                     "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
                                                     "类型": re.sub('\s', '', detail_tds[2].text),
@@ -316,12 +324,34 @@ class Task(AbsFetchTask):
                                                     "余额": re.sub('\s', '', detail_tds[5].text),
                                                     "单位名称": _tds[37].text
                                                 })
-                                    pass
+                                if len(temp_detail) > 0:
+                                    detail_trs = temp_detail[0].findAll("tr")
+                                    for detail_tr in detail_trs:
+                                        detail_tds = detail_tr.findAll("td")
+                                        if detail_tr != detail_trs[0]:
+                                            date = re.sub('\s', '', detail_tds[0].text)
+                                            if date not in temp_all_date:
+                                                try:
+                                                    self.result_data["detail"]["data"][date[0:4]]
+                                                except KeyError:
+                                                    self.result_data["detail"]["data"][date[0:4]] = {}
+                                                try:
+                                                    self.result_data["detail"]["data"][date[0:4]][date[4:6]]
+                                                except KeyError:
+                                                    self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
+
+                                                self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
+                                                    "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
+                                                    "类型": re.sub('\s', '', detail_tds[2].text),
+                                                    "汇缴年月": re.sub('\s', '', detail_tds[1].text),
+                                                    "收入": re.sub('\s', '', detail_tds[3].text),
+                                                    "支出": re.sub('\s', '', detail_tds[4].text),
+                                                    "余额": re.sub('\s', '', detail_tds[5].text),
+                                                    "单位名称": _tds[37].text
+                                                })
                         except:
                             pass
-
                         i = i + 1
-
             self.result_identity.update({
                 'task_name': self.task_info['city_name'],
                 'target_name': name,

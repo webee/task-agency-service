@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
+from  services.errors import InvalidParamsError
 
 MAIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/main_menu.jsp'
 LOGIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/login_hidden.jsp'
@@ -18,8 +19,9 @@ GJJ_URL='http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/gjjmx_cxtwo.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="安阳",
-        help="""<li></li>
-                """
+        help="""<li>初始密码为111111。</li>
+                <li>如身份证最后一位是“X”时，请输入大写X。</li>""",
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -44,6 +46,24 @@ class Task(AbsFetchTask):
         assert '密码' in params,'缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        职工姓名= params['职工姓名']
+        密码 = params['密码']
+
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(职工姓名) == 0:
+            raise InvalidParamsError('职工姓名为空，请输入职工姓名')
+        elif len(职工姓名) < 2:
+            raise InvalidParamsError('职工姓名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -88,14 +108,14 @@ class Task(AbsFetchTask):
                     password=password,
                     yzm=vc
                 )
-                resp = self.s.post(LOGIN_URL,data=parse.urlencode(data,encoding='gbk'),headers={'Content-Type':'application/x-www-form-urlencoded'})
+                resp = self.s.post(LOGIN_URL,data=parse.urlencode(data,encoding='gbk'),headers={'Content-Type':'application/x-www-form-urlencoded'},timeout=10)
 
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
                 return_message =soup.find('head') #soup.find('input', {'name': 'zgzh'})["value"]
                 if len(return_message.text)>3:
                     return_message=return_message.text.split(';')[0].split('"')[1]
-                    raise Exception(return_message)
+                    raise InvalidParamsError(return_message)
                 else:
                     print("登录成功！")
                     self.zgzh=soup.find('input', {'name': 'zgzh'})["value"]
@@ -109,7 +129,7 @@ class Task(AbsFetchTask):
                                  dwbm=self.dwbm,cxyd=self.cxyd)
 
                     resp2 = self.s.post(MAIN_URL, data=parse.urlencode(data2, encoding='gbk'),
-                                  headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                  headers={'Content-Type': 'application/x-www-form-urlencoded'},timeout=10)
                     soup2 = BeautifulSoup(resp2.content, 'html.parser')
                     self.html = str(resp2.content, 'gbk')
 
@@ -123,7 +143,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_name'] = account_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()
@@ -150,11 +170,11 @@ class Task(AbsFetchTask):
             }
             for row in rows:
                 cell = [i.text for i in row.find_all('td')]
-                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace(' ',''),cell[1].replace('\xa0',''))
-                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ',''), cell[3].replace('\xa0',''))
-            self.result_identity['status'] = data['baseInfo']['账户状态']
+                data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace('职工账号','个人账号').replace('所在单位','单位名称').replace('月缴基数','缴存基数').replace('账户状态','帐户状态').replace('上年余额','上年结转余额').replace('本年缴交','当年缴存金额').replace(' ',''),cell[1].replace('\xa0',''))
+                data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ','').replace('本年支取','当年提取金额').replace('月缴金额','月应缴额').replace('账户余额','当前余额'), cell[3].replace('\xa0',''))
+            self.result_identity['status'] = data['baseInfo']['帐户状态']
 
-            resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
+            resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'},timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
@@ -179,7 +199,7 @@ class Task(AbsFetchTask):
                            'dwbm':self.dwbm,
                            'cxyd':cxydtwo1}
                 resp = self.s.post(GJJ_URL, data=parse.urlencode(data1, encoding='gbk'),
-                                  headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'})
+                                  headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'},timeout=5)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 tab=soup.select('table')[16]
                 tabtitle=tab.findAll('tr')[0]
@@ -229,13 +249,13 @@ class Task(AbsFetchTask):
 
             data['companyList']=[]
             diclist = {
-                '单位名称': data['baseInfo']['所在单位'],
-                '单位登记号': data['baseInfo']['单位账号'],
-                '帐户状态': data['baseInfo']['账户状态'],
-                '当前余额': data['baseInfo']['账户余额'],
-                '当年提取金额': data['baseInfo']['本年支取'],
-                '当年缴存金额': data['baseInfo']['本年缴交'],
-                '上年结转余额': data['baseInfo']['上年余额']
+                '单位名称': data['baseInfo']['单位名称'],
+                '单位账号': data['baseInfo']['单位账号'],
+                '帐户状态': data['baseInfo']['帐户状态'],
+                '当前余额': data['baseInfo']['当前余额'],
+                '当年提取金额': data['baseInfo']['当年提取金额'],
+                '当年缴存金额': data['baseInfo']['当年缴存金额'],
+                '上年结转余额': data['baseInfo']['上年结转余额']
             }
             data['companyList'].append(diclist)
             return
@@ -244,7 +264,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         vc_url = VC_URL #+ str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        resp = self.s.get(vc_url,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 

@@ -18,7 +18,8 @@ class Task(AbsFetchTask):
     task_info = dict(
         city_name="苏州",
         help="""<li>个人编号长度为10位，参保地为市本级、姑苏区（原沧浪区、平江区、金阊区）、高新区，不足部分前面“00”补足；参保地为吴中区，不足部分前面“02”补足；参保地为相城区，不足部分前面“03”补足。</li>
-            <li>如有问题请拨打12333。</li>"""
+            <li>如有问题请拨打12333。</li>""",
+        developers=[{'name': '卜圆圆', 'email': 'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -42,7 +43,18 @@ class Task(AbsFetchTask):
         assert '个人编号' in params, '缺少个人编号'
         assert 'vc' in params, '缺少验证码'
         # other check
+        身份证号 = params['身份证号']
+        个人编号 = params['个人编号']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(个人编号) == 0:
+            raise InvalidParamsError('个人编号为空，请输入个人编号！')
+        elif len(个人编号) < 6:
+            raise InvalidParamsError('个人编号不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -75,7 +87,7 @@ class Task(AbsFetchTask):
                 vc = params['vc']
 
                 if account_num.__len__() != 10:
-                    raise Exception("请录入10位个人编号")
+                    raise InvalidParamsError("请录入10位个人编号")
 
                 resp = self.s.post(LOGIN_URL, data=dict(
                     sfzh=id_num,
@@ -85,7 +97,7 @@ class Task(AbsFetchTask):
                 data = resp.json()
                 errormsg = data.get('errormsg')
                 if errormsg:
-                    raise Exception(errormsg)
+                    raise InvalidParamsError(errormsg)
 
                 self.result_key = id_num
                 # 保存到meta
@@ -97,8 +109,6 @@ class Task(AbsFetchTask):
 
                 return
             except (AssertionError, InvalidParamsError) as e:
-                err_msg = str(e)
-            except Exception as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
@@ -120,7 +130,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"] = {
                 "姓名": name,
-                "社保编号": personNum,
+                "社会保障号": personNum,
                 "身份证号": sfzNum,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                 '城市名称': '苏州',
@@ -172,7 +182,7 @@ class Task(AbsFetchTask):
             })
             soup = BeautifulSoup(json.loads(str(resp.content, 'utf-8'))["content"+str(bizType)], "html.parser")
             return soup
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 养老
@@ -243,7 +253,7 @@ class Task(AbsFetchTask):
                         # 累计正常缴费的缴费月数
                         self.old_age_month = self.old_age_month + 1
                         normal.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
             for year in years:
                 # 正常费用明细数据集合(临时)
@@ -259,7 +269,7 @@ class Task(AbsFetchTask):
                         data["old_age"]["data"][str(year)][str(item["缴费时间"][5:])].append(item)
                     except:
                         data["old_age"]["data"][str(year)][str(item["缴费时间"][5:])] = [item]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 医疗
@@ -341,7 +351,7 @@ class Task(AbsFetchTask):
 
                         # 苏州目前账号来看，每个月只能生成一条数据
                         normal.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -360,7 +370,7 @@ class Task(AbsFetchTask):
                             data["medical_care"]["data"][str(year)][str(item["缴费时间"][5:])].append(item)
                         except:
                             data["medical_care"]["data"][str(year)][str(item["缴费时间"][5:])] = [item]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 工伤
@@ -429,7 +439,7 @@ class Task(AbsFetchTask):
                         self.injuries_month = self.injuries_month + 1
                         # 目前苏州账号每个月只能有一条数据
                         normal.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -447,7 +457,7 @@ class Task(AbsFetchTask):
                             data["injuries"]["data"][str(year)][str(item["缴费时间"][5:])].append(item)
                         except:
                             data["injuries"]["data"][str(year)][str(item["缴费时间"][5:])] = [item]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 生育
@@ -515,7 +525,7 @@ class Task(AbsFetchTask):
                         self.maternity_month = self.maternity_month + 1
                         # 目前苏州每个月只有一条数据
                         normal.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -534,7 +544,7 @@ class Task(AbsFetchTask):
                             data["maternity"]["data"][str(year)][str(item["缴费时间"][5:])].append(item)
                         except:
                             data["maternity"]["data"][str(year)][str(item["缴费时间"][5:])] = [item]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 失业
@@ -600,7 +610,7 @@ class Task(AbsFetchTask):
                         # 累计正常缴费的缴费月数
                         self.unemployment_month = self.unemployment_month + 1
                         normal.append(obj)
-                except Exception as e:
+                except PermissionError as e:
                     raise PreconditionNotSatisfiedError(e)
 
             for year in years:
@@ -619,7 +629,7 @@ class Task(AbsFetchTask):
                             data["unemployment"]["data"][str(year)][str(item["缴费时间"][5:])].append(item)
                         except:
                             data["unemployment"]["data"][str(year)][str(item["缴费时间"][5:])] = [item]
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     # 缴费明细main方法
@@ -664,7 +674,7 @@ class Task(AbsFetchTask):
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 
-        except Exception as e:
+        except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
@@ -678,3 +688,4 @@ if __name__ == '__main__':
 
     client = TaskTestClient(Task())
     client.run()
+#社保编号：0002357919  身份证号：320981198212274213

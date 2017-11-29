@@ -9,7 +9,7 @@ from services.commons import AbsFetchTask
 
 LOGIN_URL = 'http://ggfw.cqhrss.gov.cn/ggfw/LoginBLH_login.do'
 VC_URL = 'http://ggfw.cqhrss.gov.cn/ggfw/validateCodeBLH_image.do'
-USER_INFO_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_main.do?code=888"
+USER_INFO_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_main.do"
 DETAILED_LIST_URL = "http://ggfw.cqhrss.gov.cn/ggfw/QueryBLH_query.do"
 
 
@@ -20,7 +20,8 @@ class Task(AbsFetchTask):
         help="""<li>初始查询密码为社会保障卡卡号的后6位</li>
         <li>如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</li>
         <li>数据解析需要较长的时间，请耐心等待</li>
-        """
+        """,
+        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
     )
 
     @classmethod
@@ -109,78 +110,77 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
         ], err_msg)
 
+    # 过滤字符串
+    def filter_str(self, data_soucse, lable, sign, sign_value):
+        try:
+            return data_soucse.findAll(lable, {sign: sign_value})[0].text.strip()
+        except:
+            return ""
+
+
     # 获取用户基本信息
     def _unit_fetch_user_info(self):
         try:
             data = self.result['data']
-            resp = self.s.post(USER_INFO_URL)
+            resp = self.s.post(USER_INFO_URL + "?code=888")
             soup = BeautifulSoup(resp.content, 'html.parser')
             # 基本信息三个table表单
             tables = soup.findAll('table')
+            if tables.__len__() == 0:
+                resp = self.s.post(USER_INFO_URL + "?code=999")
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                # 基本信息三个table表单
+                tables = soup.findAll('table')
+            if tables.__len__() == 0:
+                resp = self.s.post(USER_INFO_URL + "?code=777")
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                tables = soup.findAll('table')
 
             # 姓名
-            name = None
+            name = self.filter_str(soup, "td", "id", "td_xm")
             # 个人编号
-            personNum = None
+            personNum = self.filter_str(soup, "td", "id", "td_grbh")
             # 性别
-            sex = None
+            sex = self.filter_str(soup, "td", "id", "td_xb")
             # 民族
-            mz = None
+            mz = self.filter_str(soup, "td", "id", "td_mz")
             # 身份证编号
-            idCard = None
+            idCard = self.filter_str(soup, "td", "id", "td_sfzh")
             # 出生年月
-            birthDay = None
+            birthDay = self.filter_str(soup, "td", "id", "td_csrq")
             # 所在公司编号
-            CompanyCode = None
+            CompanyCode = self.filter_str(soup, "td", "id", "td_szdwbh")
             # 户口性质
-            hkxz = None
+            hkxz = self.filter_str(soup, "td", "id", "td_hkxz")
             # 个人身份
-            sf = None
+            sf = self.filter_str(soup, "td", "id", "td_grsf")
             # 所在公司
-            Company = None
-            old_age_state = None
-            i = 0
-            for table in tables:
-                tds = table.findAll('td')
-                if i == 0:
-                    name = tds[1].text.strip()
-                    personNum = tds[3].text.strip()
-                    sex = tds[5].text.strip()
-                    mz = tds[7].text.strip()
-                    idCard = tds[9].text.strip()
-                    startTime = tds[11].text.strip()
-                    birthDay = tds[13].text.strip()
-                    CompanyCode = tds[15].text.strip()
-                    hkxz = tds[17].text.strip()
-                    sf = tds[19].text.strip()
-                elif i == 1:
-                    Company = tds[2].text.strip()
-                elif i == 2:
-                    self.old_age_lately_start_data = tds[7].text.strip()
-                    self.medical_care_lately_start_data = tds[8].text.strip()
-                    self.injuries_lately_start_data = tds[9].text.strip()
-                    self.maternity_lately_start_data = tds[10].text.strip()
-                    self.unemployment_lately_start_data = tds[11].text.strip()
+            Company = self.filter_str(soup, "td", "name", "s_dwmc")
 
-                    old_age_state = {
-                        "养老": tds[13].text.strip(),
-                        "医疗": tds[14].text.strip(),
-                        "失业": tds[15].text.strip(),
-                        "工伤": tds[16].text.strip(),
-                        "生育": tds[17].text.strip()
-                    }
-                i = i + 1
+            self.old_age_lately_start_data = self.filter_str(soup, "td", "id", "td_sccbYlbx").replace("-", "")
+            self.medical_care_lately_start_data = self.filter_str(soup, "td", "id", "td_sccbYbbx").replace("-", "")
+            self.injuries_lately_start_data = self.filter_str(soup, "td", "id", "td_sccbSybx").replace("-", "")
+            self.maternity_lately_start_data = self.filter_str(soup, "td", "id", "td_sccbGsbx").replace("-", "")
+            self.unemployment_lately_start_data = self.filter_str(soup, "td", "id", "td_sccbShbx").replace("-", "")
+
+            old_age_state = {
+                "养老": self.filter_str(soup, "td", "id", "td_cbztYlbx"),
+                "医疗": self.filter_str(soup, "td", "id", "td_cbztYbbx"),
+                "失业": self.filter_str(soup, "td", "id", "td_cbztSybx"),
+                "工伤": self.filter_str(soup, "td", "id", "td_cbztGsbx"),
+                "生育": self.filter_str(soup, "td", "id", "td_cbztShbx")
+            }
 
             data["baseInfo"] = {
                 "姓名": name,
-                "社保编号": personNum,
+                "社会保障号": personNum,
                 "性别": sex,
                 "民族": mz,
-                "出生年月": birthDay,
-                "所在公司编号": CompanyCode,
+                "出生日期": birthDay,
+                "组织机构代码": CompanyCode,
                 "户口性质": hkxz,
                 "个人身份": sf,
-                "所在公司": Company,
+                "单位名称": Company,
                 "身份证号": idCard,
                 "五险状态": old_age_state,
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
@@ -527,11 +527,17 @@ class Task(AbsFetchTask):
     def _unit_get_payment_details(self):
         try:
             # 五险开始缴费时间
-            latest_start_time = [self.old_age_lately_start_data,
-                                 self.medical_care_lately_start_data,
-                                 self.injuries_lately_start_data,
-                                 self.maternity_lately_start_data,
-                                 self.unemployment_lately_start_data]
+            latest_start_time = []
+            if self.old_age_lately_start_data:
+                latest_start_time.append(self.old_age_lately_start_data)
+            if self.medical_care_lately_start_data:
+                latest_start_time.append(self.medical_care_lately_start_data)
+            if self.injuries_lately_start_data:
+                latest_start_time.append(self.injuries_lately_start_data)
+            if self.maternity_lately_start_data:
+                latest_start_time.append(self.maternity_lately_start_data)
+            if self.unemployment_lately_start_data:
+                latest_start_time.append(self.unemployment_lately_start_data)
 
             data = self.result['data']
 

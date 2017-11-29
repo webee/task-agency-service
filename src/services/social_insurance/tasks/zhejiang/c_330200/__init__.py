@@ -13,6 +13,9 @@ from services.commons import AbsFetchTask
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
+from selenium.webdriver.common.proxy import Proxy
+from selenium.webdriver.common.proxy import ProxyType
 
 
 class value_is_number(object):
@@ -31,7 +34,7 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko
 
 MAIN_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/index.jsp'
 INFO_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-grxx.jsp'
-VC_URL = 'pages/comm/yzm.jsp?r='
+VC_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/comm/yzm.jsp?r='
 YL_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-ylbx.jsp'
 YIL_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-yilbx.jsp'
 GS_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-gsbx.jsp'
@@ -44,7 +47,8 @@ class Task(AbsFetchTask):
         city_name="宁波",
         help="""<li>如您未在社保网站查询过您的社保信息，请到宁波社保网上服务平台完成“注册”然后再登录。</li>
             <li>如有问题请拨打12333。</li>
-            """
+            """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -66,6 +70,14 @@ class Task(AbsFetchTask):
 
     def _create_driver(self):
         driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
+        proxy = webdriver.Proxy()
+        proxy.proxy_type = ProxyType.DIRECT
+        proxy.add_to_capabilities(webdriver.DesiredCapabilities.PHANTOMJS)
+        driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
+        # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
+        driver.set_page_load_timeout(13)
+        # 设置10秒脚本超时时间
+        driver.set_script_timeout(13)
         driver.get(MAIN_URL)
         return driver
 
@@ -74,7 +86,18 @@ class Task(AbsFetchTask):
         assert '身份证号' in params, '缺少身份证号'
         assert '密码' in params, '缺少密码'
         # other check
+        身份证号 = params['身份证号']
+        密码 = params['密码']
 
+        if len(身份证号) == 0:
+            raise InvalidParamsError('身份证号为空，请输入身份证号')
+        elif len(身份证号) < 15:
+            raise InvalidParamsError('身份证号不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
@@ -115,8 +138,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_id'] = id_num
 
                 return
-
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', value=params.get('身份证号', '')),
@@ -179,6 +201,8 @@ class Task(AbsFetchTask):
             arrstr = []
             years = ''
             months = ''
+            maxtime=''
+            y=1
             for row in tableinfo:
                 arr = []
                 cell = [i.text for i in row.find_all('td')]
@@ -204,6 +228,9 @@ class Task(AbsFetchTask):
                         '缴费单位': '',
                         '到账情况': cell[3]
                     }
+                    if y==1:
+                        maxtime=cell[0]
+                    y=y+1
                     arr.append(dicts)
                     self.result_data['old_age']['data'][years][months] = arr
             # print(arrstr)
@@ -211,13 +238,13 @@ class Task(AbsFetchTask):
             nowyears = time.strftime("%Y", time.localtime())
             jfscolder = int(arrstr[10].replace('至本年末实际缴费月数：', ''))
             ljjfolder = float(arrstr[9].replace('至本年末账户累计储存额：', ''))
-            for k, v in self.result_data['old_age']['data'][nowyears].items():
-                jfscolder = jfscolder + 1
-                ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+            if nowyears in self.result_data['old_age']['data'].keys():
+                for k, v in self.result_data['old_age']['data'][nowyears].items():
+                    jfscolder = jfscolder + 1
+                    ljjfolder = ljjfolder + float(v[0]['个人缴费'])
             self.result_data["baseInfo"].setdefault('缴费时长', jfscolder)
             self.result_data["baseInfo"].setdefault('个人养老累计缴费', ljjfolder)
-            self.result_data["baseInfo"].setdefault('最近缴费时间',
-                                                    nowyears + max(self.result_data['old_age']['data'][nowyears]))
+            self.result_data["baseInfo"].setdefault('最近缴费时间',maxtime)
             ksjfsj = min(self.result_data['old_age']['data'])
             self.result_data["baseInfo"].setdefault('开始缴费时间', ksjfsj + min(self.result_data['old_age']['data'][ksjfsj]))
             cbzt = arrstr[3].replace('参保状态：', '')
@@ -271,8 +298,9 @@ class Task(AbsFetchTask):
             # print(arrstr)
             nowyears = time.strftime("%Y", time.localtime())
             ljjfolder = float(arrstr[11].replace('个人账户余额：', ''))
-            for k, v in self.result_data['old_age']['data'][nowyears].items():
-                ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+            if nowyears in self.result_data['old_age']['data'].keys():
+                for k, v in self.result_data['old_age']['data'][nowyears].items():
+                    ljjfolder = ljjfolder + float(v[0]['个人缴费'])
             self.result_data["baseInfo"].setdefault('个人医疗累计缴费', ljjfolder)
             cbzt = arrstr[4].replace('参保状态：', '')
             if cbzt == '参保缴费':
@@ -356,14 +384,14 @@ class Task(AbsFetchTask):
                 '性别': soup.select('#xb')[0].text,
                 '身份证号': soup.select('#sfz')[0].text,
                 '国籍': soup.select('#gj')[0].text,
-                '社保卡号码': soup.select('#sbkh')[0].text,
+                '社会保障卡号码': soup.select('#sbkh')[0].text,
                 '社保卡状态': soup.select('#kzt')[0].text,
-                '银行卡号码': soup.select('#yhkh')[0].text,
+                '银行账号': soup.select('#yhkh')[0].text,
                 '发卡日期': soup.select('#fkrq')[0].text,
-                '手机号码': soup.select('#sjhm')[0].text,
+                '手机号': soup.select('#sjhm')[0].text,
                 '固定号码': soup.select('#gddh')[0].text,
                 '常住地址': soup.select('#czdz')[0].text,
-                '邮政编码': soup.select('#yzbm')[0].text
+                '邮编': soup.select('#yzbm')[0].text
             }
             self.result_identity['target_name'] = soup.select('#xm')[0].text
             self.g.Fivestatus = []
@@ -400,6 +428,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '330227198906162713', '密码': '362415'}
+    meta = {'身份证号': '362524197806228017', '密码': '168168'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
+#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984

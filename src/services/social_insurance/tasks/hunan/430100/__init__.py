@@ -6,9 +6,8 @@ from services.commons import AbsFetchTask
 
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="郑州",
-        help="""<li>如您未在社保网站查询过您的社保信息，请到郑州社保网上服务平台完成“注册”然后再登录。</li>
-        <li>如有问题请拨打12333。</li>""",
+        city_name="长沙",
+        help="""""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
@@ -48,27 +47,27 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '身份证号' in params, '身份证号'
+        assert '用户名' in params, '缺少用户名'
         assert '密码' in params, '缺少密码'
         # other check
-        身份证号 = params['身份证号']
+        用户名 = params['用户名']
         密码 = params['密码']
         if len(密码) < 4:
-            raise InvalidParamsError('身份证号或密码错误')
-        if 身份证号.isdigit():
-            if len(身份证号) < 15:
-                raise InvalidParamsError('身份证错误')
+            raise InvalidParamsError('用户名或密码错误')
+
+        if len(用户名) < 6:
+            raise InvalidParamsError('用户名错误')
             return
-        raise InvalidParamsError('身份证号或密码错误')
+        raise InvalidParamsError('用户名或密码错误')
 
     def _unit_login(self, params: dict):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('身份证号')
+                self.result_key = params.get('用户名')
                 # 保存到meta
-                self.result_meta['身份证号'] = params.get('身份证号')
+                self.result_meta['用户名'] = params.get('用户名')
                 self.result_meta['密码'] = params.get('密码')
 
                 raise TaskNotImplementedError('查询服务维护中')
@@ -76,7 +75,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号或护照', value=params.get('身份证号', '')),
+            dict(key='用户名', name='用户名',placeholder='身份证号或手机号', cls='input', value=params.get('用户名', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 

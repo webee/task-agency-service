@@ -15,21 +15,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-class value_is_number(object):
-    """判断元素value是数字"""
+# class value_is_number(object):
+#     """判断元素value是数字"""
+#
+#     def __init__(self, locator):
+#         self.locator = locator
+#
+#     def __call__(self, driver):
+#         element = driver.find_element(*self.locator)
+#         val = element.get_attribute('value')
+#         return val and val.isnumeric()
 
-    def __init__(self, locator):
-        self.locator = locator
 
-    def __call__(self, driver):
-        element = driver.find_element(*self.locator)
-        val = element.get_attribute('value')
-        return val and val.isnumeric()
-
-
-USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
-LOGIN_PAGE_URL = 'https://persons.shgjj.com/'
-MAIN_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/zfbzsq/main_menu.jsp'
+# USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0"
+# LOGIN_PAGE_URL = 'https://persons.shgjj.com/'
 LOGIN_URL = 'https://persons.shgjj.com/MainServlet'
 VC_URL = 'https://persons.shgjj.com/VerifyImageServlet'
 GJJMX_URL = 'http://www.aygjj.com/gjjcx/zfbzgl/gjjmxcx/gjjmx_cx.jsp'
@@ -41,7 +40,8 @@ class Task(AbsFetchTask):
         city_name="上海",
         help="""<li>如您未在公积金网站查询过您的公积金信息，请到上海公积金管理中心官网网完成“注册”然后再登录。</li>
                 <li>用户名指的是在注册时自行设置的2-12位英文字母或数字（区分大小写）。</li>
-                """
+                """,
+        developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -65,6 +65,18 @@ class Task(AbsFetchTask):
         assert '密码' in params, '缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
+        用户名 = params['用户名']
+        密码 = params['密码']
+
+        if len(用户名) == 0:
+            raise InvalidParamsError('用户名为空，请输入用户名')
+        elif len(用户名) < 5:
+            raise InvalidParamsError('用户名不正确，请重新输入')
+
+        if len(密码) == 0:
+            raise InvalidParamsError('密码为空，请输入密码！')
+        elif len(密码) < 6:
+            raise InvalidParamsError('密码不正确，请重新输入！')
 
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -75,15 +87,15 @@ class Task(AbsFetchTask):
                 params['密码'] = meta.get('密码')
         return params
 
-    def _prepare(self, data=None):
-        super()._prepare(data)
-        self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
-
-    def _create_driver(self):
-        driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
-        driver.get(LOGIN_PAGE_URL)
-
-        return driver
+    # def _prepare(self, data=None):
+    #     super()._prepare(data)
+    #     self.dsc = DriverRequestsCoordinator(s=self.s, create_driver=self._create_driver)
+    #
+    # def _create_driver(self):
+    #     driver = new_driver(user_agent=USER_AGENT, js_re_ignore='/web\/ImageCheck.jpg/g')
+    #     driver.get(LOGIN_PAGE_URL)
+    #
+    #     return driver
 
     def _param_requirements_handler(self, param_requirements, details):
         meta = self.prepared_meta
@@ -123,13 +135,17 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
                                                                   'Cache-Control': 'max-age=0',
-                                                                  'Upgrade-Insecure-Requests': '1'})
+                                                                  'Upgrade-Insecure-Requests': '1'},timeout=10)
                 soup = BeautifulSoup(resp.content, 'html.parser')
+
                 errormsg = soup.findAll('font')[0].text
-                if errormsg and errormsg != id_num:
-                    raise Exception(errormsg)
-                else:
+                # if errormsg and errormsg != id_num:
+                #     raise InvalidParamsError(errormsg)
+                if errormsg == id_num:
                     self.g.soup = soup
+                else:
+                    raise InvalidParamsError(errormsg)
+
 
                 self.result_key = id_num
                 self.result_meta['用户名'] = id_num
@@ -138,7 +154,7 @@ class Task(AbsFetchTask):
                 self.result_identity['target_id'] = id_num
 
                 return
-            except Exception as e:
+            except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         vc = self._new_vc()
@@ -148,57 +164,55 @@ class Task(AbsFetchTask):
             dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}),
         ], err_msg)
 
-    def _do_login(self, username, password, vc):
-        """使用web driver模拟登录过程"""
-        with self.dsc.get_driver_ctx() as driver:
-            # 打开登录页
-            driver.get(LOGIN_PAGE_URL)
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            username_input = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]/td[2]/input')
-            password_input = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[3]/td[2]/input')
-            vc_input = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[4]/td[2]/input')
-            submit_btn = driver.find_element_by_xpath(
-                '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[5]/td[2]/input[1]')
-            ok = driver.find_element_by_name("SUBMIT")
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            # 用户名
-            username_input.clear()
-            username_input.send_keys(username)
-
-            # 密码
-            password_input.clear()
-            password_input.send_keys(password)
-            vc_input.clear()
-            vc_input.send_keys(vc)
-
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-
-            login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
-            # 提交
-
-            ok.click()
-            submit_btn.click()
-            time.sleep(5)
-            # WebDriverWait(driver, 10).until(
-            #     lambda driver:
-            #         EC.invisibility_of_element_located((By.XPATH, 'html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]'))(driver)
-            #     or EC.element_to_be_clickable((By.XPATH, '//*[@id="div_dialog_login"]/div/div/div/form/div[5]/input[1]'))(driver))
-            #
-            # login_btn = driver.find_element_by_xpath('html/body/div[2]/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/a[1]')
-            # s = login_btn.get_attribute('style')
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
-            # if not s:
-            #     # failed
-            #     err_msg = driver.find_element_by_xpath('//*[@id="div_dialog_login"]/div/div/div/form/div[3]/font').text
-            #     raise InvalidParamsError(err_msg)
-            #     # TODO
-            # else:
-            #     # success
-            #     print('success')
-            # Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    # def _do_login(self, username, password, vc):
+    #     """使用web driver模拟登录过程"""
+    #     with self.dsc.get_driver_ctx() as driver:
+    #         # 打开登录页
+    #         driver.get(LOGIN_PAGE_URL)
+    #         Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #         username_input = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[2]/td[2]/input')
+    #         password_input = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[3]/td[2]/input')
+    #         vc_input = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[4]/td[2]/input')
+    #         submit_btn = driver.find_element_by_xpath(
+    #             '/html/body/form/table/tbody/tr/td[2]/table[2]/tbody/tr/td/table/tbody/tr[5]/td[2]/input[1]')
+    #         ok = driver.find_element_by_name("SUBMIT")
+    #         Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #         # 用户名
+    #         username_input.clear()
+    #         username_input.send_keys(username)
+    #
+    #         # 密码
+    #         password_input.clear()
+    #         password_input.send_keys(password)
+    #         vc_input.clear()
+    #         vc_input.send_keys(vc)
+    #
+    #         #Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #
+    #         #login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+    #         # 提交
+    #
+    #         ok.click()
+    #         submit_btn.click()
+    #         time.sleep(5)
+    #
+    #         Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+    #         if driver.current_url != LOGIN_PAGE_URL:
+    #             print('登录成功')
+    #         else:
+    #             # FIXME: 尝试处理alert
+    #
+    #             err_msg = driver.find_elements_by_class_name('error')[0].text
+    #             #err_msg = '登录失败，请检查输入'
+    #             #alert = driver.switch_to.alert
+    #             try:
+    #                 err_msg =err_msg #alert.text
+    #                 # alert.accept()
+    #             finally:
+    #                 raise InvalidParamsError(err_msg)
 
     def _unit_fetch_name(self):
         try:
@@ -217,16 +231,16 @@ class Task(AbsFetchTask):
             for tr in table.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
                 if len(cell) > 1:
-                    data['baseInfo'].setdefault(cell[0].replace(' ', ''),
+                    data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('所属单位','单位名称').replace('末次缴存年月','汇缴年月').replace('账户余额','当前余额').replace('当前账户状态','账户状态').replace('绑定手机号','手机号').replace('月缴存额','月应缴额'),
                                                 cell[1].replace('\r\n             ', '').replace('  >>>住房公积金本年度账户明细',
                                                                                                  '').replace(
-                                                    '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', ''))
+                                                    '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', '').replace('年','').replace('月','').replace('日',''))
 
             self.result_identity['target_name']=data['baseInfo']['姓名']
-            self.result_identity['status'] = data['baseInfo']['当前账户状态']
+            self.result_identity['status'] = data['baseInfo']['账户状态']
             # 内容
             infourl = LOGIN_URL + '?ID=11'
-            resp = self.s.get(infourl)
+            resp = self.s.get(infourl,timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
@@ -268,7 +282,7 @@ class Task(AbsFetchTask):
                             '收入': cell[2],
                             '汇缴年月': strtime,
                             '余额': '',
-                            '类型':strtype ,
+                            '类型':strtype,
                             '业务原因': cell[4].replace('\xa0', '')
                         }
 
@@ -293,8 +307,8 @@ class Task(AbsFetchTask):
                             "单位登记号": "",
                             "所属管理部编号": "",
                             "所属管理部名称": "",
-                            "当前余额": data['baseInfo']['账户余额'],
-                            "帐户状态": data['baseInfo']['当前账户状态'],
+                            "当前余额": data['baseInfo']['当前余额'],
+                            "帐户状态": data['baseInfo']['账户状态'],
                             "当年缴存金额": 0,
                             "当年提取金额": 0,
                             "上年结转余额": 0,
@@ -310,7 +324,7 @@ class Task(AbsFetchTask):
                             "单位登记号": "",
                             "所属管理部编号": "",
                             "所属管理部名称": "",
-                            "当前余额": data['baseInfo']['账户余额'],
+                            "当前余额": data['baseInfo']['当前余额'],
                             "帐户状态": '转出',
                             "当年缴存金额": 0,
                             "当年提取金额": 0,
@@ -325,8 +339,8 @@ class Task(AbsFetchTask):
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
-        vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(vc_url)
+        #vc_url = VC_URL  + str(int(time.time() * 1000))
+        resp = self.s.get(VC_URL,timeout=5)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
@@ -335,4 +349,4 @@ if __name__ == '__main__':
 
     client = TaskTestClient(Task())
     client.run()
-    # 	用户名：Candina，密码：123456
+    # 	用户名：Candina，密码：123456       362323199009075910    075910
