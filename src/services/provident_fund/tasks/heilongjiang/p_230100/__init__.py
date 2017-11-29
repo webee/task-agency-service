@@ -52,15 +52,12 @@ class Task(AbsFetchTask):
         elif len(身份证号) < 15:
             raise InvalidParamsError('身份证号不正确，请重新输入')
 
-        if len(密码) == 0:
-            raise InvalidParamsError('密码为空，请输入密码')
-        elif len(密码) < 6:
-            raise InvalidParamsError('密码不正确，请重新输入')
+        if len(密码) != 6:
+            raise InvalidParamsError('密码不能为空或不足6位！')
 
-        if len(个人账号) == 0:
-            raise InvalidParamsError('个人账号为空，请输入个人账号！')
-        elif len(个人账号) < 6:
-            raise InvalidParamsError('个人账号不正确，请重新输入！')
+        if len(个人账号) != 12:
+            raise InvalidParamsError('个人编码不能为空或不足12位！')
+
         # other check
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
@@ -108,13 +105,17 @@ class Task(AbsFetchTask):
                     validcode=vc
                 ),verify=False,timeout=10)
                 soup = BeautifulSoup(resp.content, 'html.parser')
-                return_message = soup.find('input', {'name': 'return_message'})["value"]
-
+                return_message = soup.find('input', {'name': 'return_message'})
                 if return_message:
-                    raise InvalidParamsError(return_message)
+                    return_message = soup.find('input', {'name': 'return_message'})["value"]
+                    if return_message:
+                        raise InvalidParamsError(return_message)
+                    else:
+                        print("登录成功！")
+                        self.html = str(resp.content, 'gbk')
                 else:
-                    print("登录成功！")
-                    self.html = str(resp.content, 'gbk')
+                    return_message='您输入的信息不符合要求，请到公积金管理中心确认'
+                    raise InvalidParamsError(return_message)
 
                 self.result_key= id_num
                 self.result_meta['身份证号'] =id_num
@@ -148,26 +149,27 @@ class Task(AbsFetchTask):
             resp = self.html
             soup = BeautifulSoup(resp, 'html.parser')
             table_text=soup.findAll('table')
-            rows = table_text[2].find_all('tr')
-            for row in rows:
-                cell = [i.text for i in row.find_all('td')]
-                if len(cell)==4:
-                    data['baseInfo'][cell[0].replace('\n','').replace('账户余额','当前余额').replace('本年支取总额','当年提取金额').replace('本年缴存总额','当年缴存金额').replace('月汇缴金额','月应缴额').replace('个人缴存基数','缴存基数').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
-                    data['baseInfo'][cell[2].replace('\n','').replace(' ','').replace('状态','帐户状态').replace('最后汇缴年月','最后业务日期').replace('\r                \xa0','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0','').replace('-',''))
+            if table_text:
+                rows = table_text[2].find_all('tr')
+                for row in rows:
+                    cell = [i.text for i in row.find_all('td')]
+                    if len(cell)==4:
+                        data['baseInfo'][cell[0].replace('\n','').replace('账户余额','当前余额').replace('本年支取总额','当年提取金额').replace('本年缴存总额','当年缴存金额').replace('月汇缴金额','月应缴额').replace('个人缴存基数','缴存基数').replace('    ','').replace('身份证号','证件号')] = re.sub('[\n              \t  \n\r]','',cell[1].replace('\xa0',''))
+                        data['baseInfo'][cell[2].replace('\n','').replace(' ','').replace('状态','帐户状态').replace('最后汇缴年月','最后业务日期').replace('\r                \xa0','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0','').replace('-',''))
 
-            self.result_identity['target_name'] = data['baseInfo']['姓名']
-            self.result_identity['status'] = ''
+                self.result_identity['target_name'] = data['baseInfo']['姓名']
+                self.result_identity['status'] = ''
 
-            data['companyList']=[]
-            diclist= {
-                '单位名称':data['baseInfo']['单位名称'],
-                '当前余额': data['baseInfo']['当前余额'],
-                '帐户状态': data['baseInfo']['帐户状态'],
-                '当年缴存金额': data['baseInfo']['当年缴存金额'],
-                '当年提取金额': data['baseInfo']['当年提取金额'],
-                '最后业务日期': data['baseInfo']['最后业务日期']
-            }
-            data['companyList'].append(diclist)
+                data['companyList']=[]
+                diclist= {
+                    '单位名称':data['baseInfo']['单位名称'],
+                    '当前余额': data['baseInfo']['当前余额'],
+                    '帐户状态': data['baseInfo']['帐户状态'],
+                    '当年缴存金额': data['baseInfo']['当年缴存金额'],
+                    '当年提取金额': data['baseInfo']['当年提取金额'],
+                    '最后业务日期': data['baseInfo']['最后业务日期']
+                }
+                data['companyList'].append(diclist)
             return
         except (AssertionError, InvalidParamsError) as e:
             raise PreconditionNotSatisfiedError(e)
@@ -180,7 +182,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '230206197710101118','个人账号':'7877', '密码': '123456'}
+    meta = {'身份证号': '230223197310180838','个人账号':'801016453429', '密码': '111111'}
 
     client = TaskTestClient(Task(prepare_data = dict(meta=meta)))
     client.run()
