@@ -62,7 +62,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         resp = self.s.get(VC_URL)
-        return dict(cls='data:image', content=resp.content)
+        return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
     def _setup_task_units(self):
         """设置任务执行单元"""

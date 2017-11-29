@@ -17,6 +17,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+LU="https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp"
 MAIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/personal/personalHomeAction!query.do"
 LOGIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/plogin4Action!login.do"       # https://gr.cdhrss.gov.cn:442/cdwsjb/  # netHallLoginAction!personalLogin.do
 VC_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/CaptchaImg"
@@ -456,7 +457,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '510403199511131021', '密码': 'ld1254732520!'}
+    meta = {'用户名': '350623199112205720', '密码': '900618'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
