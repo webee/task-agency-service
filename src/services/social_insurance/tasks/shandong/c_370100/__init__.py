@@ -171,7 +171,7 @@ class Task(AbsFetchTask):
                                     '缴费时间': td[0].find(type="text")["value"].replace('.',''),
                                     '缴费类型':'',
                                     '缴费基数': str(td[1].find(type="text")["value"]).replace(',', ''),
-                                    '公司缴费':'-',
+                                    '公司缴费':'',
                                     '个人缴费': td[2].find(type="text")["value"],
                                     '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                 }
@@ -205,7 +205,7 @@ class Task(AbsFetchTask):
                                     '缴费时间': td2[0].find(type="text")["value"].replace('.',''),
                                     '缴费类型':'',
                                     '缴费基数': str(td2[1].find(type="text")["value"]).replace(',', ''),
-                                    '公司缴费':'-',
+                                    '公司缴费':'',
                                     '个人缴费': float(td2[2].find(type="text")["value"])-float(td2[3].find(type="text")["value"])-float(td2[4].find(type="text")["value"]),
                                     '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                 }
@@ -239,7 +239,7 @@ class Task(AbsFetchTask):
                                     '缴费时间': td3[0].find(type="text")["value"].replace('.',''),
                                     '缴费类型': td3[4].find(type="text")["value"],
                                     '缴费基数': str(td3[1].find(type="text")["value"]).replace(',', ''),
-                                    '公司缴费': '-',
+                                    '公司缴费': '',
                                     '个人缴费': td3[2].find(type="text")["value"],
                                     '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                 }
@@ -271,9 +271,9 @@ class Task(AbsFetchTask):
                                 modelC = {
                                     '缴费时间': td4[0].find(type="text")["value"].replace('.',''),
                                     '缴费类型': td4[2].find(type="text")["value"],
-                                    '缴费基数': '-',
-                                    '公司缴费': '-',
-                                    '个人缴费': '-',
+                                    '缴费基数': '',
+                                    '公司缴费': '',
+                                    '个人缴费': '',
                                     '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                 }
                                 basedataC[yearC][monthC].append(modelC)
@@ -304,9 +304,9 @@ class Task(AbsFetchTask):
                                 modelB = {
                                     '缴费时间': td5[0].find(type="text")["value"].replace('.',''),
                                     '缴费类型': td5[2].find(type="text")["value"],
-                                    '缴费基数': '-',
-                                    '公司缴费': '-',
-                                    '个人缴费': '-',
+                                    '缴费基数': '',
+                                    '公司缴费': '',
+                                    '个人缴费': '',
                                     '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                 }
                                 basedataB[yearB][monthB].append(modelB)

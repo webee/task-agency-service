@@ -305,7 +305,7 @@ class Task(AbsFetchTask):
                     '缴费时间': str(detailCI[c]['payDate']),
                     '缴费基数': detailCI[c]['payBase'],
                     '公司缴费': detailCI[c]['companyOverallPay'],
-                    '个人缴费': '-',
+                    '个人缴费': '',
                 }
 
                 basedataC[yearC][monthC].append(modelC)
@@ -349,7 +349,7 @@ class Task(AbsFetchTask):
                     '缴费时间': str(detailBI[f]['payDate']),
                     '缴费基数': detailBI[f]['payBase'],
                     '公司缴费': detailBI[f]['companyOverallPay'],
-                    '个人缴费': '-',
+                    '个人缴费': '',
                 }
 
                 basedataB[yearB][monthB].append(modelB)

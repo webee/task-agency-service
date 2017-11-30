@@ -34,7 +34,8 @@ class Task(AbsFetchTask):
             'Accept-Encoding':'gzip, deflate',
             'Host':'grsbcx.sjz12333.gov.cn',
             'Connection':'keep-alive',
-            'Upgrade-Insecure-Requests':'1'
+            'Upgrade-Insecure-Requests':'1',
+            'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6'
         }
 
 
@@ -132,10 +133,8 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-            ds=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/zindex/default.html")
-            re=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/innerindex.jsp")
-            ress=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/menu/Page.jsp")
             res=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/default.jsp")
+            soups = BeautifulSoup(res.content, 'html.parser').findAll('div')
             resp=self.s.post(Main_URL)
             soup=BeautifulSoup(resp.content,'html.parser').findAll('body')
 

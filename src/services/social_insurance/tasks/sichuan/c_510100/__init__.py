@@ -17,14 +17,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-<<<<<<< HEAD
 LU="https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp"
-=======
 from selenium import webdriver
 from selenium.webdriver.common.proxy import Proxy
 from selenium.webdriver.common.proxy import ProxyType
 
->>>>>>> origin/master
+
 MAIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/personal/personalHomeAction!query.do"
 LOGIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/plogin4Action!login.do"       # https://gr.cdhrss.gov.cn:442/cdwsjb/  # netHallLoginAction!personalLogin.do
 VC_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/CaptchaImg"
@@ -336,7 +334,7 @@ class Task(AbsFetchTask):
                             '缴费类型': '',
                             '缴费基数': sCI[c]['yac004'],
                             '公司缴费': sCI[c]['dwjfje'],
-                            '个人缴费': '-',
+                            '个人缴费': '',
                             #'缴费合计': sCI[c]['jfjezh']
                         }
                         basedataC[yearC][monthC].append(modelC)
@@ -363,7 +361,7 @@ class Task(AbsFetchTask):
                             '缴费类型': '',
                             '缴费基数': sBI[f]['yac004'],
                             '公司缴费': sBI[f]['dwjfje'],
-                            '个人缴费': '-',
+                            '个人缴费': '',
                             #'缴费合计': sBI[f]['jfjezh']
                         }
                         basedataB[yearB][monthB].append(modelB)
@@ -390,7 +388,7 @@ class Task(AbsFetchTask):
                             '缴费类型': '',
                             '缴费基数': sSI[q]['yac004'],
                             '公司缴费': sSI[q]['dwjfje'],
-                            '个人缴费': '-'
+                            '个人缴费': ''
                         }
                         basedataS[yearQ][monthQ].append(modelS)
 
