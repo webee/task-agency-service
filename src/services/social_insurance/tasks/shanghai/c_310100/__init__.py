@@ -247,8 +247,8 @@ class Task(AbsFetchTask):
                     '缴费时间': details[a].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[a].find('jsjs1').text, dt),
                     '缴费基数': details[a].find('jsjs3').text,
-                    '缴费类型': '-',
-                    '公司缴费': '-',
+                    '缴费类型': '',
+                    '公司缴费': '',
                     '个人缴费': details[a].find('jsjs4').text,
 
                     # '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
@@ -274,8 +274,8 @@ class Task(AbsFetchTask):
                     '缴费时间': details[b].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[b].find('jsjs1').text, dt),
                     '缴费基数': details[b].find('jsjs3').text,
-                    '缴费类型': '-',
-                    '公司缴费': '-',
+                    '缴费类型': '',
+                    '公司缴费': '',
                     '个人缴费': details[b].find('jsjs6').text,
                 }
                 dataBaseH[yearH][monthH].append(modelH)
@@ -298,8 +298,8 @@ class Task(AbsFetchTask):
                     '缴费时间': details[c].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[c].find('jsjs1').text, dt),
                     '缴费基数': details[c].find('jsjs3').text,
-                    '缴费类型': '-',
-                    '公司缴费': '-',
+                    '缴费类型': '',
+                    '公司缴费': '',
                     '个人缴费': details[c].find('jsjs8').text,
                 }
                 dataBaseI[yearI][monthI].append(modelI)
@@ -383,3 +383,7 @@ if __name__ == '__main__':
     client.run()
 
     # 321322199001067241  123456       5002931643   123456
+    
+    # 372901198109035010   903503
+
+    # 342529198604032449  139016zz

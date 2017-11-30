@@ -144,38 +144,11 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             datas = soup.select('.table-content')
 
-            self.result_data['baseInfo']={
-                '姓名':datas[0].findAll("td")[3].text,
-                '证件号':datas[0].findAll("td")[5].text,
-                '证件类型': '身份证',
-                '公积金帐号': datas[0].findAll("td")[1].text,
-
-                '性别':datas[1].findAll("td")[1].text,
-                '手机号':datas[1].findAll("td")[3].text,
-                '公积金卡号':datas[1].findAll("td")[5].text,
-                '缴存基数':datas[3].findAll("td")[1].text.replace('￥','').replace('元',''),
-                '单位缴存比例':datas[4].findAll("td")[1].text,
-                '个人缴存比例':datas[4].findAll("td")[3].text,
-                '单位月缴存额':datas[5].findAll("td")[1].text.replace('￥','').replace('元',''),
-                '个人月缴存额':datas[5].findAll("td")[3].text.replace('￥','').replace('元',''),
-                '开户日期':datas[7].findAll("td")[1].text,
-
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                '城市名称': '贵阳市',
-                '城市编号': '520100'
-            # '汇缴状态': datas[8].findAll("td")[1].text,
-            # '月应缴额':datas[3].findAll("td")[3].text.replace('￥','').replace('元',''),
-            #'起缴年月':datas[7].findAll("td")[3].text,
-            #'职工汇缴年月':datas[7].findAll("td")[5].text,
-            #'所属管理部':datas[8].findAll("td")[3].text,
-            #'是否冻结':datas[9].findAll("td")[1].text,
-            #'是否贷款':datas[9].findAll("td")[5].text,
-            # '单位经办人':datas[11].findAll("td")[1].text,
-            # '单位法人':datas[11].findAll("td")[3].text,
-            # '单位地址':datas[12].findAll("td")[1].text
-            }
 
             #公积金明细
+            lastTime=""         #  最后一次汇补缴时间
+            lastMoney=""        #  最后一次汇补缴金额
+            continueCount=0     #  汇补缴累积次数
             params="&aaxmlrequest=true&currentPage=1&startTime_a=2000-01-01&startTime_b="+time.strftime("%Y-%m-%d",time.localtime())+""
             resp2 = self.s.get("http://zxcx.gygjj.gov.cn/PersonAccountsList.do?method=list"+params)
             soup2 = BeautifulSoup(resp2.text, 'html.parser')
@@ -202,6 +175,12 @@ class Task(AbsFetchTask):
                         '余额': tds[5].text.replace(',',''),
                         '单位名称':company[1].text.split('：')[1]
                     }
+
+                    if '汇缴' in tds[1].text or '补缴' in tds[1].text:
+                        lastTime=tds[0].text.replace('.','-')
+                        lastMoney=tds[3].text.replace(',','')
+                        continueCount=continueCount+1
+
                     baseDetail.setdefault(years, {})
                     baseDetail[years].setdefault(months, [])
                     baseDetail[years][months].append(model)
@@ -227,6 +206,12 @@ class Task(AbsFetchTask):
                             '余额': tdss[5].text.replace(',', ''),
                             '单位名称': company[1].text.split('：')[1]
                         }
+
+                        if '汇缴' in tdss[1].text or '补缴' in tdss[1].text:
+                            lastTime = tdss[0].text.replace('.', '-')
+                            lastMoney = tdss[3].text.replace(',', '')
+                            continueCount = continueCount + 1
+
                         baseDetail.setdefault(yearss, {})
                         baseDetail[yearss].setdefault(monthss, [])
                         baseDetail[yearss][monthss].append(models)
@@ -237,6 +222,42 @@ class Task(AbsFetchTask):
                 status="正常"
             else:
                 status="异常"
+
+
+            self.result_data['baseInfo'] = {
+                '姓名': datas[0].findAll("td")[3].text,
+                '证件号': datas[0].findAll("td")[5].text,
+                '证件类型': '身份证',
+                '公积金帐号': datas[0].findAll("td")[1].text,
+
+                '性别': datas[1].findAll("td")[1].text,
+                '手机号': datas[1].findAll("td")[3].text,
+                '公积金卡号': datas[1].findAll("td")[5].text,
+                '缴存基数': datas[3].findAll("td")[1].text.replace('￥', '').replace('元', ''),
+                '单位缴存比例': datas[4].findAll("td")[1].text,
+                '个人缴存比例': datas[4].findAll("td")[3].text,
+                '单位月缴存额': datas[5].findAll("td")[1].text.replace('￥', '').replace('元', ''),
+                '个人月缴存额': datas[5].findAll("td")[3].text.replace('￥', '').replace('元', ''),
+                '开户日期': datas[7].findAll("td")[1].text,
+
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '贵阳市',
+                '城市编号': '520100',
+
+                '最近汇款日期': lastTime,
+                '最近汇款金额': lastMoney,
+                '累计汇款次数': continueCount
+                # '汇缴状态': datas[8].findAll("td")[1].text,
+                # '月应缴额':datas[3].findAll("td")[3].text.replace('￥','').replace('元',''),
+                # '起缴年月':datas[7].findAll("td")[3].text,
+                # '职工汇缴年月':datas[7].findAll("td")[5].text,
+                # '所属管理部':datas[8].findAll("td")[3].text,
+                # '是否冻结':datas[9].findAll("td")[1].text,
+                # '是否贷款':datas[9].findAll("td")[5].text,
+                # '单位经办人':datas[11].findAll("td")[1].text,
+                # '单位法人':datas[11].findAll("td")[3].text,
+                # '单位地址':datas[12].findAll("td")[1].text
+            }
 
 
             self.result_data['companyList'].append({

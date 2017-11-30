@@ -17,9 +17,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+LU="https://gr.cdhrss.gov.cn:442/cdwsjb/login.jsp"
 from selenium import webdriver
 from selenium.webdriver.common.proxy import Proxy
 from selenium.webdriver.common.proxy import ProxyType
+
 
 MAIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/personal/personalHomeAction!query.do"
 LOGIN_URL = r"https://gr.cdhrss.gov.cn:442/cdwsjb/plogin4Action!login.do"       # https://gr.cdhrss.gov.cn:442/cdwsjb/  # netHallLoginAction!personalLogin.do
@@ -332,7 +334,7 @@ class Task(AbsFetchTask):
                             '缴费类型': '',
                             '缴费基数': sCI[c]['yac004'],
                             '公司缴费': sCI[c]['dwjfje'],
-                            '个人缴费': '-',
+                            '个人缴费': '',
                             #'缴费合计': sCI[c]['jfjezh']
                         }
                         basedataC[yearC][monthC].append(modelC)
@@ -359,7 +361,7 @@ class Task(AbsFetchTask):
                             '缴费类型': '',
                             '缴费基数': sBI[f]['yac004'],
                             '公司缴费': sBI[f]['dwjfje'],
-                            '个人缴费': '-',
+                            '个人缴费': '',
                             #'缴费合计': sBI[f]['jfjezh']
                         }
                         basedataB[yearB][monthB].append(modelB)
@@ -386,7 +388,7 @@ class Task(AbsFetchTask):
                             '缴费类型': '',
                             '缴费基数': sSI[q]['yac004'],
                             '公司缴费': sSI[q]['dwjfje'],
-                            '个人缴费': '-'
+                            '个人缴费': ''
                         }
                         basedataS[yearQ][monthQ].append(modelS)
 
@@ -468,7 +470,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '510403199511131021', '密码': 'ld1254732520!'}
+    meta = {'用户名': '350623199112205720', '密码': '900618'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

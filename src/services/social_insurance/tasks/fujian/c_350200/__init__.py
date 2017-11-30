@@ -282,7 +282,7 @@ class Task(AbsFetchTask):
                     '缴费类型': re.sub('\s', '', dateC[10].text),
                     '缴费基数': re.sub('\s', '', dateC[34].text),
                     '公司缴费': float(re.sub('\s', '', dateC[28].text)),
-                    '个人缴费': "-",
+                    '个人缴费': "",
                     '缴费单位': re.sub('\s', '', dateC[4].text),
                     '单位划入帐户': float(re.sub('\s', '', dateC[38].text)),
                     '个人划入帐户': float(re.sub('\s', '', dateC[40].text))
@@ -311,7 +311,7 @@ class Task(AbsFetchTask):
                     '缴费类型': re.sub('\s', '', dateB[10].text),
                     '缴费基数': re.sub('\s', '', dateB[34].text),
                     '公司缴费': float(re.sub('\s', '', dateB[28].text)),
-                    '个人缴费': "-",
+                    '个人缴费': "",
                     '缴费单位': re.sub('\s', '', dateB[4].text),
                     '单位划入帐户': float(re.sub('\s', '', dateB[38].text)),
                     '个人划入帐户': float(re.sub('\s', '', dateB[40].text))
@@ -373,3 +373,7 @@ if __name__ == '__main__':
     client.run()
 
     #  350524196209146816  123789
+
+    #  360222199210122826  264210
+
+    #  35021219850108455X  540108
