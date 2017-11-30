@@ -1,5 +1,6 @@
 import hashlib
 import json
+import time
 from bs4 import BeautifulSoup
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
@@ -8,7 +9,7 @@ from services.commons import AbsFetchTask
 
 VC_URL='http://218.28.166.74:8080/zzsbonline/captcha.png?'
 LOGIN_URL='http://218.28.166.74:8080/zzsbonline/usersAction!userLogin'
-INFO_URL='http://218.28.166.74:8080/zzsbonline/searchinfoAction'
+INFO_URL='http://218.28.166.74:8080/zzsbonline/personAction!GetPersonList'
 #MX_URL='http://wsbs.zjhz.hrss.gov.cn/unit/web_zgjf_query/web_zgjf_doQuery.html'
 class Task(AbsFetchTask):
     task_info = dict(
@@ -88,6 +89,8 @@ class Task(AbsFetchTask):
                     soup = BeautifulSoup(resp.content, 'html.parser')
                     msg=json.loads(soup.text)
                     err_msg=msg['msgbox']
+                    if err_msg=='用户成功登录':
+                        err_msg=''
                 else:
                     err_msg='验证码错误！'
                 if err_msg:
@@ -100,6 +103,9 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['身份证号'] = params.get('身份证号')
                 self.result_meta['密码'] = params.get('密码')
+
+                self.result_identity['task_name'] = '郑州'
+                self.result_identity['target_id'] = id_num
                 return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
@@ -113,8 +119,35 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
-            resp = self.s.get(INFO_URL)
-            vctext = BeautifulSoup(resp.content, 'html.parser')
+            Tokenurl=self.s.get('http://218.28.166.74:8080/zzsbonline/loginAction',timeout=10)
+            tokenhtml=BeautifulSoup(Tokenurl.content, 'html.parser')
+            tokens=tokenhtml.select('#token')[0].attrs['value']
+            resp = self.s.post(INFO_URL,data=dict(idno='',token=tokens),timeout=10)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            infors=json.loads(soup.text)
+            persontype=infors[0]['persontype']
+            if persontype=='3':
+                persontype='未办卡'
+            insuretype=infors[0]['insuretype']
+            if insuretype=='1':
+                insuretype='正常参保'
+            self.result_data["baseInfo"] = {
+                '城市名称': '郑州',
+                '城市编号': '410100',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '姓名': infors[0]['name'],
+                '身份证号': infors[0]['idno'],
+                '个人编号': infors[0]['personelno'],
+                '社会保障卡号码': infors[0]['cardno'],
+                '社保卡状态': persontype,
+                '单位编号': infors[0]['companyid'],
+                '单位名称': infors[0]['companyname'],
+                '卡余额': infors[0]['balance'],
+                '缴费基数': infors[0]['payBase'],
+                '参保状态':insuretype
+            }
+            self.result_identity['target_name'] = infors[0]['name']
+            self.result_identity['status'] =insuretype
 
             return
         except PermissionError as e:
@@ -138,3 +171,4 @@ if __name__ == '__main__':
     meta = {'身份证号': '410105198801200097', '密码': '988120'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
+#'身份证号': '410105198801200097', '密码': '988120'

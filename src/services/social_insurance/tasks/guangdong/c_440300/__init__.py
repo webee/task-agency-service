@@ -2,6 +2,7 @@ import base64
 import time
 import random
 import json
+import execjs
 from PIL import Image
 import io
 import datetime
@@ -129,6 +130,16 @@ class Task(AbsFetchTask):
             res.append(pr)
         return res
 
+    def get_js(self):
+        # f = open("D:/WorkSpace/MyWorkSpace/jsdemo/js/des_rsa.js",'r',encoding='UTF-8')
+        f = open("ceshi.js", 'r', encoding='UTF-8')
+        line = f.readline()
+        htmlstr = ''
+        while line:
+            htmlstr = htmlstr + line
+            line = f.readline()
+        return htmlstr
+
     def _unit_login(self, params: dict):
         err_msg = None
         if params:
@@ -137,7 +148,35 @@ class Task(AbsFetchTask):
                 username = params['用户名']
                 password = params['密码']
                 vc = params['vc']
-                self._do_login(username, password, vc)
+                jsstr = self.get_js()
+                ctx = execjs.compile(jsstr)
+                resp=self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/index.html',timeout=10)
+                skeys=resp.cookies._cookies['seyb.szsi.gov.cn']['/web/ggfw/app']['skey'].value
+                mmmm = ctx.call('encrypt',skeys,password)
+                mmjm = ctx.call('stringToHex', mmmm)
+                resp = self.s.post(LOGIN_URL, data=dict(
+                    r=random.random(),
+                    LOGINID=username,
+                    PASSWORD=mmjm,
+                    IMAGCHECK=vc,
+                    OPERTYPE2=3,
+                    ISBIND='false',
+                    now=time.strftime('%a %b %d %Y %H:%M:%S', time.localtime()),
+                    callback=''
+                ))
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                jsonread = json.loads(soup.text.replace('(','').replace(')',''))
+                flag=jsonread['flag']
+                errormsg = jsonread['message']
+                if flag=='-1':
+                    raise InvalidParamsError(errormsg)
+
+                # jsstr = self.s.get("https://seyb.szsi.gov.cn/web/js/comm/fw/encrypt.js")
+                # mmjmq = execjs.compile(jsstr)
+                # mmmm=mmjmq.call('encrypt', '', password)
+                # mmjm= mmjmq.call('stringToHex',mmjmq)
+
+                #self._do_login(username, password, vc)
 
                 # 登录成功
                 self.s.Token = self.s.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
@@ -197,8 +236,11 @@ class Task(AbsFetchTask):
             # 密码
             password_input.clear()
             password_input.send_keys(password)
+
             vc_input.clear()
             vc_input.send_keys(vc)
+            s =driver.find_element_by_tag_name('html').get_attribute('innerHTML')
+
             # Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             # 提交
             submit_btn.click()
@@ -448,7 +490,7 @@ class Task(AbsFetchTask):
                                 self.result_data[v]['data'][years][months] = {}
                             mxdic = {
                                 '缴费时间': yearmonth,
-                                '缴费类型': '-',
+                                '缴费类型': '',
                                 '缴费基数': mx[arrmingxi[ii]]['dataset'][i]['缴费工资'],
                                 '公司缴费': mx[arrmingxi[ii]]['dataset'][i]['单位缴'],
                                 '个人缴费': mx[arrmingxi[ii]]['dataset'][i]['个人缴'],
@@ -481,7 +523,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'用户名': 'ly393089973', '密码': 'Ly656389'}
+    meta = {'用户名': 'lmc13828893775', '密码': 'Luo123465'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
@@ -490,3 +532,4 @@ if __name__ == '__main__':
     # '用户名':'keguangping'， 密码：'Kegp850907' '用户名': 'Xuxiayu', '密码': 'Xuxiayu143'
     # '用户名': 'ligang860119', '密码': 'ligangL860' 用户名': 'lishaofeng1989', '密码': 'Li8880165'
     # '用户名': 'gaoyingen', '密码': 'Gao1831850' '用户名': 'lmc13828893775', '密码': 'Luo123465'
+    #'用户名': 'qinshaohua1983', '密码': 'Qshking1234'
