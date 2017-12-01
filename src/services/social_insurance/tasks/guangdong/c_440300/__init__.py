@@ -148,12 +148,18 @@ class Task(AbsFetchTask):
                 username = params['用户名']
                 password = params['密码']
                 vc = params['vc']
-                jsstr = self.get_js()
-                ctx = execjs.compile(jsstr)
-                resp=self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/index.html',timeout=10)
+                resp=self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/index.html',timeout=20)
                 skeys=resp.cookies._cookies['seyb.szsi.gov.cn']['/web/ggfw/app']['skey'].value
-                mmmm = ctx.call('encrypt',skeys,password)
+
+                jsstrs = self.s.get("https://seyb.szsi.gov.cn/web/js/comm/fw/encrypt.js",timeout=20)
+                ctx = execjs.compile(jsstrs.content.decode("utf-8"))
+                mmmm = ctx.call('encrypt', skeys, password)
                 mmjm = ctx.call('stringToHex', mmmm)
+
+                # jsstr = self.get_js()
+                # ctxs = execjs.compile(jsstr)
+                # mmmms = ctx.call('encrypt',skeys,password)
+                # mmjms = ctx.call('stringToHex', mmmms)
                 resp = self.s.post(LOGIN_URL, data=dict(
                     r=random.random(),
                     LOGINID=username,
@@ -170,11 +176,6 @@ class Task(AbsFetchTask):
                 errormsg = jsonread['message']
                 if flag=='-1':
                     raise InvalidParamsError(errormsg)
-
-                # jsstr = self.s.get("https://seyb.szsi.gov.cn/web/js/comm/fw/encrypt.js")
-                # mmjmq = execjs.compile(jsstr)
-                # mmmm=mmjmq.call('encrypt', '', password)
-                # mmjm= mmjmq.call('stringToHex',mmjmq)
 
                 #self._do_login(username, password, vc)
 
@@ -309,7 +310,7 @@ class Task(AbsFetchTask):
                                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                         'Accept': 'application / json, text / plain, * / *',
                                         'Token': self.s.Token,
-                                        'Connection': 'keep - alive'}, timeout=5)
+                                        'Connection': 'keep - alive'}, timeout=15)
 
             self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
             '''第二次'''
@@ -327,7 +328,7 @@ class Task(AbsFetchTask):
                                                         'Token': self.s.Token,
                                                         'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html',
                                                         'Origin': 'https://seyb.szsi.gov.cn',
-                                                        'Host': 'seyb.szsi.gov.cn'}, timeout=5)
+                                                        'Host': 'seyb.szsi.gov.cn'}, timeout=15)
             # print(resps.text)
             soup = BeautifulSoup(resps.content, 'html.parser')
             self.s.Token = resps.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
@@ -375,7 +376,7 @@ class Task(AbsFetchTask):
                                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                         'Accept': 'application / json, text / plain, * / *',
                                         'Token': self.g.Token,
-                                        'Connection': 'keep - alive'}, timeout=5)
+                                        'Connection': 'keep - alive'}, timeout=15)
             self.s.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
 
             # TODO: 执行任务，如果没有登录，则raise PermissionError
@@ -431,7 +432,7 @@ class Task(AbsFetchTask):
                                                          'Connection': 'keep - alive', 'Token': self.g.Token,
                                                          'Host': 'seyb.szsi.gov.cn',
                                                          'Origin': 'https://seyb.szsi.gov.cn',
-                                                         'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
+                                                         'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'},timeout=15)
                 self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                 pagearr = json.loads(resp.text)
 
@@ -460,7 +461,7 @@ class Task(AbsFetchTask):
                                                                      'Token': self.g.Token,
                                                                      'Host': 'seyb.szsi.gov.cn',
                                                                      'Origin': 'https://seyb.szsi.gov.cn',
-                                                                     'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'})
+                                                                     'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html'},timeout=15)
                             self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
                         mx = json.loads(resp.text)["datas"]
                         for i in range(0, len(mx[arrmingxi[ii]]['dataset'])):
@@ -516,14 +517,14 @@ class Task(AbsFetchTask):
 
     # 刷新验证码
     def _new_vc(self):
-        resp = self.s.get(VC_URL, timeout=10)
+        resp = self.s.get(VC_URL, timeout=20)
         return dict(cls='data:image', content=resp.content, content_type=resp.headers.get('Content-Type'))
 
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'用户名': 'lmc13828893775', '密码': 'Luo123465'}
+    meta = {'用户名': 'qinshaohua1983', '密码': 'Qshking1234'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
