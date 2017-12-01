@@ -98,7 +98,7 @@ class Task(AbsFetchTask):
             # 基本信息
             resp = self.s.get(INFO_URL,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            if len(soup)<18:
+            if len(soup.text)<18:
                 raise InvalidParamsError('第一次登录，请去官网修改密码！')
             info = json.loads(soup.text)
             data = self.result_data
