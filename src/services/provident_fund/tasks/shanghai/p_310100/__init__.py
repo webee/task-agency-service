@@ -135,7 +135,7 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
                                                                   'Cache-Control': 'max-age=0',
-                                                                  'Upgrade-Insecure-Requests': '1'},timeout=10)
+                                                                  'Upgrade-Insecure-Requests': '1'},timeout=20)
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
                 errormsg = soup.findAll('font')[0].text
@@ -240,7 +240,7 @@ class Task(AbsFetchTask):
             self.result_identity['status'] = data['baseInfo']['账户状态']
             # 内容
             infourl = LOGIN_URL + '?ID=11'
-            resp = self.s.get(infourl,timeout=5)
+            resp = self.s.get(infourl,timeout=20)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
@@ -340,7 +340,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         #vc_url = VC_URL  + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL,timeout=5)
+        resp = self.s.get(VC_URL,timeout=20)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 

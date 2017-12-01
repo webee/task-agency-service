@@ -73,7 +73,6 @@ class Task(AbsFetchTask):
                 successinfo=json.loads(soup.text)
                 if successinfo['success']:
                     print("登录成功！")
-                    self.html = str(resp.content, 'gbk')
                 else:
                     return_message = successinfo['msg']
                     raise InvalidParamsError(return_message)
@@ -97,8 +96,10 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # 基本信息
-            resp = self.s.get(INFO_URL,timeout=5)
+            resp = self.s.get(INFO_URL,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
+            if len(soup.text)<18:
+                raise InvalidParamsError('第一次登录，请去官网修改密码！')
             info = json.loads(soup.text)
             data = self.result_data
             data['baseInfo'] = {
@@ -212,7 +213,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '370881198207145816', '密码': '080707'}
+    meta = {'身份证号': '230127199007171013', '密码': '784610'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
