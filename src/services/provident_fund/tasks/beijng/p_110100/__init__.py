@@ -272,7 +272,10 @@ class Task(AbsFetchTask):
                                         "个人登记号": _tds[29].text,
                                         "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                                         '城市名称': '北京市',
-                                        '城市编号': '110100'
+                                        '城市编号': '110100',
+                                        '最近汇款日期': '',
+                                        '最近汇款金额': 0.0,
+                                        '累计汇款次数': 0.0
                                     }
                                     self.result_data["companyList"].append({
                                         "最后业务日期": re.sub('\s', '', _tds[53].text),
@@ -287,7 +290,6 @@ class Task(AbsFetchTask):
                                         "上年结转余额": re.sub('\s', '', _tds[51].text).replace("元", ""),
                                         "转出金额": re.sub('\s', '', _tds[55].text).replace("元", "")
                                     })
-
                                 detail_tag = result.findAll("span", {"class": "style2"})
                                 # 20177月份后数据不太准确
                                 temp_detail = result.findAll("table", {"id": "tab-style"})
@@ -304,6 +306,8 @@ class Task(AbsFetchTask):
 
                                         for detail_tr in detail_trs:
                                             detail_tds = detail_tr.findAll("td")
+                                            if detail_tds.__len__() == 0:
+                                                continue
                                             if detail_tr != detail_trs[0]:
                                                 date = re.sub('\s', '', detail_tds[0].text)
                                                 try:
@@ -315,6 +319,7 @@ class Task(AbsFetchTask):
                                                 except KeyError:
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
                                                 temp_all_date.append(date)
+
                                                 self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
                                                     "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
                                                     "类型": re.sub('\s', '', detail_tds[2].text),
@@ -328,6 +333,8 @@ class Task(AbsFetchTask):
                                     detail_trs = temp_detail[0].findAll("tr")
                                     for detail_tr in detail_trs:
                                         detail_tds = detail_tr.findAll("td")
+                                        if detail_tds.__len__() == 0:
+                                            continue
                                         if detail_tr != detail_trs[0]:
                                             date = re.sub('\s', '', detail_tds[0].text)
                                             if date not in temp_all_date:

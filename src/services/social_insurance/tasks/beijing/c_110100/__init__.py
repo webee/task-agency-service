@@ -178,14 +178,28 @@ class Task(AbsFetchTask):
             fromCity = td0[td0.find("所属区县：")+5:]
 
             td1 = table2.findAll("td")
-            socialType = re.sub('\s', '', td1[1].text) + "end"
+
+            socialType = re.sub('\s', '', td1[1].text)
+            socialType = socialType.replace("[", "").replace("]", ",")
+            socialType = socialType.split(",")
             old_age_state = {
-                "养老": socialType[socialType.find('[养老缴费(')+6:socialType.find(')缴费][失业缴费(')] + "参保",
-                "医疗": socialType[socialType.find('[失业缴费(')+6:socialType.find(')缴费][工伤缴费(')] + "参保",
-                "失业": socialType[socialType.find('[工伤缴费(')+6:socialType.find(')缴费][生育缴费(')] + "参保",
-                "工伤": socialType[socialType.find('[生育缴费(')+6:socialType.find(')缴费][医保缴费(')] + "参保",
-                "生育": socialType[socialType.find('[医保缴费(')+6:socialType.find(')缴费]end')] + "参保"
+                "养老": "",
+                "医疗": "",
+                "失业": "",
+                "工伤": "",
+                "生育": ""
             }
+            for item in socialType:
+                if "养老" in item:
+                    old_age_state["养老"] = item.replace("养老缴费", "")
+                if "医保" in item:
+                    old_age_state["医疗"] = item.replace("医保缴费", "")
+                if "失业" in item:
+                    old_age_state["失业"] = item.replace("失业缴费", "")
+                if "工伤" in item:
+                    old_age_state["工伤"] = item.replace("工伤缴费", "")
+                if "生育" in item:
+                    old_age_state["生育"] = item.replace("生育缴费", "")
 
             data["baseInfo"] = {
                 "单位名称": companyName,
