@@ -125,12 +125,16 @@ class Task(AbsFetchTask):
             resp = self.s.post(INFO_URL,data=dict(idno='',token=tokens),timeout=10)
             soup = BeautifulSoup(resp.content, 'html.parser')
             infors=json.loads(soup.text)
-            persontype=infors[0]['persontype']
-            if persontype=='3':
-                persontype='未办卡'
+            stepflag=infors[0]['stepflag']
+            if stepflag=='0':
+                stepflag='未办卡'
+            elif stepflag=='6':
+                stepflag = '持卡正常'
             insuretype=infors[0]['insuretype']
             if insuretype=='1':
                 insuretype='正常参保'
+            elif insuretype=='2':
+                insuretype = '已停保'
             self.result_data["baseInfo"] = {
                 '城市名称': '郑州',
                 '城市编号': '410100',
@@ -139,12 +143,17 @@ class Task(AbsFetchTask):
                 '身份证号': infors[0]['idno'],
                 '个人编号': infors[0]['personelno'],
                 '社会保障卡号码': infors[0]['cardno'],
-                '社保卡状态': persontype,
+                '社保卡状态': stepflag,
                 '单位编号': infors[0]['companyid'],
                 '单位名称': infors[0]['companyname'],
                 '卡余额': infors[0]['balance'],
                 '缴费基数': infors[0]['payBase'],
-                '参保状态':insuretype
+                '参保状态':insuretype,
+                '缴费时长':0,
+                '最近缴费时间': '',
+                '开始缴费时间': '',
+                '个人养老累计缴费': 0,
+                '个人医疗累计缴费': 0
             }
             self.result_identity['target_name'] = infors[0]['name']
             self.result_identity['status'] =insuretype
@@ -171,4 +180,4 @@ if __name__ == '__main__':
     meta = {'身份证号': '410105198801200097', '密码': '988120'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
-#'身份证号': '410105198801200097', '密码': '988120'
+#'身份证号': '410105198801200097', '密码': '988120' '身份证号': '410327198204273545', '密码': 'mahao2929'

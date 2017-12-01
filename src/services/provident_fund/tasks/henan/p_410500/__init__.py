@@ -181,6 +181,10 @@ class Task(AbsFetchTask):
             selectyear = []
             years = ''
             months = ''
+            hjtype = 0
+            hjcs = 0
+            hjje = ''
+            hjrq = ''
             for option in soup.findAll('option'):
                 selectyear.append(option.getText())
             selectyear.append('当前年度')
@@ -210,12 +214,15 @@ class Task(AbsFetchTask):
                 #         titkeys = td.getText()
                 #     else:
                 #         titkeys = titkeys + ',' + td.getText()
-
+                w=0   #获取本页倒数第二条
                 for tr in range(0,len(tabcontent)):
                     dic = {}
                     i = 0
                     monthkeys = ''
                     arr=[]
+                    w=w+1
+                    if w==len(tabcontent)-1:
+                        w=-1
                     for td in tabcontent[tr].findAll('td'):
                         dic.setdefault(titkeys.split(',')[i], td.getText())
                         i = i + 1
@@ -225,10 +232,18 @@ class Task(AbsFetchTask):
                             hjny=''
                             lx=td.getText()
                             if '汇缴' in td.getText():
+                                hjcs=hjcs+1
                                 hjny=td.getText().replace('汇缴','').replace('年','').replace('月','')
                                 lx='汇缴'
+                            if hjny and hjtype==0 and w==-1:
+                                hjtype=1
+                                hjrq=hjny
                             dic.setdefault('汇缴年月', hjny)
                             dic['类型']=lx
+                        if i==4:
+                            if hjtype==1 and w==-1:
+                                hjtype=2
+                                hjje=td.getText()
                         if i == 6:
                             dic['单位名称']= ''
                             if years==''or years!=monthkeys[:4]:
@@ -246,7 +261,9 @@ class Task(AbsFetchTask):
                                 arr=data['detail']['data'][years][months]
                             arr.append(dic)
                             data['detail']['data'][years][months]=arr
-
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
             data['companyList']=[]
             diclist = {
                 '单位名称': data['baseInfo']['单位名称'],

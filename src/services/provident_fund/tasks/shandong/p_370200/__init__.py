@@ -127,7 +127,7 @@ class Task(AbsFetchTask):
             self.result_identity['target_id'] = data['baseInfo']['证件号']
             self.result_identity['status'] = data['baseInfo']['帐户状态']
 
-            resp = self.s.get(ENTER_URL,timeout=5)
+            resp = self.s.get(ENTER_URL,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             enterinfo = json.loads(soup.text)
             data['companyList']=[]
@@ -162,13 +162,17 @@ class Task(AbsFetchTask):
                 'sort': 'csrq',
                 'order': 'desc'
             }
-            resp = self.s.post(MINGXI_URL,data=datas,timeout=5)
+            resp = self.s.post(MINGXI_URL,data=datas,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             mingxiinfo = json.loads(soup.text)
             data['detail'] = {}
             data['detail']['data'] = {}
             years = ''
             months = ''
+            hjtype=0
+            hjcs=0
+            hjje=''
+            hjrq=''
             for i in range(0,int(mingxiinfo['total'])):
                 mxdic=mingxiinfo['rows'][i]
                 arr = []
@@ -185,6 +189,12 @@ class Task(AbsFetchTask):
                     '个人金额': mxdic['grje'],
                     '结算方式': mxdic['jslxname']
                 }
+                if mxdic['ssny']:
+                    hjcs=hjcs+1
+                    if hjtype==0:
+                        hjtype=1
+                        hjje=str(float(mxdic['grje'])+float(mxdic['dwje']))
+                        hjrq= mxdic['ssny']
                 times = mxdic['csrq'][:7].replace('-', '')
                 if years != times[:4]:
                     years = times[:4]
@@ -200,7 +210,9 @@ class Task(AbsFetchTask):
                         arr = data['detail']['data'][years][months]
                 arr.append(dic)
                 data['detail']['data'][years][months] = arr
-                print(arr)
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
 
             return
         except PermissionError as e:
