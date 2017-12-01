@@ -240,14 +240,14 @@ class Task(AbsFetchTask):
             months = ''
             maxtime=''
             y=1
+            hjtype=0
+            hjje=''
+            hjrq=''
             hjcs=0
             for tb in table.findAll('tbody'):
                 dic = {}
                 arr = []
                 cell = [i.text.replace(' ', '').replace('\r\n', '') for i in tb.find_all('td')]
-                if(y==1):
-                    maxtime=cell[0]
-                y=y+1
                 typedate=cell[1].split('[')
                 hj=''
                 lx=cell[1]
@@ -256,9 +256,21 @@ class Task(AbsFetchTask):
                 if len(typedate) >1:
                     hj =typedate[1].replace(']', '')
                     lx=typedate[0]
+                if (y == 1):
+                    maxtime = cell[0]
+                    if '汇缴' in lx:
+                        hjrq=hj
+                        hjje=str(float(cell[2])+float(cell[3]))
+                        hjtype=1
+                y = y + 1
 
                 if hj:
                     hjcs=hjcs+1
+                    if hjtype==0:
+                        hjrq = hj
+                        hjje = str(float(cell[2]) + float(cell[3]))
+                        hjtype = 1
+
                 dic = {
                     '时间': cell[0],
                     '单位名称':'',
@@ -283,7 +295,9 @@ class Task(AbsFetchTask):
                         arr = data['detail']['data'][years][months]
                 arr.append(dic)
                 data['detail']['data'][years][months] = arr
-                print(arr)
+            data['baseInfo']['最近汇缴日期']=hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
 
             #companyList
             data['companyList'] = []
