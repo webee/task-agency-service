@@ -240,6 +240,7 @@ class Task(AbsFetchTask):
             months = ''
             maxtime=''
             y=1
+            hjcs=0
             for tb in table.findAll('tbody'):
                 dic = {}
                 arr = []
@@ -256,6 +257,8 @@ class Task(AbsFetchTask):
                     hj =typedate[1].replace(']', '')
                     lx=typedate[0]
 
+                if hj:
+                    hjcs=hjcs+1
                 dic = {
                     '时间': cell[0],
                     '单位名称':'',
@@ -309,7 +312,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '15826126131', '密码': 'qinyu20070207'}
+    meta = {'账号': '15826126132', '密码': 'qinyu20070207'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #账号': '15826126132', '密码': 'qinyu20070207'  账号': '15123133361', '密码': 'haoran'
