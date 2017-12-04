@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium import webdriver
 from selenium.webdriver.common.proxy import Proxy
 from selenium.webdriver.common.proxy import ProxyType
+from decimal import Decimal
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.221 Safari/537.36 SE 2.X MetaSr 1.0'
 LOGIN_PAGE_URL = 'https://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
@@ -244,6 +245,14 @@ class Task(AbsFetchTask):
             name = ''
             target_id = ''
             paymentStart = ''
+
+            # 累计汇缴月数
+            payMonth = []
+            last_income = {
+                "date": "",
+                "data": ""
+            }
+
             if len(companyList) > 0:
                 trs = companyList[0].findAll("tr")
                 i = 0
@@ -293,6 +302,7 @@ class Task(AbsFetchTask):
                                 detail_tag = result.findAll("span", {"class": "style2"})
                                 # 20177月份后数据不太准确
                                 temp_detail = result.findAll("table", {"id": "tab-style"})
+
                                 temp_all_date = []
                                 if len(detail_tag) > 0:
                                     detail_a = detail_tag[1].findAll("a")[0]
@@ -318,8 +328,27 @@ class Task(AbsFetchTask):
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]]
                                                 except KeyError:
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
-                                                temp_all_date.append(date)
 
+                                                hj = re.sub('\s', '', detail_tds[2].text)
+                                                sr = re.sub('\s', '', detail_tds[3].text).replace(",", "")
+                                                try:
+                                                    if (hj.find("汇缴") or hj.find("补缴")) and Decimal(sr) > 0:
+                                                        if last_income["date"] == "":
+                                                            last_income.update({
+                                                                "date": date,
+                                                                "data": sr
+                                                            })
+                                                        else:
+                                                            if int(last_income["date"]) < int(date):
+                                                                last_income.update({
+                                                                    "date": date,
+                                                                    "data": sr
+                                                                })
+                                                        if date[0:6] not in payMonth:
+                                                            payMonth.append(date[0:6])
+                                                except:
+                                                    pass
+                                                temp_all_date.append(date)
                                                 self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
                                                     "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
                                                     "类型": re.sub('\s', '', detail_tds[2].text),
@@ -347,6 +376,25 @@ class Task(AbsFetchTask):
                                                 except KeyError:
                                                     self.result_data["detail"]["data"][date[0:4]][date[4:6]] = []
 
+                                                hj = re.sub('\s', '', detail_tds[2].text)
+                                                sr = re.sub('\s', '', detail_tds[3].text).replace(",", "")
+                                                try:
+                                                    if (hj.find("汇缴") or hj.find("补缴")) and Decimal(sr) > 0:
+                                                        if last_income["date"] == "":
+                                                            last_income.update({
+                                                                "date": date,
+                                                                "data": sr
+                                                            })
+                                                        else:
+                                                            if int(last_income["date"]) < int(date):
+                                                                last_income.update({
+                                                                    "date": date,
+                                                                    "data": sr
+                                                                })
+                                                        if date[0:6] not in payMonth:
+                                                            payMonth.append(date[0:6])
+                                                except:
+                                                    pass
                                                 self.result_data["detail"]["data"][date[0:4]][date[4:6]].append({
                                                     "时间": date[0:4] + "-" + date[4:6] + "-" + date[6:],
                                                     "类型": re.sub('\s', '', detail_tds[2].text),
@@ -359,12 +407,21 @@ class Task(AbsFetchTask):
                         except:
                             pass
                         i = i + 1
+
             self.result_identity.update({
                 'task_name': self.task_info['city_name'],
                 'target_name': name,
                 'target_id': target_id,
-                'status': paymentStart,
+                'status': paymentStart
             })
+            try:
+                self.result_data["baseInfo"].update({
+                    "最近汇款日期": last_income["date"][0:4] + "-" + last_income["date"][4:6],
+                    "最近汇款金额": float(last_income["data"]),
+                    "累计汇款次数": payMonth.__len__(),
+                })
+            except:
+                pass
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
 
