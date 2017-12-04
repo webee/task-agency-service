@@ -310,7 +310,7 @@ class Task(AbsFetchTask):
                     '缴费时间': re.sub('\s', '', dateB[14].text),
                     '缴费类型': re.sub('\s', '', dateB[10].text),
                     '缴费基数': re.sub('\s', '', dateB[34].text),
-                    '公司缴费': float(re.sub('\s', '', dateB[28].text)),
+                    '公司缴费': float(dateB[28].text.replace('\t','').replace('\r','').replace('\n','')),
                     '个人缴费': "",
                     '缴费单位': re.sub('\s', '', dateB[4].text),
                     '单位划入帐户': float(re.sub('\s', '', dateB[38].text)),

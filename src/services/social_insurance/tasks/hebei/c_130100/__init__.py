@@ -33,9 +33,10 @@ class Task(AbsFetchTask):
             'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.79 Safari/537.36',
             'Accept-Encoding':'gzip, deflate',
             'Host':'grsbcx.sjz12333.gov.cn',
-            'Connection':'keep-alive',
             'Upgrade-Insecure-Requests':'1',
-            'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6'
+            'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6',
+            'X-Requested-With':'XMLHttpRequest',
+            #'Content-Type':'multipart/form-data'
         }
 
 
@@ -133,8 +134,8 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-            res=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/default.jsp")
-            soups = BeautifulSoup(res.content, 'html.parser').findAll('div')
+            #res=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/default.jsp")
+            #soups = BeautifulSoup(res.content, 'html.parser').findAll('div')
             resp=self.s.post(Main_URL)
             soup=BeautifulSoup(resp.content,'html.parser').findAll('body')
 
