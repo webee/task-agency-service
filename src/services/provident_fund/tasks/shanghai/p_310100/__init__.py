@@ -250,7 +250,10 @@ class Task(AbsFetchTask):
             infotable = soup.select('.table')[0].findAll('tr')
             years = ''
             months = ''
-
+            hjtype = 0
+            hjcs = 0
+            hjje = ''
+            hjrq = ''
             for y in range(2, len(infotable)):
                 dic = {}
                 arr = []
@@ -274,6 +277,12 @@ class Task(AbsFetchTask):
                         if len(re.findall(r"汇缴(.+?)公积金", strname))>0:
                             strtype=strname[:2]
                             strtime=strname[2:8]
+                        if strtype=='汇缴':
+                            hjcs=hjcs+1
+                            if hjtype==0:
+                                hjtype=1
+                                hjje=cell[2]
+                                hjrq=strtime
 
                         dic = {
                             '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
@@ -334,6 +343,9 @@ class Task(AbsFetchTask):
                         }
             enterarr.append(enterdic)
             data['companyList'] = enterarr
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)

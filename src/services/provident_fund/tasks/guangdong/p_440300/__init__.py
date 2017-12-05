@@ -1,5 +1,6 @@
 import time
 import io
+import hashlib
 from PIL import Image
 from bs4 import BeautifulSoup
 from services.service import SessionData, AbsTaskUnitSessionTask
@@ -36,7 +37,7 @@ class Task(AbsFetchTask):
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
     def _get_common_headers(self):
-        return {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
+        return {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -101,27 +102,27 @@ class Task(AbsFetchTask):
                 id_num = params['公积金账号']
                 password = params['密码']
                 vc = params['vc']
-                self._do_login(id_num, password, vc)
-                # m = hashlib.md5()
-                # m.update(password.encode(encoding='utf-8'))
-                # hashpsw = m.hexdigest()
-                # data = {
-                #     'task': 'pri',
-                #     'transcode': 'card',
-                #     'ssoLogin': '',
-                #     'issueName': '',
-                #     'UserCert': '',
-                #     'bjcaRanStr': '',
-                #     'ranStr': '',
-                #     'CardNo': id_num,
-                #     'QryPwd': '19ee8550b7b1af89',
-                #     'identifyCode': vc,
-                #     'sSignTxt': '',
-                #     'SUBMIT.x': '50',
-                #     'SUBMIT.y': '12'
-                # }
-                # resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
-                #                                                   'Cache-Control': 'no-cache'})
+                #self._do_login(id_num, password, vc)
+                m = hashlib.md5()
+                m.update(password.encode(encoding='utf-8'))
+                hashpsw = m.hexdigest()
+                data = {
+                    'task': 'pri',
+                    'transcode': 'card',
+                    'ssoLogin': '',
+                    'issueName': '',
+                    'UserCert': '',
+                    'bjcaRanStr': '',
+                    'ranStr': '',
+                    'CardNo': id_num,
+                    'QryPwd': '19ee8550b7b1af89',
+                    'identifyCode': vc,
+                    'sSignTxt': '',
+                    'SUBMIT.x': '91',
+                    'SUBMIT.y': '15'
+                }
+                resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
+                                                                  'Cache-Control': 'no-cache'})
                 soup = self.s.soup
                 errormsg = soup.select('.message')[0].text
                 if errormsg and errormsg != id_num:
