@@ -124,8 +124,11 @@ class Task(AbsFetchTask):
                     data = BeautifulSoup(resp.content, "html.parser")
                     try:
                         errormsg = data.findAll("table")[3].findAll("font")[0].text.replace("\r", "").replace("\n", "").replace("\t", "")
+                    except IndexError:
+                        errormsg = data.find("body").find("font").text
                     except:
-                        errormsg = "登录失败，请移至官网查看异常信息"
+                        errormsg = "服务器繁忙，请稍后重试"
+
                     raise InvalidParamsError(errormsg)
 
                 self.result['key'] = j_username
