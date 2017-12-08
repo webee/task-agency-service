@@ -68,7 +68,7 @@ class Task(AbsFetchTask):
                     'signdata':'',
                     '1': 'y'
                 }
-                resp = self.s.post(LOGIN_URL, data=data,timeout=10)
+                resp = self.s.post(LOGIN_URL, data=data,timeout=20)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 successinfo=json.loads(soup.text)
                 if successinfo['success']:
@@ -220,7 +220,7 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         #vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL,timeout=5)
+        resp = self.s.get(VC_URL,timeout=15)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
     from services.client import TaskTestClient
