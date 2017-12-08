@@ -134,7 +134,7 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-            #res=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/default.jsp")
+            res=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/default.jsp")
             #soups = BeautifulSoup(res.content, 'html.parser').findAll('div')
             resp=self.s.post(Main_URL)
             soup=BeautifulSoup(resp.content,'html.parser').findAll('body')
