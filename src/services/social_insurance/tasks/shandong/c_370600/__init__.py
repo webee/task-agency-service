@@ -175,7 +175,7 @@ class Task(AbsFetchTask):
             username_input = driver.find_element_by_xpath('//*[@id="yhmInput"]')
             password_input = driver.find_element_by_xpath('//*[@id="mmInput"]')
             vc_input = driver.find_element_by_xpath('//*[@id="authcode_result"]')
-            submit_btn = driver.find_element_by_xpath('//*[@name="login_btn"]')
+            # submit_btn = driver.find_element_by_xpath('//*[@name="login_btn"]')
 
             # 用户名
             username_input.clear()
@@ -193,7 +193,7 @@ class Task(AbsFetchTask):
             driver.execute_script('onLogin("1.0.68","105","mainFrame.jsp?","1","")')
             #submit_btn.click()
             time.sleep(8)
-            Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
+            # Image.open(io.BytesIO(driver.get_screenshot_as_png())).show()
             if driver.current_url != MAIN_URL:
                 print('登录成功')
                 # 保存登录后的页面内容供抓取单元解析使用

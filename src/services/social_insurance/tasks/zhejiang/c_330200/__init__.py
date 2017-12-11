@@ -463,7 +463,8 @@ class Task(AbsFetchTask):
             self.result_data['baseInfo']['社保卡状态'] = kt
             self.result_data['baseInfo']['银行账号'] = infors['AAE010']
             self.result_data['baseInfo']['发卡日期'] = infors['AAZ503']
-            self.result_data['baseInfo']['手机号'] = infors['AAE004']
+            if 'AAE004' in infors.keys():
+                self.result_data['baseInfo']['手机号'] = infors['AAE004']
             self.result_data['baseInfo']['固定号码'] = infors['AAE005']
             self.result_data['baseInfo']['常住地址'] = infors['AAE006']
             self.result_data['baseInfo']['邮编'] = infors['AAZ220']
@@ -721,7 +722,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '362330198408045478', '密码': '19841984'}
+    meta = {'身份证号': '330227198906162713', '密码': '362415'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998'
