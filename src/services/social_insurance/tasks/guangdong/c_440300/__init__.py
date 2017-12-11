@@ -368,6 +368,13 @@ class Task(AbsFetchTask):
 
                 self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
                 self.result_data["baseInfo"].setdefault('五险状态', fivedic)
+            else:
+                self.result_data["baseInfo"].setdefault('缴费时长', 0)
+                self.result_data["baseInfo"].setdefault('身份证号','')
+                self.result_data["baseInfo"].setdefault('最近缴费时间', '')
+                self.result_data["baseInfo"].setdefault('开始缴费时间', '')
+                self.result_data["baseInfo"].setdefault('个人养老累计缴费', '')
+                self.result_data["baseInfo"].setdefault('个人医疗累计缴费', '')
 
             '''第三次'''
             strr = '?r=' + str(random.random())
