@@ -193,6 +193,81 @@ class Task(AbsFetchTask):
                                             'Connection': 'keep - alive'}, timeout=15)
                 self.s.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
 
+                self.result_data["baseInfo"] = {
+                    '城市名称': '深圳',
+                    '城市编号': '440300',
+                    '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+                }
+                # 查询（点击业务查询请求三次）
+                '''第一次'''
+                strr = '?r=' + str(random.random())
+                resp = self.s.post(USERINFO_URL + strr, data=dict(_isModel='true',
+                                                                  params='{"oper":"UnitHandleCommAction.insertLogRecord","params":{},"datas":{"@tmpGtDatas":{"rightId":"500101","rightName":"参保基本信息查询","recordType":"1"}}}'),
+                                   headers={'X-Requested-With': 'XMLHttpRequest',
+                                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                            'Accept': 'application / json, text / plain, * / *',
+                                            'Token': self.s.Token,
+                                            'Connection': 'keep - alive'}, timeout=15)
+
+                self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+                '''第二次'''
+                datass = dict(
+                    _isModel='true',
+                    params='{"oper":"CbjbxxcxAction.queryGrcbjbxx","params":{},"datas":{"ncm_gt_用户信息":{"params":{}},"ncm_gt_参保状态":{"params":{}},"ncm_gt_缴纳情况":{"params":{}}}}'
+                )
+                strrs = USERINFO_URL + '?r=' + str(random.random())
+                resps = self.s.post(strrs, datass, headers={'X-Requested-With': 'XMLHttpRequest',
+                                                            'Accept-Language': 'zh-CN,zh;q=0.8',
+                                                            'Accept-Encoding': 'gzip, deflate, br',
+                                                            'Connection': 'keep - alive',
+                                                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                            'Accept': 'application/json,text/plain, */*',
+                                                            'Token': self.s.Token,
+                                                            'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html',
+                                                            'Origin': 'https://seyb.szsi.gov.cn',
+                                                            'Host': 'seyb.szsi.gov.cn'}, timeout=15)
+                # print(resps.text)
+                soup = BeautifulSoup(resps.content, 'html.parser')
+                self.s.Token = resps.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
+                jsonread = json.loads(soup.text)
+                if jsonread['flag'] != '-1':
+                    userinfo = jsonread['datas']
+                    fivedic = {}
+                    for k, v in userinfo['ncm_gt_用户信息']['params'].items():
+                        if k.find('参保状态') > 0:
+                            fivedic.setdefault(k[:2], v)
+                        else:
+                            if k == '户籍类别':
+                                self.result_data["baseInfo"].setdefault('户口性质', v)
+                            else:
+                                self.result_data["baseInfo"].setdefault(k, v)
+                            if k == '姓名':
+                                self.result_identity['target_name'] = v
+                            if k == '身份证号':
+                                self.result_identity['target_id'] = v
+                            if k == '参保状态':
+                                if v == '正常':
+                                    self.result_identity['status'] = '正常缴纳'
+                                else:
+                                    self.result_identity['status'] = '停缴'
+
+                    monthnum = 0
+                    for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
+                        if k == '养老保险累计月数':
+                            self.result_data["baseInfo"].setdefault('养老实际缴费月数', v)
+                        elif k == '失业保险累计月数':
+                            self.result_data["baseInfo"].setdefault('失业实际缴费月数', v)
+                        else:
+                            self.result_data["baseInfo"].setdefault(k, v)
+                        if k.find('保险累计月数') > -1:
+                            if (monthnum < int(v)):
+                                monthnum = int(v)
+
+                    self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
+                    self.result_data["baseInfo"].setdefault('五险状态', fivedic)
+                else:
+                    raise InvalidParamsError('请您登录社保官网输入社保个人电脑号完成身份认证后，再做查询操作。')
+
                 self.result_key = username
 
                 # 保存到meta
@@ -296,80 +371,6 @@ class Task(AbsFetchTask):
     def _unit_fetch_userinfo(self):
         """用户信息"""
         try:
-            self.result_data["baseInfo"] = {
-                '城市名称': '深圳',
-                '城市编号': '440300',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
-            }
-            # 查询（点击业务查询请求三次）
-            '''第一次'''
-            strr = '?r=' + str(random.random())
-            resp = self.s.post(USERINFO_URL + strr, data=dict(_isModel='true',
-                                                              params='{"oper":"UnitHandleCommAction.insertLogRecord","params":{},"datas":{"@tmpGtDatas":{"rightId":"500101","rightName":"参保基本信息查询","recordType":"1"}}}'),
-                               headers={'X-Requested-With': 'XMLHttpRequest',
-                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                        'Accept': 'application / json, text / plain, * / *',
-                                        'Token': self.s.Token,
-                                        'Connection': 'keep - alive'}, timeout=15)
-
-            self.g.Token = resp.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
-            '''第二次'''
-            datass = dict(
-                _isModel='true',
-                params='{"oper":"CbjbxxcxAction.queryGrcbjbxx","params":{},"datas":{"ncm_gt_用户信息":{"params":{}},"ncm_gt_参保状态":{"params":{}},"ncm_gt_缴纳情况":{"params":{}}}}'
-            )
-            strrs = USERINFO_URL + '?r=' + str(random.random())
-            resps = self.s.post(strrs, datass, headers={'X-Requested-With': 'XMLHttpRequest',
-                                                        'Accept-Language': 'zh-CN,zh;q=0.8',
-                                                        'Accept-Encoding': 'gzip, deflate, br',
-                                                        'Connection': 'keep - alive',
-                                                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                                        'Accept': 'application/json,text/plain, */*',
-                                                        'Token': self.s.Token,
-                                                        'Referer': 'https://seyb.szsi.gov.cn/web/ggfw/app/index.html',
-                                                        'Origin': 'https://seyb.szsi.gov.cn',
-                                                        'Host': 'seyb.szsi.gov.cn'}, timeout=15)
-            # print(resps.text)
-            soup = BeautifulSoup(resps.content, 'html.parser')
-            self.s.Token = resps.cookies._cookies['seyb.szsi.gov.cn']['/']['Token'].value
-            jsonread = json.loads(soup.text)
-            if jsonread['flag']!='-1':
-                userinfo = jsonread['datas']
-                fivedic = {}
-                for k, v in userinfo['ncm_gt_用户信息']['params'].items():
-                    if k.find('参保状态') > 0:
-                        fivedic.setdefault(k[:2], v)
-                    else:
-                        if k == '户籍类别':
-                            self.result_data["baseInfo"].setdefault('户口性质', v)
-                        else:
-                            self.result_data["baseInfo"].setdefault(k, v)
-                        if k == '姓名':
-                            self.result_identity['target_name'] = v
-                        if k == '身份证号':
-                            self.result_identity['target_id'] = v
-                        if k == '参保状态':
-                            if v == '正常':
-                                self.result_identity['status'] = '正常缴纳'
-                            else:
-                                self.result_identity['status'] = '停缴'
-
-                monthnum = 0
-                for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
-                    if k == '养老保险累计月数':
-                        self.result_data["baseInfo"].setdefault('养老实际缴费月数', v)
-                    elif k == '失业保险累计月数':
-                        self.result_data["baseInfo"].setdefault('失业实际缴费月数', v)
-                    else:
-                        self.result_data["baseInfo"].setdefault(k, v)
-                    if k.find('保险累计月数') > -1:
-                        if (monthnum < int(v)):
-                            monthnum = int(v)
-
-                self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
-                self.result_data["baseInfo"].setdefault('五险状态', fivedic)
-            else:
-                raise InvalidParamsError('请您登录社保官网输入社保个人电脑号完成身份认证后，再做查询操作。')
 
             '''第三次'''
             strr = '?r=' + str(random.random())

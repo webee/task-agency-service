@@ -459,15 +459,21 @@ class Task(AbsFetchTask):
             else:
                 kt=''
             self.result_data['baseInfo']['性别']=xb
-            self.result_data['baseInfo']['国籍'] = infors['AZA103']
+            if 'AZA103' in infors.keys():
+                self.result_data['baseInfo']['国籍'] = infors['AZA103']
             self.result_data['baseInfo']['社保卡状态'] = kt
-            self.result_data['baseInfo']['银行账号'] = infors['AAE010']
-            self.result_data['baseInfo']['发卡日期'] = infors['AAZ503']
+            if 'AAE010' in infors.keys():
+                self.result_data['baseInfo']['银行账号'] = infors['AAE010']
+            if 'AAZ503' in infors.keys():
+                self.result_data['baseInfo']['发卡日期'] = infors['AAZ503']
             if 'AAE004' in infors.keys():
                 self.result_data['baseInfo']['手机号'] = infors['AAE004']
-            self.result_data['baseInfo']['固定号码'] = infors['AAE005']
-            self.result_data['baseInfo']['常住地址'] = infors['AAE006']
-            self.result_data['baseInfo']['邮编'] = infors['AAZ220']
+            if 'AAE005' in infors.keys():
+                self.result_data['baseInfo']['固定号码'] = infors['AAE005']
+            if 'AAE006' in infors.keys():
+                self.result_data['baseInfo']['常住地址'] = infors['AAE006']
+            if 'AAZ220' in infors.keys():
+                self.result_data['baseInfo']['邮编'] = infors['AAZ220']
 
             urls = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=10S005&bustype=01&refresh=true&client=NBHRSS_WEB'
             resp = self.s.get(urls)
