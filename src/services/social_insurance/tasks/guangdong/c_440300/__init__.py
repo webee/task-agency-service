@@ -369,12 +369,7 @@ class Task(AbsFetchTask):
                 self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
                 self.result_data["baseInfo"].setdefault('五险状态', fivedic)
             else:
-                self.result_data["baseInfo"].setdefault('缴费时长', 0)
-                self.result_data["baseInfo"].setdefault('身份证号','')
-                self.result_data["baseInfo"].setdefault('最近缴费时间', '')
-                self.result_data["baseInfo"].setdefault('开始缴费时间', '')
-                self.result_data["baseInfo"].setdefault('个人养老累计缴费', '')
-                self.result_data["baseInfo"].setdefault('个人医疗累计缴费', '')
+                raise InvalidParamsError('请您登录社保官网输入社保个人电脑号完成身份认证后，再做查询操作。')
 
             '''第三次'''
             strr = '?r=' + str(random.random())
@@ -532,7 +527,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'用户名': 'xiaolan0612', '密码': 'Xiaolan0612'}
+    meta = {'用户名': 'KevinJ', '密码': 'Zwk667515'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
