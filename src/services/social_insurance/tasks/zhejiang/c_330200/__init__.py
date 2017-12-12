@@ -146,7 +146,7 @@ class Task(AbsFetchTask):
                         phone=''))
                     soup = BeautifulSoup(resp.content, 'html.parser')
                     infor = json.loads(soup.text)
-                    if len(infor)<3:
+                    if infor['ret']=='1':
                         print("登录成功！")
                         inforr=json.loads(infor['result'])
                         self.g.access_token=inforr['access_token']
@@ -160,7 +160,7 @@ class Task(AbsFetchTask):
                         }
                         self.result_identity['target_name'] = inforr['xm']
                     else:
-                        raise InvalidParamsError('登陆用户名或密码错误！')
+                        raise InvalidParamsError(infor['msg'])
                 else:
                     raise InvalidParamsError('验证码错误！')
 
@@ -728,7 +728,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '330227198906162713', '密码': '362415'}
+    meta = {'身份证号': '360732199005254715', '密码': 'wq1599392177ooo'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
-#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998'
+#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998''身份证号': '330227198906162713', '密码': '362415'
