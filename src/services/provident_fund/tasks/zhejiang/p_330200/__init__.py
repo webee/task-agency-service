@@ -126,17 +126,7 @@ class Task(AbsFetchTask):
                 accnum=resp.cookies['gjjaccnum']
                 res=self.s.get(MAIN_URL+"tranCode=142503&task=&accnum="+accnum)
                 resdata=json.loads(res.text)
-                self.result_data['baseInfo'] = {
-                    '姓名':resdata['accname'],
-                    '证件号':resdata['certinum'],
-                    '证件类型':'身份证',
-                    '公积金账号':resdata['accnum'],
-                    '缴存基数':resdata['basenum'],
-                    '开户日期':resdata['begdate'],
-                    '更新时间':time.strftime("%Y-%m-%d",time.localtime()),
-                    '城市名称':'宁波市',
-                    '城市编号':'330200'
-                }
+
 
                 # 公司信息
                 self.result_data['companyList'].append({
@@ -162,6 +152,10 @@ class Task(AbsFetchTask):
                 }
 
                 # 缴费明细
+                lastTime = ""  # 最后一次汇补缴时间
+                lastMoney = ""  # 最后一次汇补缴金额
+                continueCount = 0  # 汇补缴累积次数
+
                 starttime=str(datetime.datetime.now()-datetime.timedelta(days=365*3))[0:10]    # 开始时间
                 endtime=str(datetime.datetime.now())[0:10]                                      # 结束时间
                 detailurl=self.s.get(MAIN_URL+"tranCode=142504&task=ftp&indiacctype=1&accnum="+accnum+"&begdate="+starttime+"&enddate="+endtime)
@@ -182,9 +176,31 @@ class Task(AbsFetchTask):
                         '单位名称':detailData[aa]["unitaccname"].strip()
                     }
 
+                    if '汇缴' in detailData[aa]["ywtype"].strip() or '补缴' in detailData[aa]["ywtype"].strip():
+                        lastTime=detailData[aa]["trandate"]
+                        lastMoney=detailData[aa]["amt"]
+                        continueCount=continueCount+1
+
                     baseDetail.setdefault(years, {})
                     baseDetail[years].setdefault(months, [])
                     baseDetail[years][months].append(model)
+
+
+                self.result_data['baseInfo'] = {
+                    '姓名': resdata['accname'],
+                    '证件号': resdata['certinum'],
+                    '证件类型': '身份证',
+                    '公积金账号': resdata['accnum'],
+                    '缴存基数': resdata['basenum'],
+                    '开户日期': resdata['begdate'],
+                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                    '城市名称': '宁波市',
+                    '城市编号': '330200',
+
+                    '最近汇款日期': lastTime,
+                    '最近汇款金额': lastMoney,
+                    '累计汇款次数': continueCount
+                }
 
 
                 self.result_key = id_num

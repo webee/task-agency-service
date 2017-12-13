@@ -375,7 +375,7 @@ class Task(AbsFetchTask):
                             '缴费时间': nowtime4,
                             '缴费基数': td4[3].text,
                             '公司缴费': float(td4[8].text) / rangNumC,
-                            '个人缴费': '-'
+                            '个人缴费': ''
                         }
                         dataBaseC.setdefault(nowtime4[0:4], {})
                         dataBaseC[nowtime4[0:4]].setdefault(nowtime4[4:6], [])
@@ -400,7 +400,7 @@ class Task(AbsFetchTask):
                             '缴费时间': nowtime5,
                             '缴费基数': td5[3].text,
                             '公司缴费': float(td5[9].text) / rangNumB,
-                            '个人缴费': '-'
+                            '个人缴费': ''
                         }
                         dataBaseB.setdefault(nowtime5[0:4], {})
                         dataBaseB[nowtime5[0:4]].setdefault(nowtime5[4:6], [])
@@ -504,7 +504,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '441481198701204831', '密码': 'taifaikcoi168'}
+    meta = {'账号': '460024197809231611', '密码': 'csf247403'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

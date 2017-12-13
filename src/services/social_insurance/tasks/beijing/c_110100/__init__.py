@@ -96,7 +96,7 @@ class Task(AbsFetchTask):
         err_msg = None
         resp = self.s.get(LOGIN_PAGE_URL)
         n = datetime.datetime.now() + datetime.timedelta(days=1)
-        if 1 <= n.day <= 6 or from_error:
+        if 1 <= n.day <= 8 or from_error:
             soup = BeautifulSoup(resp.content, 'html.parser')
             if not soup.find('form'):
                 # 可能暂停维护了
@@ -124,8 +124,11 @@ class Task(AbsFetchTask):
                     data = BeautifulSoup(resp.content, "html.parser")
                     try:
                         errormsg = data.findAll("table")[3].findAll("font")[0].text.replace("\r", "").replace("\n", "").replace("\t", "")
+                    except IndexError:
+                        errormsg = data.find("body").find("font").text
                     except:
-                        errormsg = "登录失败，请移至官网查看异常信息"
+                        errormsg = "服务器繁忙，请稍后重试"
+
                     raise InvalidParamsError(errormsg)
 
                 self.result['key'] = j_username
@@ -178,14 +181,28 @@ class Task(AbsFetchTask):
             fromCity = td0[td0.find("所属区县：")+5:]
 
             td1 = table2.findAll("td")
-            socialType = re.sub('\s', '', td1[1].text) + "end"
+
+            socialType = re.sub('\s', '', td1[1].text)
+            socialType = socialType.replace("[", "").replace("]", ",")
+            socialType = socialType.split(",")
             old_age_state = {
-                "养老": socialType[socialType.find('[养老缴费(')+6:socialType.find(')缴费][失业缴费(')] + "参保",
-                "医疗": socialType[socialType.find('[失业缴费(')+6:socialType.find(')缴费][工伤缴费(')] + "参保",
-                "失业": socialType[socialType.find('[工伤缴费(')+6:socialType.find(')缴费][生育缴费(')] + "参保",
-                "工伤": socialType[socialType.find('[生育缴费(')+6:socialType.find(')缴费][医保缴费(')] + "参保",
-                "生育": socialType[socialType.find('[医保缴费(')+6:socialType.find(')缴费]end')] + "参保"
+                "养老": "",
+                "医疗": "",
+                "失业": "",
+                "工伤": "",
+                "生育": ""
             }
+            for item in socialType:
+                if "养老" in item:
+                    old_age_state["养老"] = item.replace("养老缴费", "")
+                if "医保" in item:
+                    old_age_state["医疗"] = item.replace("医保缴费", "")
+                if "失业" in item:
+                    old_age_state["失业"] = item.replace("失业缴费", "")
+                if "工伤" in item:
+                    old_age_state["工伤"] = item.replace("工伤缴费", "")
+                if "生育" in item:
+                    old_age_state["生育"] = item.replace("生育缴费", "")
 
             data["baseInfo"] = {
                 "单位名称": companyName,

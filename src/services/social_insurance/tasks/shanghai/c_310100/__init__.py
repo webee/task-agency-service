@@ -69,9 +69,9 @@ class Task(AbsFetchTask):
         driver.start_session(webdriver.DesiredCapabilities.PHANTOMJS)
 
         # 以前遇到过driver.get(url)一直不返回，但也不报错的问题，这时程序会卡住，设置超时选项能解决这个问题。
-        driver.set_page_load_timeout(20)
+        driver.set_page_load_timeout(30)
         # 设置10秒脚本超时时间
-        driver.set_script_timeout(20)
+        driver.set_script_timeout(30)
 
         # 随便访问一个相同host的地址，方便之后设置cookie
         driver.get('"http://www.12333sh.gov.cn/xxxx')
@@ -215,7 +215,7 @@ class Task(AbsFetchTask):
             # TODO: 执行任务，如果没有登录，则raise PermissionError
 
             resp = self.s.get("http://www.12333sh.gov.cn/sbsjb/wzb/sbsjbcx12.jsp",
-                              proxies={"http": "http://" + self.proxy}, timeout=10)
+                              proxies={"http": "http://" + self.proxy}, timeout=30)
             soup = BeautifulSoup(resp.content, 'html.parser')
             # years = soup.find('xml', {'id': 'dataisxxb_sum3'}).findAll("jsjs")
             details = soup.find('xml', {'id': 'dataisxxb_sum2'}).findAll("jsjs")
@@ -247,8 +247,8 @@ class Task(AbsFetchTask):
                     '缴费时间': details[a].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[a].find('jsjs1').text, dt),
                     '缴费基数': details[a].find('jsjs3').text,
-                    '缴费类型': '-',
-                    '公司缴费': '-',
+                    '缴费类型': '',
+                    '公司缴费': '',
                     '个人缴费': details[a].find('jsjs4').text,
 
                     # '实缴金额': self._match_money(details[a].find('jsjs1').text, years[a].find('jsjs1').text,years[a].find('jsjs3').text)
@@ -274,8 +274,8 @@ class Task(AbsFetchTask):
                     '缴费时间': details[b].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[b].find('jsjs1').text, dt),
                     '缴费基数': details[b].find('jsjs3').text,
-                    '缴费类型': '-',
-                    '公司缴费': '-',
+                    '缴费类型': '',
+                    '公司缴费': '',
                     '个人缴费': details[b].find('jsjs6').text,
                 }
                 dataBaseH[yearH][monthH].append(modelH)
@@ -298,8 +298,8 @@ class Task(AbsFetchTask):
                     '缴费时间': details[c].find('jsjs1').text,
                     '缴费单位': self._match_commapy(details[c].find('jsjs1').text, dt),
                     '缴费基数': details[c].find('jsjs3').text,
-                    '缴费类型': '-',
-                    '公司缴费': '-',
+                    '缴费类型': '',
+                    '公司缴费': '',
                     '个人缴费': details[c].find('jsjs8').text,
                 }
                 dataBaseI[yearI][monthI].append(modelI)
@@ -378,8 +378,12 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '321322199001067241', '密码': '123456'}
+    meta = {'用户名': '222406198011231832', '密码': '801230'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
     # 321322199001067241  123456       5002931643   123456
+    
+    # 372901198109035010   903503
+
+    # 342529198604032449  139016zz
