@@ -554,10 +554,14 @@ class Task(AbsFetchTask):
                 resp = self.s.get(ylurl)
                 soupyl = BeautifulSoup(resp.content, 'html.parser')
                 ylinfo = json.loads(soupyl.text)
-                ylinfos = json.loads(ylinfo['result'])
-                if len(ylinfos['COSTLIST']['COST']) > 1:
-                    jfscolder = int(ylinfos['COSTLIST']['COST'][0]['AAE091'])  # arrstr[10].replace('至本年末实际缴费月数：', '')
-                    ljjfolder = float(ylinfos['COSTLIST']['COST'][0]['AAE382'])  # arrstr[9].replace('至本年末账户累计储存额：', '')
+                if ylinfo['ret'] == '1':
+                    ylinfos = json.loads(ylinfo['result'])
+                    if len(ylinfos['COSTLIST']['COST']) > 1:
+                        jfscolder = int(ylinfos['COSTLIST']['COST'][0]['AAE091'])  # arrstr[10].replace('至本年末实际缴费月数：', '')
+                        ljjfolder = float(ylinfos['COSTLIST']['COST'][0]['AAE382'])  # arrstr[9].replace('至本年末账户累计储存额：', '')
+                    else:
+                        jfscolder = 0
+                        ljjfolder = 0.00
                 else:
                     jfscolder = 0
                     ljjfolder = 0.00
@@ -640,9 +644,12 @@ class Task(AbsFetchTask):
                 resp = self.s.get(ylurl)
                 soupyl = BeautifulSoup(resp.content, 'html.parser')
                 ylinfo = json.loads(soupyl.text)
-                ylinfos = json.loads(ylinfo['result'])
-                if len(ylinfos) > 1:
-                    ljjfolder = float(ylinfos['AKC087'])  # arrstr[9].replace('至本年末账户累计储存额：', '')
+                if ylinfo['ret'] == '1':
+                    ylinfos = json.loads(ylinfo['result'])
+                    if len(ylinfos) > 1:
+                        ljjfolder = float(ylinfos['AKC087'])  # arrstr[9].replace('至本年末账户累计储存额：', '')
+                    else:
+                        ljjfolder = 0.00
                 else:
                     ljjfolder = 0.00
                 if nowyears in self.result_data['old_age']['data'].keys():
@@ -728,7 +735,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '360732199005254715', '密码': 'wq1599392177ooo'}
+    meta = {'身份证号': '330227198906162713', '密码': '362415'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
-#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998''身份证号': '330227198906162713', '密码': '362415'
+#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998''身份证号': '330227198906162713', '密码': '362415''身份证号': '360427196807192017', '密码': '717174'

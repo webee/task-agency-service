@@ -1,8 +1,12 @@
-from services.service import SessionData
+import time
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
+from bs4 import BeautifulSoup
 
+LOGIN_URL = 'http://www.hzgjj.gov.cn:8080/WebAccounts/userLogin.do'
+VC_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/codeMaker'
+INFOR_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/userModify.do'
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -12,89 +16,216 @@ class Task(AbsFetchTask):
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
-    def _prepare(self):
-        """恢复状态，初始化结果"""
-        super()._prepare()
-        # state
-        # state: dict = self.state
-        # TODO: restore from state
-
-        # result
-        # result: dict = self.result
-        # TODO: restore from result
-
-    def _update_session_data(self):
-        """保存任务状态"""
-        super()._update_session_data()
-        # state
-        # state: dict = self.state
-        # TODO: update state
-
-        # result
-        # result: dict = self.result
-        # TODO: update temp result
-
     def _get_common_headers(self):
-        return {}
+        return {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
 
     def _query(self, params: dict):
-        """任务状态查询"""
-        pass
-
-    def _setup_task_units(self):
-        """设置任务执行单元"""
-        self._add_unit(self._unit_login)
-        self._add_unit(self._unit_fetch, self._unit_login)
+        t = params.get('t')
+        if t == 'vc':
+            return self._new_vc()
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '登陆名' in params, '缺少账号'
-        assert '密码' in params, '缺少密码'
+        assert 'other' in params, '请选择登录方式'
+        if params["other"] == "1":
+            assert 'bh1' in params, '缺少客户号'
+            assert 'mm1' in params, '缺少密码'
+        elif params["other"] == "3":
+            assert 'bh3' in params, '缺少用户名'
+            assert 'mm3' in params, '缺少密码'
+        elif params["other"] == "4":
+            assert 'bh4' in params, '缺少市民邮箱'
+            assert 'mm4' in params, '缺少密码'
+        assert 'vc' in params, '缺少验证码'
         # other check
-        登陆名 = params['登陆名']
-        密码 = params['密码']
+        if params["other"] == "1":
+            用户名 = params['bh1']
+        elif params["other"] == "3":
+            用户名 = params['bh3']
+        elif params["other"] == "4":
+            用户名 = params['bh4']
+        if params["other"] == "1":
+            密码 = params['mm1']
+        elif params["other"] == "3":
+            密码 = params['mm3']
+        elif params["other"] == "4":
+            密码 = params['mm4']
+
         if len(密码) < 4:
-            raise InvalidParamsError('登陆名或密码错误')
-        if 登陆名.isdigit():
-            if len(登陆名) < 5:
-                raise InvalidParamsError('登陆名错误')
-            return
-        if '@' in 登陆名:
-            if not 登陆名.endswith('@hz.cn'):
+            raise InvalidParamsError('用户名或密码错误')
+        if len(用户名) < 5:
+            raise InvalidParamsError('登陆名错误')
+        if '@' in 用户名:
+            if not 用户名.endswith('@hz.cn'):
                 raise InvalidParamsError('市民邮箱错误')
             return
-        raise InvalidParamsError('登陆名或密码错误')
 
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if 'bh1' not in params:
+                params['bh1'] = meta.get('客户号')
+            if 'mm1' not in params:
+                params['mm1'] = meta.get('密码')
+            if 'bh3' not in params:
+                params['bh3'] = meta.get('用户名')
+            if 'mm3' not in params:
+                params['mm3'] = meta.get('密码')
+            if 'bh4' not in params:
+                params['bh4'] = meta.get('市民邮箱')
+            if 'mm4' not in params:
+                params['mm4'] = meta.get('密码')
+            if 'other' not in params:
+                params['other'] = meta.get('类型Code')
+        return params
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            # 用户名
+            if meta['类型Code'] == '3':
+                if pr['key'] == 'bh3':
+                    continue
+                if pr['key'] == 'mm3':
+                    continue
+                if pr['key'] == 'bh1' and '客户号' in meta:
+                    continue
+                elif pr['key'] == 'mm1' and '密码' in meta:
+                    continue
+                if pr['key'] == 'bh4' and '市民邮箱' in meta:
+                    continue
+                elif pr['key'] == 'mm4' and '密码' in meta:
+                    continue
+                res.append(pr)
+            # 客户号
+            elif meta['类型Code'] == '1':
+                if pr['key'] == 'bh1':
+                    continue
+                if pr['key'] == 'mm1':
+                    continue
+                if pr['key'] == 'bh3' and '用户名' in meta:
+                    continue
+                elif pr['key'] == 'mm3' and '密码' in meta:
+                    continue
+                if pr['key'] == 'bh4' and '市民邮箱' in meta:
+                    continue
+                elif pr['key'] == 'mm4' and '密码' in meta:
+                    continue
+                res.append(pr)
+            # 客户号
+            elif meta['类型Code'] == '4':
+                if pr['key'] == 'bh1':
+                    continue
+                if pr['key'] == 'mm1':
+                    continue
+                if pr['key'] == 'bh3' and '用户名' in meta:
+                    continue
+                elif pr['key'] == 'mm3' and '密码' in meta:
+                    continue
+                if pr['key'] == 'bh4' and '市民邮箱' in meta:
+                    continue
+                elif pr['key'] == 'mm4' and '密码' in meta:
+                    continue
+                res.append(pr)
+            else:
+                res.append(pr)
+        return res
+    def _setup_task_units(self):
+        self._add_unit(self._unit_login)
+        self._add_unit(self._unit_fetch_name, self._unit_login)
     def _unit_login(self, params: dict):
         err_msg = None
+        params
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('登陆名')
-                # 保存到meta
-                self.result_meta['登陆名'] = params.get('登陆名')
-                self.result_meta['密码'] = params.get('密码')
+                if params["other"] == "3":
+                    code = "3"
+                elif params["other"] == "1":
+                    code = "1"
+                else:
+                    code = "4"
+                id_num = params['bh' + code]
+                password = params['mm' + code]
+                vc = params['vc']
+                data={
+                    'cust_no':id_num,
+                    'password': password,
+                    'validate_code': vc,
+                    'cust_type': '2',
+                    'user_type': code
+                }
+                resp = self.s.post(LOGIN_URL, data=data, timeout=20)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                datas = {
+                    'cust_no': id_num,
+                    'flag':soup.text,
+                    'password': password,
+                    'validate_code': vc,
+                    'cust_type': '2',
+                    'user_type': code
+                }
+                resp = self.s.post(LOGIN_URL, data=datas, timeout=20)
+                soup = BeautifulSoup(resp.content, 'html.parser')
 
-                raise TaskNotImplementedError('查询服务维护中')
+                if soup.text=='2':
+                    err_msg='验证码不正确！'
+                elif soup.text=='-1':
+                    err_msg='用户名或密码不正确！'
+                if err_msg:
+                    raise InvalidParamsError(err_msg)
+
+                self.result_key = id_num
+                self.result_meta['用户名'] = id_num
+                self.result_meta['密码'] = password
+                self.result_identity['task_name'] = '杭州'
+                self.result_identity['target_id'] = id_num
+
+                return
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='登陆名', name='登陆名', cls='input', placeholder='登陆名或者市民邮箱(@hz.cn)', value=params.get('登陆名', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='other',
+                name = '[{"tabName":"客户号","tabCode":"1","isEnable":"1"},{"tabName":"用户名","tabCode":"3","isEnable":"1"},{"tabName":"市民邮箱","tabCode":"4","isEnable":"1"}]',
+                       cls = 'tab', value = params.get('类型Code', '')),
+            dict(key='bh1', name='客户号', cls='input', tabCode="1", value=params.get('用户名', '')),
+            dict(key='mm1', name='密码', cls='input:password', tabCode="1", value=params.get('密码', '')),
+            dict(key='bh3', name='用户名', cls='input', tabCode="3", value=params.get('用户名', '')),
+            dict(key='mm3', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),
+            dict(key='bh4', name='市民邮箱', cls='input', tabCode="4", value=params.get('用户名', '')),
+            dict(key='mm4', name='密码', cls='input:password', tabCode="4", value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="[1,3,4]", value=''),
         ], err_msg)
 
-    def _unit_fetch(self):
+    def _unit_fetch_name(self):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
+            #基本信息
+            resp = self.s.get(INFOR_URL, timeout=25)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            table = soup.find('table')
+            data = self.result_data
+            data['baseInfo'] = {
+                '城市名称': '杭州',
+                '城市编号': '330100',
+                '证件类型': '身份证',
+                '个人登记号': '',
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+            }
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
+    def _new_vc(self):
+        resp = self.s.get(VC_URL)
+        return dict(cls='data:image', content=resp.content)
 
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    client = TaskTestClient(Task(SessionData()))
+    #meta = {'客户号': '100091745304', '密码': '592316'}prepare_data=dict(meta=meta)
+    client = TaskTestClient(Task())
     client.run()
 
 
