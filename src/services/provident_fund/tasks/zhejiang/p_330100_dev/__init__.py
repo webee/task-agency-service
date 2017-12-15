@@ -1,4 +1,5 @@
 import time,datetime
+import operator
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
@@ -229,9 +230,10 @@ class Task(AbsFetchTask):
             table = soup.select('table')[0]
             enterarr=[]   #企业
             statearr=[]   #状态
-            y=1     #获取连接
+            y=1     #获取链接
             timeenter={}   #明细时间对应的企业
             maxtimes=[]
+
             data['companyList'] = []
             for tr in table.findAll('tr'):
                 cell = [i.text.replace(' ','') for i in tr.find_all('td')]
@@ -241,7 +243,7 @@ class Task(AbsFetchTask):
                     dictenter={
                         '单位名称':cell[3],
                         '当前余额':0,
-                        '账号状态':cell[7]
+                        '帐户状态':cell[7]
                     }
                     if y<=len(table.findAll('a')):
                         urlinfo='http://www.hzgjj.gov.cn:8080'+table.findAll('a')[y].attrs['href']
@@ -258,6 +260,8 @@ class Task(AbsFetchTask):
                         dictenter.setdefault('最后业务日期',max(timearr))
                         maxtimes.append(max(timearr))
                         data['companyList'].append(dictenter)
+                    data['companyList'].sort(key=operator.itemgetter('最后业务日期'),reverse=True)
+
 
             if '正常' in statearr:
                 self.result_identity['status'] ='正常'
@@ -269,6 +273,7 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             yuer=soup.findAll('td')[3].text
             data['baseInfo'].setdefault('当前余额',yuer)
+            data['companyList'][0]['当前余额'] = yuer
             axx=soup.find('a').attrs['href']
             urlinfo = 'http://www.hzgjj.gov.cn:8080' + axx
             resps = self.s.get(urlinfo, timeout=25)
