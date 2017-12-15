@@ -1,4 +1,4 @@
-import time
+import time,datetime
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup
 LOGIN_URL = 'http://www.hzgjj.gov.cn:8080/WebAccounts/userLogin.do'
 VC_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/codeMaker'
 INFOR_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/userModify.do'
+ENRER_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/perComInfo.do'
+YE_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/perComInfo.do?flag=1'
+DZD_URL='http://www.hzgjj.gov.cn:8080/WebAccounts/perBillDetial.do'
 
 class Task(AbsFetchTask):
     task_info = dict(
@@ -180,7 +183,6 @@ class Task(AbsFetchTask):
                 self.result_meta['用户名'] = id_num
                 self.result_meta['密码'] = password
                 self.result_identity['task_name'] = '杭州'
-                self.result_identity['target_id'] = id_num
 
                 return
             except (AssertionError, InvalidParamsError) as e:
@@ -205,15 +207,145 @@ class Task(AbsFetchTask):
             #基本信息
             resp = self.s.get(INFOR_URL, timeout=25)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            table = soup.find('table')
+            table = soup.select('table')[0].findAll('input')
             data = self.result_data
             data['baseInfo'] = {
                 '城市名称': '杭州',
                 '城市编号': '330100',
                 '证件类型': '身份证',
-                '个人登记号': '',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime())
+                '证件号': table[3].attrs['value'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '手机号': table[0].attrs['value'],
+                '个人账号': table[1].attrs['value'],
+                '姓名': table[2].attrs['value'],
+                '邮箱': table[12].attrs['value'],
+                '用户名': table[8].attrs['value'],
+                '地址': table[13].attrs['value'],
+                '邮编': table[14].attrs['value']
             }
+            #企业信息
+            resp = self.s.get(ENRER_URL, timeout=25)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            table = soup.select('table')[0]
+            enterarr=[]   #企业
+            statearr=[]   #状态
+            y=1     #获取连接
+            timeenter={}   #明细时间对应的企业
+            maxtimes=[]
+            data['companyList'] = []
+            for tr in table.findAll('tr'):
+                cell = [i.text.replace(' ','') for i in tr.find_all('td')]
+                if len(cell):
+                    enterarr.append(cell[3])
+                    statearr.append(cell[7])
+                    dictenter={
+                        '单位名称':cell[3],
+                        '当前余额':0,
+                        '账号状态':cell[7]
+                    }
+                    if y<=len(table.findAll('a')):
+                        urlinfo='http://www.hzgjj.gov.cn:8080'+table.findAll('a')[y].attrs['href']
+                        resps = self.s.get(urlinfo, timeout=25)
+                        soups = BeautifulSoup(resps.content, 'html.parser')
+                        tables = soups.select('table')[0]
+                        timearr=[]
+                        for tr in tables.findAll('tr'):
+                            cells = [i.text.replace(' ', '') for i in tr.find_all('td')]
+                            if len(cells):
+                                timearr.append(cells[1])
+                                timeenter.setdefault(cells[1],cell[3])
+                        y=y+2
+                        dictenter.setdefault('最后业务日期',max(timearr))
+                        maxtimes.append(max(timearr))
+                        data['companyList'].append(dictenter)
+
+            if '正常' in statearr:
+                self.result_identity['status'] ='正常'
+            else:
+                self.result_identity['status'] = '停缴'
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            #对账单
+            resp = self.s.get(YE_URL, timeout=25)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            yuer=soup.findAll('td')[3].text
+            data['baseInfo'].setdefault('当前余额',yuer)
+            axx=soup.find('a').attrs['href']
+            urlinfo = 'http://www.hzgjj.gov.cn:8080' + axx
+            resps = self.s.get(urlinfo, timeout=25)
+            soups = BeautifulSoup(resps.content, 'html.parser')
+            tables = soups.select('input')
+            if len(tables)>3:
+                data['baseInfo']['证件号']=tables[3].attrs['value']
+                self.result_identity['target_id'] = tables[3].attrs['value']
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            hjje = ''
+            hjrq = ''
+            hjcs = 0
+            for i in range(1998,int(datetime.datetime.now().year+1)):
+                datas={
+                    'check_ym': i,
+                    'button1': '',
+                    'acct_no': tables[1].attrs['value'],
+                    'cacct_no':tables[2].attrs['value'],
+                    'cert_code':tables[3].attrs['value'],
+                    'fund_type': tables[4].attrs['value'],
+                    'cname':tables[5].attrs['value'],
+                    'flag':tables[6].attrs['value'],
+                    'begin_date': str(i)+'0101',
+                    'end_date': str(i)+'1214'
+                    }
+
+                resp = self.s.post(DZD_URL,data=datas, timeout=25)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                table = soup.select('table')[0]
+                for tr in table.findAll('tr'):
+                    cell = [i.text.replace(' ', '') for i in tr.find_all('td')]
+                    if len(cell)>2 and cell[1]:
+                        arr = []
+                        hj = ''
+                        hjdw=''
+                        lx = cell[2]
+                        if '汇缴' in lx:
+                            hj =lx[-6:]
+                            lx =lx[:2]
+                            if max(maxtimes)==hj:
+                                hjrq=hj
+                                hjje=cell[3]
+                        else:
+                            lx = cell[2]
+                        if hj:
+                            hjcs = hjcs + 1
+                            hjdw=timeenter[hj]
+                        dic = {
+                            '时间': cell[1],
+                            '单位名称': hjdw,
+                            '支出': cell[4],
+                            '收入': cell[3],
+                            '汇缴年月': hj,
+                            '余额': cell[5],
+                            '类型': lx
+                        }
+                        times = cell[1][0:6]
+                        if years != times[:4]:
+                            years = times[:4]
+                            data['detail']['data'][years] = {}
+                            if months != times[-2:]:
+                                months = times[-2:]
+                                data['detail']['data'][years][months] = {}
+                        else:
+                            if months != times[-2:]:
+                                months = times[-2:]
+                                data['detail']['data'][years][months] = {}
+                            else:
+                                arr = data['detail']['data'][years][months]
+                        arr.append(dic)
+                        data['detail']['data'][years][months] = arr
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -224,8 +356,8 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    #meta = {'客户号': '100091745304', '密码': '592316'}prepare_data=dict(meta=meta)
-    client = TaskTestClient(Task())
+    meta = {'类型Code':1,'客户号': '100091745304', '密码': '592316','用户名':'','密码':'','市民邮箱':'','密码':''}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
 
