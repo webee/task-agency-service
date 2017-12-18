@@ -172,7 +172,10 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             self.result['data']['baseInfo']={}
-            rest = self.s.get("http://public.hrss.tj.gov.cn/api/security/user") #
+            rest = self.s.get("http://public.hrss.tj.gov.cn/api/security/user")
+            if rest.status_code!=200:
+                raise InvalidConditionError("未找到对应的信息！")
+
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
             s2=json.loads(rest.text)["associatedPersons"][0]["personNumber"]
 
@@ -396,7 +399,7 @@ class Task(AbsFetchTask):
             if (social_Type['养老'] == "正常参保"):
                 statuss = "正常"
             else:
-                statuss = "异常"
+                statuss = "停缴"
 
             self.result['data']['baseInfo'] = {
                 '姓名': rs['name'],

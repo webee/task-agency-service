@@ -4,6 +4,7 @@ import time
 import requests
 import json
 from bs4 import BeautifulSoup
+import demjson
 
 from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
@@ -15,6 +16,7 @@ from services.commons import AbsFetchTask
 LoginUrl="http://grsbcx.sjz12333.gov.cn/login.do?method=begin"
 VC_URL="http://grsbcx.sjz12333.gov.cn/jcaptcha"
 Main_URL="http://grsbcx.sjz12333.gov.cn/ria_grid.do?method=query"
+Half_URL="http://grsbcx.sjz12333.gov.cn/Report-ResultAction.do?linage=-1&encode=false&newReport=true&reportId="
 
 
 class Task(AbsFetchTask):
@@ -134,10 +136,175 @@ class Task(AbsFetchTask):
 
     def _unit_fetch(self):
         try:
-            res=self.s.get("http://grsbcx.sjz12333.gov.cn/si/pages/default.jsp")
-            #soups = BeautifulSoup(res.content, 'html.parser').findAll('div')
-            resp=self.s.post(Main_URL)
-            soup=BeautifulSoup(resp.content,'html.parser').findAll('body')
+            self.result_data['baseInfo'] = {}
+            times=str(int(time.strftime("%Y",time.localtime()))-1)
+            icard=self.result_meta['社保号']
+            res=self.s.get(Half_URL+'a5c27955-1489-4f81-9781-18ee9ace9ec3&AS_AAE001='+times+'&AS_AAE135='+icard)
+            soup=BeautifulSoup(res.text,'html.parser').findAll('tr')
+
+            redetail=self.s.get(Half_URL+'da89388c-5c59-452f-b2bd-8f54effeda33&AS_AAE001='+times+'&AS_AAE135='+icard)
+            soupDetail=BeautifulSoup(redetail.text,'html.parser').findAll('tr')
+
+            # 明细
+            datas='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{contentStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"contentStore",pageNumber:1,pageSize:2147483647,recordCount:0,statementName:"si.treatment.ggfw.content",attributes:{"AAC002": ["'+icard+'", "12"],}},xzStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"xzStore",pageNumber:1,pageSize:2147483647,recordCount:0,statementName:"si.treatment.ggfw.xzxx",attributes:{"AAC002": ["'+icard+'", "12"],}},sbkxxStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"sbkxxStore",pageNumber:1,pageSize:2147483647,recordCount:0,statementName:"si.treatment.ggfw.sbkxx",attributes:{"AAC002": ["'+icard+'", "12"],}},grqyjlStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"grqyjlStore",pageNumber:1,pageSize:2147483647,recordCount:0,statementName:"si.treatment.ggfw.grqyjlyj",attributes:{"AAE135": ["'+icard+'", "12"]}}},parameters:{"BUSINESS_ID": "UCI314", "BUSINESS_REQUEST_ID": "REQ-IC-Q-098-60", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            totalresp=self.s.post(Main_URL,datas)
+            totalinfo=demjson.decode(totalresp.text)['body']['dataStores']['xzStore']['rowSet']['primary']
+
+            # 养老保险明细
+            #
+            self.result['data']["old_age"] = {"data": {}}
+            basedataE = self.result['data']["old_age"]["data"]
+            modelE = {}
+            EICount= soupDetail[18].findAll('td')[0].text
+            EIMoney=soupDetail[18].findAll('td')[1].text.replace(',','')
+            EIType=totalinfo[0]['AAC008']
+
+            # 医疗保险明细
+            #
+            self.result['data']["medical_care"] = {"data": {}}
+            basedataH = self.result['data']["medical_care"]["data"]
+            modelH = {}
+            HIType = totalinfo[1]['AAC008']
+            HCompany=totalinfo[1]['AAB004']
+            sanxian='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",pageNumber:1,pageSize:20,recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.yljf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            sanxianresp=self.s.post(Main_URL,sanxian)
+            sanDetail=demjson.decode(sanxianresp.text)['body']['dataStores']['searchStore']['rowSet']['primary']
+            for k in range(len(sanDetail)):
+                if(sanDetail[k]['AC43_AAE140']=="城镇职工基本医疗保险"):
+                    yearH = sanDetail[k]['AC43_AAE003'][0:4]
+                    monthH = sanDetail[k]['AC43_AAE003'][4:6]
+                    basedataH.setdefault(yearH, {})
+                    basedataH[yearH].setdefault(monthH, [])
+
+                    modelH = {
+                        '缴费单位': HCompany,
+                        '缴费类型': HIType,
+                        '缴费时间': sanDetail[k]['AC43_AAE003'],
+                        '缴费基数': sanDetail[k]['AC43_AAE018'],
+                        '公司缴费': sanDetail[k]['AC43_AAE022'],
+                        '个人缴费': sanDetail[k]['AC43_AAE021'],
+                    }
+                    basedataH[yearH][monthH].append(modelH)
+
+            # 失业保险明细
+            #
+            self.result['data']["unemployment"] = {"data": {}}
+            basedataI = self.result['data']["unemployment"]["data"]
+            modelI = {}
+            IIType = totalinfo[2]['AAC008']
+            jsons='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",pageNumber:1,pageSize:20,recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.syjf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            IIresp=self.s.post(Main_URL,jsons)
+            iiDetail=demjson.decode(IIresp.text)['body']['dataStores']['searchStore']['rowSet']['primary']
+            for b in range(len(iiDetail)):
+                yearI = iiDetail[b]['AC43_AAE003'][0:4]
+                monthI = iiDetail[b]['AC43_AAE003'][4:6]
+                basedataI.setdefault(yearI, {})
+                basedataI[yearI].setdefault(monthI, [])
+
+                modelI = {
+                    '缴费单位': totalinfo[2]['AAB004'],
+                    '缴费类型': IIType,
+                    '缴费时间': iiDetail[b]['AC43_AAE003'],
+                    '缴费基数': iiDetail[b]['AC43_AAE018'],
+                    '公司缴费': iiDetail[b]['AC43_AAE022'],
+                    '个人缴费': iiDetail[b]['AC43_AAE021'],
+                }
+                basedataI[yearI][monthI].append(modelI)
+
+            # 工伤保险明细
+            #
+            self.result['data']["injuries"] = {"data": {}}
+            basedataC = self.result['data']["injuries"]["data"]
+            modelC = {}
+
+
+            # 生育保险明细
+            #
+            self.result['data']["maternity"] = {"data": {}}
+            basedataB = self.result['data']["maternity"]["data"]
+            modelB = {}
+            BIType = totalinfo[3]['AAC008']
+            for p in range(len(sanDetail)):
+                if (sanDetail[p]['AC43_AAE140'] == "生育保险"):
+                    yearB = sanDetail[p]['AC43_AAE003'][0:4]
+                    monthB = sanDetail[p]['AC43_AAE003'][4:6]
+                    basedataB.setdefault(yearB, {})
+                    basedataB[yearB].setdefault(monthB, [])
+
+                    modelB = {
+                        '缴费单位': HCompany,
+                        '缴费类型': BIType,
+                        '缴费时间': sanDetail[p]['AC43_AAE003'],
+                        '缴费基数': sanDetail[p]['AC43_AAE018'],
+                        '公司缴费': sanDetail[p]['AC43_AAE022'],
+                        '个人缴费': '',
+                    }
+                    basedataB[yearB][monthB].append(modelB)
+
+
+            # 大病保险明细
+            #
+            self.result['data']["serious_illness"] = {"data": {}}
+            basedataP=self.result['data']["serious_illness"]["data"]
+            modelP={}
+            for q in range(len(sanDetail)):
+                if (sanDetail[q]['AC43_AAE140'] == "大额医疗费用补助"):
+                    yearP=sanDetail[q]['AC43_AAE003'][0:4]
+                    monthP=sanDetail[q]['AC43_AAE003'][4:6]
+                    basedataP.setdefault(yearP, {})
+                    basedataP[yearP].setdefault(monthP, [])
+
+                    modelP={
+                        '缴费单位':HCompany,
+                        '缴费类型':HIType,
+                        '缴费时间':sanDetail[q]['AC43_AAE003'],
+                        '缴费基数':sanDetail[q]['AC43_AAE018'],
+                        '公司缴费':sanDetail[q]['AC43_AAE022'],
+                        '个人缴费':''
+                    }
+                    basedataP[yearP][monthP].append(modelP)
+
+
+            # 个人基本信息
+            status = ""
+            if soup[10].findAll('td')[1].text != '':
+                wuxiantype={
+                    '养老':EIType,
+                    '医疗':HIType,
+                    '失业':IIType,
+                    '生育':BIType
+                }
+                if(EIType=="正常参保"):
+                    status='正常'
+                else:
+                    status='停缴'
+
+                self.result_data['baseInfo'] = {
+                    '姓名': soup[10].findAll('td')[1].text,
+                    '身份证号': soup[10].findAll('td')[5].text,
+                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                    '城市名称': '石家庄',
+                    '城市编号': '130100',
+                    '缴费时长': EICount,
+                    '最近缴费时间': sanDetail[0]['AC43_AAE003'],
+                    '开始缴费时间': sanDetail[len(sanDetail)-1]['AC43_AAE003'],
+                    '个人养老累计缴费': EIMoney,
+                    '个人医疗累计缴费': soup[40].findAll('td')[4].text,
+                    '五险状态': wuxiantype,
+                    '账户状态': status,
+
+                    '个人编号': soup[11].findAll('td')[1].text,
+                    '单位编号': soup[11].findAll('td')[3].text,
+                    '开户日期': soup[12].findAll('td')[1].text,
+                }
+
+            # identity
+            self.result['identity'] = {
+                "task_name": "石家庄",
+                "target_name": soup[10].findAll('td')[1].text,
+                "target_id": self.result_meta['社保号'],
+                "status": status
+            }
 
             return
         except InvalidConditionError as e:
