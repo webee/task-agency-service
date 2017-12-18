@@ -496,12 +496,12 @@ class Task(AbsFetchTask):
             ylinfo = json.loads(soupyl.text)
             ylinfos = json.loads(ylinfo['result'])
             cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+            Fivestatus={'养老': cbzt}
             if cbzt == '参保缴费':
                 cbzt = '正常参保'
             else:
                 cbzt = '停缴'
             self.result_identity['status'] = cbzt
-            Fivestatus={'养老': cbzt}
             self.result_data["baseInfo"].setdefault('单位名称',ylinfos['AAB004'])
 
           #养老第四次
@@ -596,10 +596,10 @@ class Task(AbsFetchTask):
             ylinfo = json.loads(soupyl.text)
             ylinfos = json.loads(ylinfo['result'])
             cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            if cbzt == '参保缴费':
-                cbzt = '正常参保'
-            else:
-                cbzt = '停缴'
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
             Fivestatus.setdefault('医疗',cbzt)
 
             # 第四次
@@ -664,10 +664,10 @@ class Task(AbsFetchTask):
             ylinfo = json.loads(soupyl.text)
             ylinfos = json.loads(ylinfo['result'])
             cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            if cbzt == '参保缴费':
-                cbzt = '正常参保'
-            else:
-                cbzt = '停缴'
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
             Fivestatus.setdefault('工伤', cbzt)
 
             # 生育
@@ -677,10 +677,10 @@ class Task(AbsFetchTask):
             ylinfo = json.loads(soupyl.text)
             ylinfos = json.loads(ylinfo['result'])
             cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            if cbzt == '参保缴费':
-                cbzt = '正常参保'
-            else:
-                cbzt = '停缴'
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
             Fivestatus.setdefault('生育', cbzt)
 
             #失业
@@ -690,10 +690,10 @@ class Task(AbsFetchTask):
             ylinfo = json.loads(soupyl.text)
             ylinfos = json.loads(ylinfo['result'])
             cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            if cbzt == '参保缴费':
-                cbzt = '正常参保'
-            else:
-                cbzt = '停缴'
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
             Fivestatus.setdefault('失业', cbzt)
             # self.result_data["baseInfo"] = {
             #     '城市名称': '宁波',

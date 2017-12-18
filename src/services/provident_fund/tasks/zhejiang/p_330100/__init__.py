@@ -264,9 +264,9 @@ class Task(AbsFetchTask):
 
 
             if '正常' in statearr:
-                self.result_identity['status'] ='正常'
+                self.result_identity['status'] ='缴存'
             else:
-                self.result_identity['status'] = '停缴'
+                self.result_identity['status'] ='封存'
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             #对账单
             resp = self.s.get(YE_URL, timeout=25)
@@ -300,7 +300,7 @@ class Task(AbsFetchTask):
                     'cname':tables[5].attrs['value'],
                     'flag':tables[6].attrs['value'],
                     'begin_date': str(i)+'0101',
-                    'end_date': str(i)+'1214'
+                    'end_date': str(i)+'1231'
                     }
 
                 resp = self.s.post(DZD_URL,data=datas, timeout=25)
@@ -365,5 +365,4 @@ if __name__ == '__main__':
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
-
-#登陆名：100091745304  密码：592316   登陆名：100095161703   密码：843320
+#登陆名：100091745304  密码：592316 用户名:chenxia6461 密码：592316   登陆名：100095161703   密码：843320

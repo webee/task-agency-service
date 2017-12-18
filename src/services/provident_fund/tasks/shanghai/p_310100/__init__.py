@@ -237,7 +237,10 @@ class Task(AbsFetchTask):
                                                     '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', '').replace('年','').replace('月','').replace('日',''))
 
             self.result_identity['target_name']=data['baseInfo']['姓名']
-            self.result_identity['status'] = data['baseInfo']['账户状态']
+            if '正常' in data['baseInfo']['账户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
             # 内容
             infourl = LOGIN_URL + '?ID=11'
             resp = self.s.get(infourl,timeout=20)

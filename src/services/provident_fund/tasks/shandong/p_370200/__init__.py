@@ -125,8 +125,10 @@ class Task(AbsFetchTask):
             }
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['证件号']
-            self.result_identity['status'] = data['baseInfo']['帐户状态']
-
+            if '正常' in data['baseInfo']['帐户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
             resp = self.s.get(ENTER_URL,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             enterinfo = json.loads(soup.text)
@@ -225,8 +227,8 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '230127199007171013', '密码': '784610'}
+    meta = {'身份证号': '152922199001221810', '密码': '900121'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
-#'身份证号': '370881198207145816', '密码': '080707'
+#'身份证号': '370881198207145816', '密码': '080707'  身份证号：152922199001221810  密码：900121  '身份证号': '230127199007171013', '密码': '784610'
