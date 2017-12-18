@@ -214,7 +214,7 @@ class Task(AbsFetchTask):
         if(num=="1"):
             resinfo="正常"
         else:
-            resinfo="异常"
+            resinfo="停缴"
         return resinfo
 
 

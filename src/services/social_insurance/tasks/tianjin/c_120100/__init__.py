@@ -399,7 +399,7 @@ class Task(AbsFetchTask):
             if (social_Type['养老'] == "正常参保"):
                 statuss = "正常"
             else:
-                statuss = "异常"
+                statuss = "停缴"
 
             self.result['data']['baseInfo'] = {
                 '姓名': rs['name'],

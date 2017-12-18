@@ -332,7 +332,7 @@ class Task(AbsFetchTask):
                     if '在职' in resstatus:
                         status="正常"
                     else:
-                        status="异常"
+                        status="停缴"
 
                     # 个人基本信息
                     self.result_data['baseInfo'] = {
