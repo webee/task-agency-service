@@ -172,7 +172,10 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             self.result['data']['baseInfo']={}
-            rest = self.s.get("http://public.hrss.tj.gov.cn/api/security/user") #
+            rest = self.s.get("http://public.hrss.tj.gov.cn/api/security/user")
+            if rest.status_code!=200:
+                raise InvalidConditionError("未找到对应的信息！")
+
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
             s2=json.loads(rest.text)["associatedPersons"][0]["personNumber"]
 

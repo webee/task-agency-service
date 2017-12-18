@@ -219,9 +219,9 @@ class Task(AbsFetchTask):
 
             status=""
             if(datas[8].findAll("td")[1].text=="正常汇缴"):
-                status="正常"
+                status="缴存"
             else:
-                status="异常"
+                status="封存"
 
 
             self.result_data['baseInfo'] = {
