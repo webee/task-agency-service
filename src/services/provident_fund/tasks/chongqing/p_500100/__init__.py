@@ -228,7 +228,10 @@ class Task(AbsFetchTask):
 
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['证件号']
-            self.result_identity['status'] = data['baseInfo']['帐户状态']
+            if '正常' in data['baseInfo']['帐户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
 
             #公积金明细
             resp = self.s.get(MINGXI_URL,timeout=25)
@@ -324,9 +327,10 @@ class Task(AbsFetchTask):
         resp = self.s.get(VC_URL,timeout=20)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
+
     from services.client import TaskTestClient
 
-    meta = {'账号': '13609482787', '密码': '19921029qlq...'}
+    meta = {'账号': '15826126132', '密码': 'qinyu20070207'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #账号': '15826126132', '密码': 'qinyu20070207'  账号': '15123133361', '密码': 'haoran'

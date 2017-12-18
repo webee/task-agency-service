@@ -188,7 +188,7 @@ class Task(AbsFetchTask):
             for row in infostatus.find_all('tr'):
                 cell = [i.text for i in row.find_all('td')]
                 if cell[1] != '险种类型':
-                    infodic[cell[1].replace('企业基本','').replace('保险','').replace('职工医保（企业）','医疗').replace('\r\n','')]=cell[2].replace('参保缴费','正常参保').replace('\r\n','')
+                    infodic[cell[1].replace('企业基本','').replace('保险','').replace('职工医保（企业）','医疗').replace('\r\n','')]=cell[2].replace('\r\n','')
 
                     fristtime.append(cell[4])
 
@@ -196,8 +196,8 @@ class Task(AbsFetchTask):
             data['baseInfo'].setdefault('开始缴费时间',min(fristtime))
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['身份证号']
-            if '正常参保' in infodic.values():
-                self.result_identity['status'] = '正常参保'
+            if '参保缴费' in infodic.values():
+                self.result_identity['status'] = '正常'
             else:
                 self.result_identity['status'] = '停缴'
 

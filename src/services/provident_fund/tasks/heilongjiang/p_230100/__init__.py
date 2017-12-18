@@ -158,7 +158,7 @@ class Task(AbsFetchTask):
                         data['baseInfo'][cell[2].replace('\n','').replace(' ','').replace('状态','帐户状态').replace('最后汇缴年月','最后业务日期').replace('\r                \xa0','').replace('    ','')] = re.sub('[\n              \t  \n\r]','',cell[3].replace('\xa0','').replace('-',''))
 
                 self.result_identity['target_name'] = data['baseInfo']['姓名']
-                self.result_identity['status'] = ''
+                self.result_identity['status'] =data['baseInfo']['帐户状态']
 
                 data['companyList']=[]
                 diclist= {
@@ -182,7 +182,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '230223197310180838','个人账号':'801016453429', '密码': '111111'}
+    meta = {'身份证号': '230223197310180837','个人账号':'801016453429', '密码': '111111'}
 
     client = TaskTestClient(Task(prepare_data = dict(meta=meta)))
     client.run()

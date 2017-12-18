@@ -180,6 +180,13 @@ class Task(AbsFetchTask):
                 if len(cell) > 5:
                     data['baseInfo'].setdefault(cell[4].replace(' ', ''), cell[5].replace(' ', ''))
             self.result_identity['status'] = ''
+            fivestatus={'养老':data['baseInfo']['养老'],'医疗':data['baseInfo']['医疗'],'工伤':data['baseInfo']['工伤'],'失业':data['baseInfo']['失业'],'生育':data['baseInfo']['生育']}
+            data['baseInfo'].pop('养老')
+            data['baseInfo'].pop('医疗')
+            data['baseInfo'].pop('工伤')
+            data['baseInfo'].pop('失业')
+            data['baseInfo'].pop('生育')
+            data['baseInfo'].setdefault('五险状态', fivestatus)
 
             arrtime = []
             grylsum = 0.00
@@ -256,9 +263,9 @@ class Task(AbsFetchTask):
                                         months = monthkeys[-2:]
                                         arr = value
 
-                                dic['缴费起止时间'] = monthkeys
+                                dic['缴费时间'] = monthkeys
                                 dic1 = dic.copy()
-                                dic1.setdefault('缴费类型', '正常应缴')
+                                dic1.setdefault('缴费类型', '')
                                 arr.append(dic1)
                                 if months:
                                     data[v]['data'][yearkeys][months] = arr

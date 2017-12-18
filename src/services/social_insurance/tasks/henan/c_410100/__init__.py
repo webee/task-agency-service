@@ -156,7 +156,10 @@ class Task(AbsFetchTask):
                 '个人医疗累计缴费': 0
             }
             self.result_identity['target_name'] = infors[0]['name']
-            self.result_identity['status'] =insuretype
+            if '正常参保' in insuretype:
+                self.result_identity['status'] ='正常'
+            else:
+                self.result_identity['status'] = '停缴'
 
             return
         except PermissionError as e:
