@@ -3,10 +3,10 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-LOGIN_URL='http://118.112.188.109/nethall/login.jsp'
+LOGIN_URL='http://www.sjzgjj.cn/wsyyt/'
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="贵阳",
+        city_name="石家庄",
 
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
