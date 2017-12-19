@@ -3,16 +3,11 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-
+LOGIN_URL='http://218.90.158.61/index.html'
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="苏州",
-        help="""<li>有未还清的公积金贷款的用户可以使用代扣还款银行卡(折)帐号登录；</li>
-        <li>身份证号码如包含x，录入时不区分大小写；</li>
-        <li>如果密码控件不可用，说明您的计算机未安装JRE或版本太低，请参照以下内容安装并设置JRE：
-        1)如果浏览器没有自动下载,请点击[下载]手动安装
-        2)安装JRE需要数分钟时间,请耐心等待,安装完成后请刷新登录页面</li>
-        """,
+        city_name="无锡",
+
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
@@ -59,11 +54,9 @@ class Task(AbsFetchTask):
         密码 = params['密码']
         if len(密码) < 4:
             raise InvalidParamsError('登陆名或密码错误')
-        if 登陆名.isdigit():
-            if len(登陆名) < 5:
-                raise InvalidParamsError('登陆名错误')
-            return
-        raise InvalidParamsError('登陆名或密码错误')
+        if len(登陆名) < 5:
+            raise InvalidParamsError('登陆名错误')
+
 
     def _unit_login(self, params: dict):
         err_msg = None
@@ -80,7 +73,7 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='登陆名', name='登陆名', cls='input', placeholder='用户名或者公积金账号或身份证号登录', value=params.get('登陆名', '')),
+            dict(key='登陆名', name='登陆名', cls='input', placeholder='身份证/别名', value=params.get('登陆名', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
         ], err_msg)
 
