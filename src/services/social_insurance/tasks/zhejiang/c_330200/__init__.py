@@ -159,6 +159,8 @@ class Task(AbsFetchTask):
                             '社会保障卡号码': inforr['sbkh']
                         }
                         self.result_identity['target_name'] = inforr['xm']
+                    elif infor['msg']=='E1001':
+                        raise InvalidParamsError('请去官网进行账号升级！')
                     else:
                         raise InvalidParamsError(infor['msg'])
                 else:
@@ -738,4 +740,5 @@ if __name__ == "__main__":
     meta = {'身份证号': '330227198906162713', '密码': '362415'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
+    #'身份证号': '330282198707218248', '密码': 'sqf1769981270'
 #'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998''身份证号': '330227198906162713', '密码': '362415''身份证号': '360427196807192017', '密码': '717174'
