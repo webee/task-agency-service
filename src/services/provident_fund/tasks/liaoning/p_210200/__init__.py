@@ -3,10 +3,10 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-LOGIN_URL='http://www.tygjj.com/wt-web/grlogin'
+LOGIN_URL='https://bg.gjj.dl.gov.cn/person/logon.jsp'
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="https://bg.gjj.dl.gov.cn/person/logon.jsp",
+        city_name="大连",
         help="""""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
