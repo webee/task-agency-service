@@ -407,7 +407,10 @@ class Task(AbsFetchTask):
                         except:
                             pass
                         i = i + 1
-
+            if paymentStart == "繳存":
+                paymentStart = "繳存"
+            else:
+                paymentStart = "封存"
             self.result_identity.update({
                 'task_name': self.task_info['city_name'],
                 'target_name': name,
