@@ -93,7 +93,7 @@ class Task(AbsFetchTask):
             dict(key='other',
                      name='[{"tabName":"社会保障卡号","tabCode":"1","isEnable":"1"},{"tabName":"身份证号","tabCode":"3","isEnable":"1"}]',
                  cls='tab', value=params.get('类型Code', '')),
-            dict(key='bh1', name='社会保障卡号', cls='input', tabCode="1", value=params.get('用户名', '')),
+            dict(key='bh1', name='社会卡号', cls='input', tabCode="1", value=params.get('用户名', '')),
             dict(key='mm1', name='密码', cls='input:password', tabCode="1", value=params.get('密码', '')),
             dict(key='bh3', name='身份证号', cls='input', tabCode="3", value=params.get('用户名', '')),
             dict(key='mm3', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),

@@ -48,12 +48,12 @@ class Task(AbsFetchTask):
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert '用户名' in params, '缺少证件号码'
-        assert '对帐簿或原存折帐号后8位' in params, '缺少对帐簿或原存折帐号后8位'
+        assert '个人账号' in params, '个人账号'
         # other check
         证件号码 = params['证件号码']
-        对帐簿或原存折帐号后8位 = params['对帐簿或原存折帐号后8位']
-        if len(对帐簿或原存折帐号后8位) !=8:
-            raise InvalidParamsError('对帐簿或原存折帐号后8位错误')
+        个人账号 = params['个人账号']
+        if len(个人账号) !=8:
+            raise InvalidParamsError('个人账号')
         if len(证件号码) < 15:
             raise InvalidParamsError('证件号码错误')
 
@@ -66,7 +66,7 @@ class Task(AbsFetchTask):
                 self.result_key = params.get('用户名')
                 # 保存到meta
                 self.result_meta['证件号码'] = params.get('证件号码')
-                self.result_meta['对帐簿或原存折帐号后8位'] = params.get('对帐簿或原存折帐号后8位')
+                self.result_meta['个人账号'] = params.get('个人账号')
 
                 raise TaskNotImplementedError('查询服务维护中')
             except (AssertionError, InvalidParamsError) as e:
@@ -74,7 +74,7 @@ class Task(AbsFetchTask):
 
         raise AskForParamsError([
             dict(key='证件号码', name='证件号码', cls='input', placeholder='证件号码（以单位申报为准）', value=params.get('证件号码', '')),
-            dict(key='对帐簿或原存折帐号后8位', name='对帐簿或原存折帐号后8位', cls='input',placeholder='对帐簿或原存折帐号后8位', value=params.get('对帐簿或原存折帐号后8位', '')),
+            dict(key='个人账号', name='个人账号', cls='input',placeholder='对帐簿或原存折帐号后8位', value=params.get('个人账号', '')),
         ], err_msg)
 
     def _unit_fetch(self):
