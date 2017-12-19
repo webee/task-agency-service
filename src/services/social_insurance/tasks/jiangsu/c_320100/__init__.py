@@ -3,16 +3,11 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-
+LOGIN_URL='http://wsbs.njhrss.gov.cn/NJLD/'
 class Task(AbsFetchTask):
     task_info = dict(
-        city_name="苏州",
-        help="""<li>有未还清的公积金贷款的用户可以使用代扣还款银行卡(折)帐号登录；</li>
-        <li>身份证号码如包含x，录入时不区分大小写；</li>
-        <li>如果密码控件不可用，说明您的计算机未安装JRE或版本太低，请参照以下内容安装并设置JRE：
-        1)如果浏览器没有自动下载,请点击[下载]手动安装
-        2)安装JRE需要数分钟时间,请耐心等待,安装完成后请刷新登录页面</li>
-        """,
+        city_name="南京",
+        help="""""",
         developers=[{'name':'卜圆圆','email':'byy@qinqinxiaobao.com'}]
     )
 
@@ -52,36 +47,56 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '登陆名' in params, '缺少账号'
-        assert '密码' in params, '缺少密码'
+        assert 'other' in params, '请选择登录方式'
+        if params["other"] == "1":
+            assert 'bh1' in params, '缺少客户号'
+            assert 'mm1' in params, '缺少密码'
+        elif params["other"] == "3":
+            assert 'bh3' in params, '缺少用户名'
+            assert 'mm3' in params, '缺少密码'
         # other check
-        登陆名 = params['登陆名']
-        密码 = params['密码']
+        if params["other"] == "1":
+            用户名 = params['bh1']
+        elif params["other"] == "3":
+            用户名 = params['bh3']
+        if params["other"] == "1":
+            密码 = params['mm1']
+        elif params["other"] == "3":
+            密码 = params['mm3']
         if len(密码) < 4:
-            raise InvalidParamsError('登陆名或密码错误')
-        if 登陆名.isdigit():
-            if len(登陆名) < 5:
-                raise InvalidParamsError('登陆名错误')
-            return
-        raise InvalidParamsError('登陆名或密码错误')
+            raise InvalidParamsError('密码错误')
+
+        if len(用户名) <8:
+            raise InvalidParamsError('用户名错误！')
 
     def _unit_login(self, params: dict):
         err_msg = None
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('登陆名')
+                if params["other"] == "3":
+                    code = "3"
+                elif params["other"] == "1":
+                    code = "1"
+                id_num = params['bh' + code]
+                password = params['mm' + code]
+                self.result_key = id_num
                 # 保存到meta
-                self.result_meta['登陆名'] = params.get('登陆名')
-                self.result_meta['密码'] = params.get('密码')
+                self.result_meta['用户名'] = id_num
+                self.result_meta['密码'] = password
 
                 raise TaskNotImplementedError('查询服务维护中')
             except (AssertionError, InvalidParamsError) as e:
                 err_msg = str(e)
 
         raise AskForParamsError([
-            dict(key='登陆名', name='登陆名', cls='input', placeholder='用户名或者公积金账号或身份证号登录', value=params.get('登陆名', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
+            dict(key='other',
+                     name='[{"tabName":"社会保障卡号","tabCode":"1","isEnable":"1"},{"tabName":"身份证号","tabCode":"3","isEnable":"1"}]',
+                 cls='tab', value=params.get('类型Code', '')),
+            dict(key='bh1', name='社会保障卡号', cls='input', tabCode="1", value=params.get('用户名', '')),
+            dict(key='mm1', name='密码', cls='input:password', tabCode="1", value=params.get('密码', '')),
+            dict(key='bh3', name='身份证号', cls='input', tabCode="3", value=params.get('用户名', '')),
+            dict(key='mm3', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),
         ], err_msg)
 
     def _unit_fetch(self):
@@ -96,5 +111,3 @@ if __name__ == '__main__':
     from services.client import TaskTestClient
     client = TaskTestClient(Task(SessionData()))
     client.run()
-
-
