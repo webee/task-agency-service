@@ -208,10 +208,10 @@ class Task(AbsFetchTask):
                                         '缴费类型':'',
                                         '缴费基数': str(td2[1].find(type="text")["value"]).replace(',', ''),
                                         '公司缴费':'',
-                                        '个人缴费': float(td2[2].find(type="text")["value"])-float(td2[3].find(type="text")["value"])-float(td2[4].find(type="text")["value"]),
+                                        '个人缴费': float(td2[2].find(type="text")["value"].replace(',',''))-float(td2[3].find(type="text")["value"].replace(',',''))-float(td2[4].find(type="text")["value"].replace(',','')),
                                         '缴费单位': soup[9].findAll("td")[1].find(type="text")["value"],
                                     }
-                                    permedicalTotal +=float(float(td2[2].find(type="text")["value"])-float(td2[3].find(type="text")["value"])-float(td2[4].find(type="text")["value"]))
+                                    permedicalTotal +=float(float(td2[2].find(type="text")["value"].replace(',',''))-float(td2[3].find(type="text")["value"].replace(',',''))-float(td2[4].find(type="text")["value"].replace(',','')))
                                     basedataH[yearH][monthH].append(modelH)
 
 

@@ -166,7 +166,8 @@ class Task(AbsFetchTask):
             modelH = {}
             HIType = totalinfo[1]['AAC008']
             HCompany=totalinfo[1]['AAB004']
-            sanxian='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",pageNumber:1,pageSize:20,recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.yljf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            # sanxian='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",pageNumber:1,pageSize:20,recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.yljf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            sanxian='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.yljf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
             sanxianresp=self.s.post(Main_URL,sanxian)
             sanDetail=demjson.decode(sanxianresp.text)['body']['dataStores']['searchStore']['rowSet']['primary']
             for k in range(len(sanDetail)):
@@ -192,7 +193,8 @@ class Task(AbsFetchTask):
             basedataI = self.result['data']["unemployment"]["data"]
             modelI = {}
             IIType = totalinfo[2]['AAC008']
-            jsons='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",pageNumber:1,pageSize:20,recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.syjf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            # jsons='{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",pageNumber:1,pageSize:20,recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.syjf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
+            jsons = '{header:{"code": -100, "message": {"title": "", "detail": ""}},body:{dataStores:{searchStore:{rowSet:{"primary":[],"filter":[],"delete":[]},name:"searchStore",recordCount:0,context:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": ""},statementName:"si.treatment.ggfw.syjf",attributes:{"AAC002": ["'+icard+'", "12"],}}},parameters:{"BUSINESS_ID": "UOA017", "BUSINESS_REQUEST_ID": "REQ-OA-M-013-01", "CUSTOMVPDPARA": "", "PAGE_ID": ""}}}'
             IIresp=self.s.post(Main_URL,jsons)
             iiDetail=demjson.decode(IIresp.text)['body']['dataStores']['searchStore']['rowSet']['primary']
             for b in range(len(iiDetail)):
@@ -287,7 +289,7 @@ class Task(AbsFetchTask):
                     '城市编号': '130100',
                     '缴费时长': EICount,
                     '最近缴费时间': sanDetail[0]['AC43_AAE003'],
-                    '开始缴费时间': sanDetail[len(sanDetail)-1]['AC43_AAE003'],
+                    '开始缴费时间': iiDetail[len(iiDetail)-1]['AC43_AAE003'],
                     '个人养老累计缴费': EIMoney,
                     '个人医疗累计缴费': soup[40].findAll('td')[4].text,
                     '五险状态': wuxiantype,
