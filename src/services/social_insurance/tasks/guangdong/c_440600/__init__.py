@@ -156,7 +156,7 @@ class Task(AbsFetchTask):
             # 基本信息
             baseinfo_URL = MAIN_URL + '?ActionType=grcx_grjbzlcx&flag=true'
             resp = self.s.get(baseinfo_URL)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            soup = BeautifulSoup(resp.content.decode('gbk'), 'html.parser')
             table_text = soup.select('.dataTable')[1]
             rows = table_text.find_all('tr')
             data['baseInfo'] = {
