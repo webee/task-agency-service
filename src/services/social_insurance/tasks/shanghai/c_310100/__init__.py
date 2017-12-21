@@ -184,6 +184,7 @@ class Task(AbsFetchTask):
         with self.dsc.get_driver_ctx() as driver:
             # 打开登录页
             driver.get(LOGIN_URL)
+            time.sleep(10)
             driver.get("http://www.12333sh.gov.cn/sbsjb/wzb/229.jsp")
 
             username_input = driver.find_element_by_xpath('//*[@id="userid"]')
@@ -205,7 +206,7 @@ class Task(AbsFetchTask):
             # 登录
             # driver.find_element_by_xpath('//*[@id="ckRecId20"]/form/table[1]/tbody/tr[7]/td[2]/img').click()  # /html/body/form/table/tbody/tr[6]/td[2]
             driver.execute_script('checkForm()')
-            time.sleep(5)
+            time.sleep(10)
 
             if driver.current_url != "http://www.12333sh.gov.cn/sbsjb/wzb/helpinfo.jsp?id=0":
                 raise InvalidParamsError('登录失败，请重新登录！')
@@ -378,7 +379,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '222406198011231832', '密码': '801230'}
+    meta = {'用户名': '310114197811290418', '密码': '781129'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

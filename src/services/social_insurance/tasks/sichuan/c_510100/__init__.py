@@ -214,7 +214,7 @@ class Task(AbsFetchTask):
         if(num=="1"):
             resinfo="正常"
         else:
-            resinfo="异常"
+            resinfo="停缴"
         return resinfo
 
 
@@ -436,6 +436,12 @@ class Task(AbsFetchTask):
                 mcount=[len(sEI)-1,len(sHI)-1,len(sII)-1,len(sCI)-1,len(sBI)-1]    # 缴费时长
                 moneyCount=max(mcount)
 
+                recentTime=""
+                startTime=""
+                if(len(sEI)>0):
+                    recentTime=sEI[0]['aae002']
+                    startTime=sEI[len(sEI)-1]['aae002']
+
                 self.result_data['baseInfo'] = {
                     '姓名': s['aac003'],
                     '身份证号': s['aac002'],
@@ -443,8 +449,8 @@ class Task(AbsFetchTask):
                     '城市名称': '成都',
                     '城市编号': '510100',
                     '缴费时长': moneyCount,
-                    '最近缴费时间': sEI[0]['aae002'],
-                    '开始缴费时间': sEI[len(sEI)-1]['aae002'],
+                    '最近缴费时间': recentTime,
+                    '开始缴费时间': startTime,
                     '个人养老累计缴费': peroldTotal,
                     '个人医疗累计缴费': permedicalTotal,
                     '五险状态': social_Type,
@@ -470,7 +476,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '350623199112205720', '密码': '900618'}
+    meta = {'用户名': '024452041', '密码': 'yyy201328'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

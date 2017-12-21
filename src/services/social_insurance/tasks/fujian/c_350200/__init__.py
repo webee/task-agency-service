@@ -146,7 +146,7 @@ class Task(AbsFetchTask):
         if (num == "有效"):
             resinfo = "正常"
         else:
-            resinfo = "异常"
+            resinfo = "停缴"
         return resinfo
 
     def _unit_fetch(self):
@@ -169,6 +169,7 @@ class Task(AbsFetchTask):
             peroldTotal = 0.0
             detailEI = self.s.get(Detail_URL + "?xzdm00=2&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sEI = BeautifulSoup(detailEI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
+            yanglao = sEI[len(sEI) - 1].findAll('td')[2].text
 
             for b in range(len(sEI)):
                 td2 = sEI[b].findAll('td')
@@ -205,6 +206,7 @@ class Task(AbsFetchTask):
             # 社保明细-----医疗
             detailHI = self.s.get(Detail_URL + "?xzdm00=1&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sHI = BeautifulSoup(detailHI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
+            yiliao = sHI[len(sHI) - 1].findAll('td')[2].text
 
             for a in range(len(sHI)):
                 td = sHI[a].findAll('td')
@@ -238,6 +240,7 @@ class Task(AbsFetchTask):
             # 社保明细-----失业
             detailII = self.s.get(Detail_URL + "?xzdm00=4&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sII = BeautifulSoup(detailII.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
+            shiye = sII[len(sII) - 1].findAll('td')[2].text
 
             for c in range(len(sII)):
                 td3 = sII[c].findAll('td')
@@ -267,6 +270,7 @@ class Task(AbsFetchTask):
             # 社保明细-----工伤
             detailCI = self.s.get(Detail_URL + "?xzdm00=3&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sCI = BeautifulSoup(detailCI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
+            gongshang = sCI[len(sCI) - 1].findAll('td')[2].text
 
             for d in range(len(sCI)):
                 td4 = sCI[d].findAll('td')
@@ -296,6 +300,7 @@ class Task(AbsFetchTask):
             # 社保明细-----生育
             detailBI = self.s.get(Detail_URL + "?xzdm00=5&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sBI = BeautifulSoup(detailBI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
+            shengyu = sBI[len(sBI) - 1].findAll('td')[2].text
 
             for f in range(len(sBI)):
                 td5 = sBI[f].findAll('td')
@@ -325,11 +330,11 @@ class Task(AbsFetchTask):
 
             # 五险状态
             social_type = {
-                '养老': re.sub('\s', '', sEI[len(sEI) - 1].findAll('td')[2].text),
-                '医疗': re.sub('\s', '', sEI[len(sHI) - 1].findAll('td')[2].text),
-                '失业': re.sub('\s', '', sEI[len(sII) - 1].findAll('td')[2].text),
-                '工伤': re.sub('\s', '', sEI[len(sCI) - 1].findAll('td')[2].text),
-                '生育': re.sub('\s', '', sEI[len(sBI) - 1].findAll('td')[2].text)
+                '养老': re.sub('\s', '', yanglao),
+                '医疗': re.sub('\s', '', yiliao),
+                '失业': re.sub('\s', '', shiye),
+                '工伤': re.sub('\s', '', gongshang),
+                '生育': re.sub('\s', '', shengyu)
             }
 
             #  个人基本信息

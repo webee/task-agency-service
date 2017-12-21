@@ -144,11 +144,17 @@ class Task(AbsFetchTask):
                 })
 
                 # identity 信息
+                status=""
+                if(resdata['freeuse1']=="中止" or resdata['freeuse1']=="停缴"):
+                    status='封存'
+                else:
+                    status='缴存'
+
                 self.result['identity']={
                     "task_name": "宁波",
                     "target_name": resdata['accname'],
                     "target_id": id_num,
-                    "status": resdata['freeuse1']
+                    "status": status
                 }
 
                 # 缴费明细
