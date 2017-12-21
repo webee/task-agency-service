@@ -35,29 +35,46 @@ class Task(AbsFetchTask):
 
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
-        assert '账号' in params, '缺少账号'
-        assert '密码' in params,'缺少密码'
+        assert 'other' in params, '请选择登录方式'
+        if params["other"] == "3":
+            assert 'bh3' in params, '缺少用户名'
+            assert 'mm3' in params, '缺少密码'
+        elif params["other"] == "1":
+            assert 'bh1' in params, '缺少市民邮箱'
+            assert 'mm1' in params, '缺少密码'
         assert 'vc' in params, '缺少验证码'
         # other check
-        账号 = params['账号']
-        密码 = params['密码']
+        if params["other"] == "1":
+            用户名 = params['bh1']
+        elif params["other"] == "3":
+            用户名 = params['bh3']
+        if params["other"] == "1":
+            密码 = params['mm1']
+        elif params["other"] == "3":
+            密码 = params['mm3']
 
-        if len(账号) == 0:
-            raise InvalidParamsError('用户名为空，请输入用户名')
-        elif len(账号) < 4:
-            raise InvalidParamsError('用户名不正确，请重新输入')
+        if len(密码) < 4:
+            raise InvalidParamsError('用户名或密码错误')
+        if len(用户名) < 5:
+            raise InvalidParamsError('登陆名错误')
+        if '@' in 用户名:
+            if not 用户名.endswith('@hz.cn'):
+                raise InvalidParamsError('市民邮箱错误')
+            return
 
-        if len(密码) == 0:
-            raise InvalidParamsError('密码为空，请输入密码！')
-        elif len(密码) < 6:
-            raise InvalidParamsError('密码不正确，请重新输入！')
     def _params_handler(self, params: dict):
         if not (self.is_start and not params):
             meta = self.prepared_meta
-            if '账号' not in params:
-                params['账号'] = meta.get('账号')
-            if '密码' not in params:
-                params['密码'] = meta.get('密码')
+            if 'bh3' not in params:
+                params['bh3'] = meta.get('用户名')
+            if 'mm3' not in params:
+                params['mm3'] = meta.get('密码')
+            if 'bh1' not in params:
+                params['bh1'] = meta.get('市民邮箱')
+            if 'mm1' not in params:
+                params['mm1'] = meta.get('密码')
+            if 'other' not in params:
+                params['other'] = meta.get('类型Code')
         return params
 
     def _param_requirements_handler(self, param_requirements, details):
@@ -65,10 +82,30 @@ class Task(AbsFetchTask):
         res = []
         for pr in param_requirements:
             # TODO: 进一步检查details
-            if pr['key'] == '账号' and '账号' in meta:
-                continue
-            elif pr['key'] == '密码' and '密码' in meta:
-                continue
+            # 用户名
+            if meta['类型Code'] == '3':
+                if pr['key'] == 'bh3':
+                    continue
+                if pr['key'] == 'mm3':
+                    continue
+                if pr['key'] == 'bh1' and '市民邮箱' in meta:
+                    continue
+                elif pr['key'] == 'mm1' and '密码' in meta:
+                    continue
+                res.append(pr)
+            # 邮箱
+            elif meta['类型Code'] == '1':
+                if pr['key'] == 'bh1':
+                    continue
+                if pr['key'] == 'mm1':
+                    continue
+                if pr['key'] == 'bh3' and '用户名' in meta:
+                    continue
+                elif pr['key'] == 'mm3' and '密码' in meta:
+                    continue
+                res.append(pr)
+            else:
+                res.append(pr)
             res.append(pr)
         return res
 
@@ -77,17 +114,23 @@ class Task(AbsFetchTask):
         if params:
             try:
                 self._check_login_params(params)
-                id_num = params['账号']
-                password = params['密码']
+                if params["other"] == "3":
+                    code = "3"
+                    lt='1'
+                elif params["other"] == "1":
+                    code = "1"
+                    lt = '2'
+                id_num = params['bh' + code]
+                password = params['mm' + code]
                 # m = hashlib.md5()
                 # m.update(str(password).encode(encoding="utf-8"))
                 # pw = m.hexdigest()
                 pw=base64.b64encode(password.encode('utf-8'))
                 vc = params['vc']
-                newurl=LOGIN_URL+'?logintype=2&captcha='+vc
+                newurl=LOGIN_URL+'?logintype='+lt+'&captcha='+vc
                 resp = self.s.post(newurl, data=dict(
                                     type='01',
-                                    persontype='01',
+                                    persontype='0'+code,
                                     account=id_num,
                                     password=pw,
                                     captcha1=vc))
@@ -110,9 +153,14 @@ class Task(AbsFetchTask):
                 err_msg = str(e)
         vc = self._new_vc()
         raise AskForParamsError([
-            dict(key='账号', name='账号', cls='input', placeholder='身份证号或者市民邮箱(@hz.cn)', value=params.get('账号', '')),
-            dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
-            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, value=params.get('vc', '')),
+            dict(key='other',
+                 name='[{"tabName":"用户名","tabCode":"3","isEnable":"1"},{"tabName":"市民邮箱","tabCode":"1","isEnable":"1"}]',
+                 cls='tab', value=params.get('类型Code', '')),
+            dict(key='bh3', name='用户名', cls='input', tabCode="3", value=params.get('用户名', '')),
+            dict(key='mm3', name='密码', cls='input:password', tabCode="3", value=params.get('密码', '')),
+            dict(key='bh1', name='市民邮箱', cls='input', tabCode="1", value=params.get('用户名', '')),
+            dict(key='mm1', name='密码', cls='input:password', tabCode="1", value=params.get('密码', '')),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'}, tabCode="[1,3]", value=''),
         ], err_msg)
 
     def _unit_fetch(self):
@@ -140,7 +188,7 @@ class Task(AbsFetchTask):
             for row in infostatus.find_all('tr'):
                 cell = [i.text for i in row.find_all('td')]
                 if cell[1] != '险种类型':
-                    infodic[cell[1].replace('企业基本','').replace('保险','').replace('职工医保（企业）','医疗').replace('\r\n','')]=cell[2].replace('参保缴费','正常参保').replace('\r\n','')
+                    infodic[cell[1].replace('企业基本','').replace('保险','').replace('职工医保（企业）','医疗').replace('\r\n','')]=cell[2].replace('\r\n','')
 
                     fristtime.append(cell[4])
 
@@ -148,8 +196,8 @@ class Task(AbsFetchTask):
             data['baseInfo'].setdefault('开始缴费时间',min(fristtime))
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['身份证号']
-            if '正常参保' in infodic.values():
-                self.result_identity['status'] = '正常参保'
+            if '参保缴费' in infodic.values():
+                self.result_identity['status'] = '正常'
             else:
                 self.result_identity['status'] = '停缴'
 

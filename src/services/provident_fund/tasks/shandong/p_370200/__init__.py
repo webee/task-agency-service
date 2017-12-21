@@ -68,12 +68,11 @@ class Task(AbsFetchTask):
                     'signdata':'',
                     '1': 'y'
                 }
-                resp = self.s.post(LOGIN_URL, data=data,timeout=10)
+                resp = self.s.post(LOGIN_URL, data=data,timeout=20)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 successinfo=json.loads(soup.text)
                 if successinfo['success']:
                     print("登录成功！")
-                    self.html = str(resp.content, 'gbk')
                 else:
                     return_message = successinfo['msg']
                     raise InvalidParamsError(return_message)
@@ -97,8 +96,10 @@ class Task(AbsFetchTask):
     def _unit_fetch(self):
         try:
             # 基本信息
-            resp = self.s.get(INFO_URL,timeout=5)
+            resp = self.s.get(INFO_URL,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
+            if len(soup.text)<18:
+                raise InvalidParamsError('第一次登录，请去官网修改密码！')
             info = json.loads(soup.text)
             data = self.result_data
             data['baseInfo'] = {
@@ -124,9 +125,11 @@ class Task(AbsFetchTask):
             }
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['证件号']
-            self.result_identity['status'] = data['baseInfo']['帐户状态']
-
-            resp = self.s.get(ENTER_URL,timeout=5)
+            if '正常' in data['baseInfo']['帐户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
+            resp = self.s.get(ENTER_URL,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             enterinfo = json.loads(soup.text)
             data['companyList']=[]
@@ -161,13 +164,17 @@ class Task(AbsFetchTask):
                 'sort': 'csrq',
                 'order': 'desc'
             }
-            resp = self.s.post(MINGXI_URL,data=datas,timeout=5)
+            resp = self.s.post(MINGXI_URL,data=datas,timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             mingxiinfo = json.loads(soup.text)
             data['detail'] = {}
             data['detail']['data'] = {}
             years = ''
             months = ''
+            hjtype=0
+            hjcs=0
+            hjje=''
+            hjrq=''
             for i in range(0,int(mingxiinfo['total'])):
                 mxdic=mingxiinfo['rows'][i]
                 arr = []
@@ -184,6 +191,12 @@ class Task(AbsFetchTask):
                     '个人金额': mxdic['grje'],
                     '结算方式': mxdic['jslxname']
                 }
+                if mxdic['ssny']:
+                    hjcs=hjcs+1
+                    if hjtype==0:
+                        hjtype=1
+                        hjje=str(float(mxdic['grje'])+float(mxdic['dwje']))
+                        hjrq= mxdic['ssny']
                 times = mxdic['csrq'][:7].replace('-', '')
                 if years != times[:4]:
                     years = times[:4]
@@ -199,7 +212,9 @@ class Task(AbsFetchTask):
                         arr = data['detail']['data'][years][months]
                 arr.append(dic)
                 data['detail']['data'][years][months] = arr
-                print(arr)
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
 
             return
         except PermissionError as e:
@@ -207,13 +222,13 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         #vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL,timeout=5)
+        resp = self.s.get(VC_URL,timeout=15)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '370881198207145816', '密码': '080707'}
+    meta = {'身份证号': '152922199001221810', '密码': '900121'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
-#'身份证号': '370881198207145816', '密码': '080707'
+#'身份证号': '370881198207145816', '密码': '080707'  身份证号：152922199001221810  密码：900121  '身份证号': '230127199007171013', '密码': '784610'

@@ -143,9 +143,9 @@ class Task(AbsFetchTask):
                 '开户日期': infos['Person']['openDate'].replace('年','').replace('月','').replace('日','')
             }
             self.result_identity['target_name'] = data['baseInfo']['姓名']
-            acctStatus='停缴'
+            acctStatus='封存'
             if infos['Person']['acctStatus']=='0':
-                acctStatus='正常'
+                acctStatus='缴存'
             self.result_identity['status'] =acctStatus
 
             data['companyList'] = []

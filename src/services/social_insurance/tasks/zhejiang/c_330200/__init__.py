@@ -40,6 +40,8 @@ YIL_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-yilbx.jsp
 GS_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-gsbx.jsp'
 SY_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-sybx.jsp'
 SHY_URL = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-shybx.jsp'
+CVC_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/comm/checkYzm.jsp'
+LOGIN_URL='https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/rzxt/nbhrssLogin.action'
 
 
 class Task(AbsFetchTask):
@@ -123,13 +125,46 @@ class Task(AbsFetchTask):
 
     def _unit_login(self, params: dict):
         err_msg = None
+        params
         if params:
             try:
                 self._check_login_params(params)
                 id_num = params['身份证号']
                 pwd = params['密码']
                 yzm = params['vc']
-                self._do_login(id_num, pwd, yzm)
+                #self._do_login(id_num, pwd, yzm)
+                resp = self.s.post(CVC_URL, data=dict(
+                    client='NBHRSS_WEB',
+                    yzm=yzm))
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                infors = json.loads(soup.text)
+                if infors['result']=='0':
+                    resp = self.s.post(LOGIN_URL, data=dict(
+                        id=id_num,
+                        password=pwd,
+                        client='NBHRSS_WEB',
+                        phone=''))
+                    soup = BeautifulSoup(resp.content, 'html.parser')
+                    infor = json.loads(soup.text)
+                    if infor['ret']=='1':
+                        print("登录成功！")
+                        inforr=json.loads(infor['result'])
+                        self.g.access_token=inforr['access_token']
+                        self.result_data["baseInfo"] = {
+                            '城市名称': '宁波',
+                            '城市编号': '330200',
+                            '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                            '姓名': inforr['xm'],
+                            '身份证号': inforr['sfz'],
+                            '社会保障卡号码': inforr['sbkh']
+                        }
+                        self.result_identity['target_name'] = inforr['xm']
+                    elif infor['msg']=='E1001':
+                        raise InvalidParamsError('请去官网进行账号升级！')
+                    else:
+                        raise InvalidParamsError(infor['msg'])
+                else:
+                    raise InvalidParamsError('验证码错误！')
 
                 self.result_key = id_num
                 self.result_meta['身份证号'] = id_num
@@ -234,10 +269,15 @@ class Task(AbsFetchTask):
                     arr.append(dicts)
                     self.result_data['old_age']['data'][years][months] = arr
             # print(arrstr)
-            self.result_data["baseInfo"].setdefault('单位名称', arrstr[2].replace('单位名称：', ''))
+            if len(arrstr) > 2:
+                self.result_data["baseInfo"].setdefault('单位名称', arrstr[2].replace('单位名称：', ''))
             nowyears = time.strftime("%Y", time.localtime())
-            jfscolder = int(arrstr[10].replace('至本年末实际缴费月数：', ''))
-            ljjfolder = float(arrstr[9].replace('至本年末账户累计储存额：', ''))
+            if len(arrstr)>8:
+                jfscolder = int(arrstr[10].replace('至本年末实际缴费月数：', ''))
+                ljjfolder = float(arrstr[9].replace('至本年末账户累计储存额：', ''))
+            else:
+                jfscolder=0
+                ljjfolder=0.00
             if nowyears in self.result_data['old_age']['data'].keys():
                 for k, v in self.result_data['old_age']['data'][nowyears].items():
                     jfscolder = jfscolder + 1
@@ -245,9 +285,15 @@ class Task(AbsFetchTask):
             self.result_data["baseInfo"].setdefault('缴费时长', jfscolder)
             self.result_data["baseInfo"].setdefault('个人养老累计缴费', ljjfolder)
             self.result_data["baseInfo"].setdefault('最近缴费时间',maxtime)
-            ksjfsj = min(self.result_data['old_age']['data'])
-            self.result_data["baseInfo"].setdefault('开始缴费时间', ksjfsj + min(self.result_data['old_age']['data'][ksjfsj]))
-            cbzt = arrstr[3].replace('参保状态：', '')
+            if len(self.result_data['old_age']['data'])>0:
+                ksjfsj = min(self.result_data['old_age']['data'])
+                self.result_data["baseInfo"].setdefault('开始缴费时间', ksjfsj + min(self.result_data['old_age']['data'][ksjfsj]))
+            else:
+                self.result_data["baseInfo"].setdefault('开始缴费时间','')
+            if len(arrstr) > 3:
+                cbzt = arrstr[3].replace('参保状态：', '')
+            else:
+                cbzt ='未知'
             if cbzt == '参保缴费':
                 cbzt = '正常参保'
             else:
@@ -297,12 +343,18 @@ class Task(AbsFetchTask):
                     self.result_data['medical_care']['data'][years][months] = arr
             # print(arrstr)
             nowyears = time.strftime("%Y", time.localtime())
-            ljjfolder = float(arrstr[11].replace('个人账户余额：', ''))
+            if len(arrstr)>10:
+                ljjfolder = float(arrstr[11].replace('个人账户余额：', ''))
+            else:
+                ljjfolder = 0.00
             if nowyears in self.result_data['old_age']['data'].keys():
                 for k, v in self.result_data['old_age']['data'][nowyears].items():
                     ljjfolder = ljjfolder + float(v[0]['个人缴费'])
             self.result_data["baseInfo"].setdefault('个人医疗累计缴费', ljjfolder)
-            cbzt = arrstr[4].replace('参保状态：', '')
+            if len(arrstr) >4:
+                cbzt = arrstr[4].replace('参保状态：', '')
+            else:
+                cbzt ='未知'
             if cbzt == '参保缴费':
                 cbzt = '正常参保'
             else:
@@ -323,7 +375,10 @@ class Task(AbsFetchTask):
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell) < 3:
                     arrstr.extend(cell)
-            cbzt = arrstr[3].replace('参保状态：', '')
+            if len(arrstr) > 3:
+                cbzt = arrstr[3].replace('参保状态：', '')
+            else:
+                cbzt ='未知'
             if cbzt == '参保缴费':
                 cbzt = '正常参保'
             else:
@@ -344,7 +399,10 @@ class Task(AbsFetchTask):
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell) < 3:
                     arrstr.extend(cell)
-            cbzt = arrstr[3].replace('参保状态：', '')
+            if len(arrstr) > 3:
+                cbzt = arrstr[3].replace('参保状态：', '')
+            else:
+                cbzt ='未知'
             if cbzt == '参保缴费':
                 cbzt = '正常参保'
             else:
@@ -365,7 +423,10 @@ class Task(AbsFetchTask):
                 cell = [i.text for i in row.find_all('td')]
                 if len(cell) < 3:
                     arrstr.extend(cell)
-            cbzt = arrstr[3].replace('参保状态：', '')
+            if len(arrstr) > 3:
+                cbzt = arrstr[3].replace('参保状态：', '')
+            else:
+                cbzt ='未知'
             if cbzt == '参保缴费':
                 cbzt = '正常参保'
             else:
@@ -375,45 +436,293 @@ class Task(AbsFetchTask):
     def _unit_fetch_name(self):
         """用户信息"""
         try:
-            soup = self.s.soup
-            self.result_data["baseInfo"] = {
-                '城市名称': '宁波',
-                '城市编号': '330200',
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                '姓名': soup.select('#xm')[0].text,
-                '性别': soup.select('#xb')[0].text,
-                '身份证号': soup.select('#sfz')[0].text,
-                '国籍': soup.select('#gj')[0].text,
-                '社会保障卡号码': soup.select('#sbkh')[0].text,
-                '社保卡状态': soup.select('#kzt')[0].text,
-                '银行账号': soup.select('#yhkh')[0].text,
-                '发卡日期': soup.select('#fkrq')[0].text,
-                '手机号': soup.select('#sjhm')[0].text,
-                '固定号码': soup.select('#gddh')[0].text,
-                '常住地址': soup.select('#czdz')[0].text,
-                '邮编': soup.select('#yzbm')[0].text
-            }
-            self.result_identity['target_name'] = soup.select('#xm')[0].text
-            self.g.Fivestatus = []
+            respss=self.s.get('https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-grxx.jsp')
 
-            self._yanglao()
-            self._yiliao()
-            self._gongshang()
-            self._shiye()
-            self._shengyu()
-            self.result_data["baseInfo"].setdefault('五险状态', self.g.Fivestatus)
+            urls = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=10S006&bustype=01&refresh=true&client=NBHRSS_WEB'
+            resp = self.s.get(urls)
 
-            # resp=self.s.get(YL_URL)
+            urls='https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token='+self.g.access_token+'&api=10S005&bustype=01&refresh=true&client=NBHRSS_WEB'
+            resp=self.s.get(urls)
+            soup =BeautifulSoup(resp.content, 'html.parser')
+            infor = json.loads(soup.text)
+            infors=json.loads(infor['result'])
+            if infors['AAC004']=='1':
+                xb='男'
+            elif infors['AAC004']=='2':
+                xb='女'
+            else:
+                xb = '未说明性别'
+            if infors['AAZ502']=='1':
+                kt='正常有卡状态'
+            elif infors['AAZ502']=='2':
+                kt='正式挂失状态'
+            elif infors['AAZ502']=='4':
+                kt = '临时挂失状态'
+            else:
+                kt=''
+            self.result_data['baseInfo']['性别']=xb
+            if 'AZA103' in infors.keys():
+                self.result_data['baseInfo']['国籍'] = infors['AZA103']
+            self.result_data['baseInfo']['社保卡状态'] = kt
+            if 'AAE010' in infors.keys():
+                self.result_data['baseInfo']['银行账号'] = infors['AAE010']
+            if 'AAZ503' in infors.keys():
+                self.result_data['baseInfo']['发卡日期'] = infors['AAZ503']
+            if 'AAE004' in infors.keys():
+                self.result_data['baseInfo']['手机号'] = infors['AAE004']
+            if 'AAE005' in infors.keys():
+                self.result_data['baseInfo']['固定号码'] = infors['AAE005']
+            if 'AAE006' in infors.keys():
+                self.result_data['baseInfo']['常住地址'] = infors['AAE006']
+            if 'AAZ220' in infors.keys():
+                self.result_data['baseInfo']['邮编'] = infors['AAZ220']
 
-            # token=resp.request._cookies['__rz__k']
-            # datas=json.dumps({'api':'91S001','AAB301':'aab301'})
-            # r=requests.post('https://app.nbhrss.gov.cn/nbykt/rest/commapi',datas,token)
-            # print(r.json())
+            urls = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=10S005&bustype=01&refresh=true&client=NBHRSS_WEB'
+            resp = self.s.get(urls)
+            Fivestatus = {}
+          #   #养老状态
+            resp=self.s.get('https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-ylbx.jsp')
+
+            #第一次
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S099&bustype=01&refresh=true&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+
+            # 第二次
+            ylurl = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/rzxt/getTimeOut.action'
+            resp = self.s.post(ylurl)
+
+            # 第三次
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S001&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+            soupyl = BeautifulSoup(resp.content, 'html.parser')
+            ylinfo = json.loads(soupyl.text)
+            ylinfos = json.loads(ylinfo['result'])
+            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+            Fivestatus={'养老': cbzt}
+            if cbzt == '参保缴费':
+                cbzt = '正常参保'
+            else:
+                cbzt = '停缴'
+            self.result_identity['status'] = cbzt
+            self.result_data["baseInfo"].setdefault('单位名称',ylinfos['AAB004'])
+
+          #养老第四次
+            ylurls='https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token='+self.g.access_token+'&api=91S002&bustype=01&param={"AAB301":"330200","PAGENO":1,"PAGESIZE":10000}&client=NBHRSS_WEB'
+            resps=self.s.get(ylurls)
+            soupyls = BeautifulSoup(resps.content, 'html.parser')
+            ylinfos=json.loads(soupyls.text)
+            if ylinfos['ret']=='1':
+                ylinfof=json.loads(ylinfos['result'])
+                self.result_data['old_age'] = {}
+                self.result_data['old_age']['data'] = {}
+                years = ''
+                months = ''
+                maxtime = ''
+                y = 1
+                for i in range(0, len(ylinfof['COSTLIST']['COST'])):
+                    arr = []
+                    cell = ylinfof['COSTLIST']['COST'][i]
+                    # if len(cell) < 3:
+                    #     arrstr.extend(cell)
+                    # elif len(cell) == 4:
+                    yearmonth = cell['AAE002']
+                    if years == '' or years != yearmonth[:4]:
+                        years = yearmonth[:4]
+                        self.result_data['old_age']['data'][years] = {}
+                        if len(months) > 0:
+                            if months == yearmonth[-2:]:
+                                self.result_data['old_age']['data'][years][months] = {}
+                    if months == '' or months != yearmonth[-2:]:
+                        months = yearmonth[-2:]
+                        self.result_data['old_age']['data'][years][months] = {}
+                    dicts = {
+                        '缴费时间': cell['AAE002'],
+                        '缴费类型': '',
+                        '缴费基数': cell['AAE180'],
+                        '公司缴费': '',
+                        '个人缴费': cell['AAE022'],
+                        '缴费单位': '',
+                        '到账情况': cell['AAE078']
+                    }
+                    if y == 1:
+                        maxtime = cell['AAE002']
+                        y = 2
+                    arr.append(dicts)
+                    self.result_data['old_age']['data'][years][months] = arr
+
+                nowyears = time.strftime("%Y", time.localtime())
+                #第五次
+                ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S003&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+                resp = self.s.get(ylurl)
+                soupyl = BeautifulSoup(resp.content, 'html.parser')
+                ylinfo = json.loads(soupyl.text)
+                if ylinfo['ret'] == '1':
+                    ylinfos = json.loads(ylinfo['result'])
+                    if len(ylinfos['COSTLIST']['COST']) > 1:
+                        jfscolder = int(ylinfos['COSTLIST']['COST'][0]['AAE091'])  # arrstr[10].replace('至本年末实际缴费月数：', '')
+                        ljjfolder = float(ylinfos['COSTLIST']['COST'][0]['AAE382'])  # arrstr[9].replace('至本年末账户累计储存额：', '')
+                    else:
+                        jfscolder = 0
+                        ljjfolder = 0.00
+                else:
+                    jfscolder = 0
+                    ljjfolder = 0.00
+                if nowyears in self.result_data['old_age']['data'].keys():
+                    for k, v in self.result_data['old_age']['data'][nowyears].items():
+                        jfscolder = jfscolder + 1
+                        ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+                self.result_data["baseInfo"].setdefault('缴费时长', jfscolder)
+                self.result_data["baseInfo"].setdefault('个人养老累计缴费', ljjfolder)
+                self.result_data["baseInfo"].setdefault('最近缴费时间', maxtime)
+                if len(self.result_data['old_age']['data']) > 0:
+                    ksjfsj = min(self.result_data['old_age']['data'])
+                    self.result_data["baseInfo"].setdefault('开始缴费时间',
+                                                            ksjfsj + min(self.result_data['old_age']['data'][ksjfsj]))
+                else:
+                    self.result_data["baseInfo"].setdefault('开始缴费时间', '')
+
+            #医疗
+            resp = self.s.get('https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/web/pages/query/query-yilbx.jsp')
+            # 第一次
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S099&bustype=01&refresh=true&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+
+            # 第二次
+            ylurl = 'https://rzxt.nbhrss.gov.cn/nbsbk-rzxt/rzxt/getTimeOut.action'
+            resp = self.s.post(ylurl)
+
+            # 第三次
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S011&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+            soupyl = BeautifulSoup(resp.content, 'html.parser')
+            ylinfo = json.loads(soupyl.text)
+            ylinfos = json.loads(ylinfo['result'])
+            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
+            Fivestatus.setdefault('医疗',cbzt)
+
+            # 第四次
+            ylurls = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S012&bustype=01&param={"AAB301":"330200","PAGENO":1,"PAGESIZE":10000}&client=NBHRSS_WEB'
+            resps = self.s.get(ylurls)
+            soupyls = BeautifulSoup(resps.content, 'html.parser')
+            ylinfos = json.loads(soupyls.text)
+            if ylinfos['ret']=='1':
+                ylinfof = json.loads(ylinfos['result'])
+                self.result_data['medical_care'] = {}
+                self.result_data['medical_care']['data'] = {}
+                years = ''
+                months = ''
+                for i in range(0, len(ylinfof['COSTLIST']['COST'])):
+                    arr = []
+                    cell = ylinfof['COSTLIST']['COST'][i]
+                    yearmonth = cell['AAE002']
+                    if years == '' or years != yearmonth[:4]:
+                        years = yearmonth[:4]
+                        self.result_data['medical_care']['data'][years] = {}
+                        if len(months) > 0:
+                            if months == yearmonth[-2:]:
+                                self.result_data['medical_care']['data'][years][months] = {}
+                    if months == '' or months != yearmonth[-2:]:
+                        months = yearmonth[-2:]
+                        self.result_data['medical_care']['data'][years][months] = {}
+                    dicts = {
+                        '缴费时间': cell['AAE002'],
+                        '缴费类型': '',
+                        '缴费基数': cell['AAE180'],
+                        '公司缴费': '',
+                        '个人缴费': cell['AAE022'],
+                        '缴费单位': '',
+                        '到账情况': cell['AAE078']
+                    }
+                    arr.append(dicts)
+                    self.result_data['medical_care']['data'][years][months] = arr
+                # print(arrstr)
+
+                nowyears = time.strftime("%Y", time.localtime())
+                ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S013&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+                resp = self.s.get(ylurl)
+                soupyl = BeautifulSoup(resp.content, 'html.parser')
+                ylinfo = json.loads(soupyl.text)
+                if ylinfo['ret'] == '1':
+                    ylinfos = json.loads(ylinfo['result'])
+                    if len(ylinfos) > 1:
+                        ljjfolder = float(ylinfos['AKC087'])  # arrstr[9].replace('至本年末账户累计储存额：', '')
+                    else:
+                        ljjfolder = 0.00
+                else:
+                    ljjfolder = 0.00
+                if nowyears in self.result_data['old_age']['data'].keys():
+                    for k, v in self.result_data['old_age']['data'][nowyears].items():
+                        ljjfolder = ljjfolder + float(v[0]['个人缴费'])
+                self.result_data["baseInfo"].setdefault('个人医疗累计缴费', ljjfolder)
+
+            # 工伤
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S018&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+            soupyl = BeautifulSoup(resp.content, 'html.parser')
+            ylinfo = json.loads(soupyl.text)
+            ylinfos = json.loads(ylinfo['result'])
+            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
+            Fivestatus.setdefault('工伤', cbzt)
+
+            # 生育
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S019&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+            soupyl = BeautifulSoup(resp.content, 'html.parser')
+            ylinfo = json.loads(soupyl.text)
+            ylinfos = json.loads(ylinfo['result'])
+            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
+            Fivestatus.setdefault('生育', cbzt)
+
+            #失业
+            ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S020&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
+            resp = self.s.get(ylurl)
+            soupyl = BeautifulSoup(resp.content, 'html.parser')
+            ylinfo = json.loads(soupyl.text)
+            ylinfos = json.loads(ylinfo['result'])
+            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+            # if cbzt == '参保缴费':
+            #     cbzt = '正常参保'
+            # else:
+            #     cbzt = '停缴'
+            Fivestatus.setdefault('失业', cbzt)
+            # self.result_data["baseInfo"] = {
+            #     '城市名称': '宁波',
+            #     '城市编号': '330200',
+            #     '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+            #     '姓名': soup.select('#xm')[0].text,
+            #     '性别': soup.select('#xb')[0].text,
+            #     '身份证号': soup.select('#sfz')[0].text,
+            #     '国籍': soup.select('#gj')[0].text,
+            #     '社会保障卡号码': soup.select('#sbkh')[0].text,
+            #     '社保卡状态': soup.select('#kzt')[0].text,
+            #     '银行账号': soup.select('#yhkh')[0].text,
+            #     '发卡日期': soup.select('#fkrq')[0].text,
+            #     '手机号': soup.select('#sjhm')[0].text,
+            #     '固定号码': soup.select('#gddh')[0].text,
+            #     '常住地址': soup.select('#czdz')[0].text,
+            #     '邮编': soup.select('#yzbm')[0].text
+            # }
 
 
 
-
-
+            # self._yanglao()
+            # self._yiliao()
+            # self._gongshang()
+            # self._shiye()
+            # self._shengyu()
+            self.result_data["baseInfo"].setdefault('五险状态', Fivestatus)
 
             return
         except PermissionError as e:
@@ -428,7 +737,8 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '362524197806228017', '密码': '168168'}
+    meta = {'身份证号': '330227198906162713', '密码': '362415'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
-#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984
+    #'身份证号': '330282198707218248', '密码': 'sqf1769981270'
+#'身份证号': '330227198906162713', '密码': '362415'  身份证号': '362330198408045478', '密码': '19841984 '身份证号': '320924197906206491', '密码': '810998''身份证号': '330227198906162713', '密码': '362415''身份证号': '360427196807192017', '密码': '717174'

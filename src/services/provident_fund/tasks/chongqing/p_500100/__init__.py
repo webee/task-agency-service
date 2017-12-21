@@ -39,7 +39,7 @@ class Task(AbsFetchTask):
     )
 
     def _get_common_headers(self):
-        return {'User-Agent':'Mozilla/5.0 (iPad; CPU OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1'}
+        return {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
 
     def _query(self, params: dict):
         """任务状态查询"""
@@ -104,14 +104,37 @@ class Task(AbsFetchTask):
         return res
     def _unit_login(self, params: dict):
         err_msg = None
+        params
         if params:
             try:
                 self._check_login_params(params)
                 id_num = params['账号']
                 password = params['密码']
                 vc = params['vc']
-                self._do_login(id_num, password, vc)
-
+                resps=self.s.get(LOGIN_PAGE_URL,timeout=10)
+                soup = BeautifulSoup(resps.content, 'html.parser')
+                VIEWSTATE=soup.select('#__VIEWSTATE')[0].attrs['value']
+                VIEWSTATEGENERATOR = soup.select('#__VIEWSTATEGENERATOR')[0].attrs['value']
+                EVENTVALIDATION = soup.select('#__EVENTVALIDATION')[0].attrs['value']
+                resp = self.s.post(LOGIN_PAGE_URL,data=dict(
+                                                            __VIEWSTATE=VIEWSTATE,
+                                                            __VIEWSTATEGENERATOR=VIEWSTATEGENERATOR,
+                                                            __EVENTVALIDATION=EVENTVALIDATION,
+                                                            HiddenField1=id_num,
+                                                            txt_loginname=id_num,
+                                                            txt_pwd=password,
+                                                            txt_code=vc,
+                                                            loginBtn=''), timeout=25)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                #self._do_login(id_num, password, vc)
+                if len(soup.select('.error'))>1:
+                    err_msg=soup.select('.error')[0].text.replace(' ', '').replace('\n', '')
+                    if err_msg:
+                        raise InvalidParamsError(err_msg)
+                    else:
+                        print("登录成功！")
+                else:
+                    print("登录成功！")
 
                 self.result_key = params.get('账号')
                 # 保存到meta
@@ -184,7 +207,7 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             # 基本信息
-            resp = self.s.get(INFO_URL,timeout=5)
+            resp = self.s.get(INFO_URL,timeout=25)
             soup = BeautifulSoup(resp.content, 'html.parser')
             table = soup.find('table')
             data = self.result_data
@@ -205,10 +228,13 @@ class Task(AbsFetchTask):
 
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['证件号']
-            self.result_identity['status'] = data['baseInfo']['帐户状态']
+            if '正常' in data['baseInfo']['帐户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
 
             #公积金明细
-            resp = self.s.get(MINGXI_URL,timeout=5)
+            resp = self.s.get(MINGXI_URL,timeout=25)
             soup = BeautifulSoup(resp.content, 'html.parser')
             table = soup.find('table')
             data['detail'] = {}
@@ -217,13 +243,14 @@ class Task(AbsFetchTask):
             months = ''
             maxtime=''
             y=1
+            hjtype=0
+            hjje=''
+            hjrq=''
+            hjcs=0
             for tb in table.findAll('tbody'):
                 dic = {}
                 arr = []
                 cell = [i.text.replace(' ', '').replace('\r\n', '') for i in tb.find_all('td')]
-                if(y==1):
-                    maxtime=cell[0]
-                y=y+1
                 typedate=cell[1].split('[')
                 hj=''
                 lx=cell[1]
@@ -232,6 +259,20 @@ class Task(AbsFetchTask):
                 if len(typedate) >1:
                     hj =typedate[1].replace(']', '')
                     lx=typedate[0]
+                if (y == 1):
+                    maxtime = cell[0]
+                    if '汇缴' in lx:
+                        hjrq=hj
+                        hjje=str(float(cell[2])+float(cell[3]))
+                        hjtype=1
+                y = y + 1
+
+                if hj:
+                    hjcs=hjcs+1
+                    if hjtype==0:
+                        hjrq = hj
+                        hjje = str(float(cell[2]) + float(cell[3]))
+                        hjtype = 1
 
                 dic = {
                     '时间': cell[0],
@@ -257,7 +298,9 @@ class Task(AbsFetchTask):
                         arr = data['detail']['data'][years][months]
                 arr.append(dic)
                 data['detail']['data'][years][months] = arr
-                print(arr)
+            data['baseInfo']['最近汇缴日期']=hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
 
             #companyList
             data['companyList'] = []
@@ -281,12 +324,13 @@ class Task(AbsFetchTask):
 
     def _new_vc(self):
         #vc_url = VC_URL  # + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL,timeout=10)
+        resp = self.s.get(VC_URL,timeout=20)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 if __name__ == '__main__':
+
     from services.client import TaskTestClient
 
-    meta = {'账号': '510231198107191540', '密码': '154000'}
+    meta = {'账号': '15826126132', '密码': 'qinyu20070207'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #账号': '15826126132', '密码': 'qinyu20070207'  账号': '15123133361', '密码': 'haoran'

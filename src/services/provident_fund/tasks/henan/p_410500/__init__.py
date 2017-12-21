@@ -172,7 +172,10 @@ class Task(AbsFetchTask):
                 cell = [i.text for i in row.find_all('td')]
                 data['baseInfo'].setdefault(cell[0].replace('职工姓名','姓名').replace('职工账号','个人账号').replace('所在单位','单位名称').replace('月缴基数','缴存基数').replace('账户状态','帐户状态').replace('上年余额','上年结转余额').replace('本年缴交','当年缴存金额').replace(' ',''),cell[1].replace('\xa0',''))
                 data['baseInfo'].setdefault(cell[2].replace('身份证号','证件号').replace(' ','').replace('本年支取','当年提取金额').replace('月缴金额','月应缴额').replace('账户余额','当前余额'), cell[3].replace('\xa0',''))
-            self.result_identity['status'] = data['baseInfo']['帐户状态']
+            if '正常' in data['baseInfo']['帐户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
 
             resp = self.s.post(GJJMX_URL,data = parse.urlencode(dict(zgzh=self.zgzh,sfzh=self.sfzh,zgxm=self.zgxm,dwbm=self.dwbm,cxyd=self.cxyd), encoding='gbk'),headers={'Content-Type': 'application/x-www-form-urlencoded','Accept-Language':'zh-CN,zh;q=0.8'},timeout=5)
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -181,6 +184,10 @@ class Task(AbsFetchTask):
             selectyear = []
             years = ''
             months = ''
+            hjtype = 0
+            hjcs = 0
+            hjje = ''
+            hjrq = ''
             for option in soup.findAll('option'):
                 selectyear.append(option.getText())
             selectyear.append('当前年度')
@@ -210,12 +217,15 @@ class Task(AbsFetchTask):
                 #         titkeys = td.getText()
                 #     else:
                 #         titkeys = titkeys + ',' + td.getText()
-
+                w=0   #获取本页倒数第二条
                 for tr in range(0,len(tabcontent)):
                     dic = {}
                     i = 0
                     monthkeys = ''
                     arr=[]
+                    w=w+1
+                    if w==len(tabcontent)-1:
+                        w=-1
                     for td in tabcontent[tr].findAll('td'):
                         dic.setdefault(titkeys.split(',')[i], td.getText())
                         i = i + 1
@@ -225,10 +235,18 @@ class Task(AbsFetchTask):
                             hjny=''
                             lx=td.getText()
                             if '汇缴' in td.getText():
+                                hjcs=hjcs+1
                                 hjny=td.getText().replace('汇缴','').replace('年','').replace('月','')
                                 lx='汇缴'
+                            if hjny and hjtype==0 and w==-1:
+                                hjtype=1
+                                hjrq=hjny
                             dic.setdefault('汇缴年月', hjny)
                             dic['类型']=lx
+                        if i==4:
+                            if hjtype==1 and w==-1:
+                                hjtype=2
+                                hjje=td.getText()
                         if i == 6:
                             dic['单位名称']= ''
                             if years==''or years!=monthkeys[:4]:
@@ -246,7 +264,9 @@ class Task(AbsFetchTask):
                                 arr=data['detail']['data'][years][months]
                             arr.append(dic)
                             data['detail']['data'][years][months]=arr
-
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
             data['companyList']=[]
             diclist = {
                 '单位名称': data['baseInfo']['单位名称'],

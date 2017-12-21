@@ -178,10 +178,9 @@ class Task(AbsFetchTask):
             for tr in tabs.findAll('tr'):
                 cell = [i.text for i in tr.find_all('td')]
                 if len(cell)>2:
-                    strss='停缴'
+                    strss=cell[3]
                     if cell[3]=='参保缴费':
-                        idstatus='正常参保'
-                        strss='正常参保'
+                        idstatus='正常'
                     arrstatus.setdefault(cell[2].replace('保险', '').replace('企业', '').replace('基本', ''),strss)
 
             data['baseInfo'].setdefault('五险状态', arrstatus)

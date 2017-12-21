@@ -135,7 +135,7 @@ class Task(AbsFetchTask):
                 }
                 resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
                                                                   'Cache-Control': 'max-age=0',
-                                                                  'Upgrade-Insecure-Requests': '1'},timeout=10)
+                                                                  'Upgrade-Insecure-Requests': '1'},timeout=20)
                 soup = BeautifulSoup(resp.content, 'html.parser')
 
                 errormsg = soup.findAll('font')[0].text
@@ -237,10 +237,13 @@ class Task(AbsFetchTask):
                                                     '\xa0\xa0\xa0\xa0\xa0【修改】', '').replace('             ', '').replace('年','').replace('月','').replace('日',''))
 
             self.result_identity['target_name']=data['baseInfo']['姓名']
-            self.result_identity['status'] = data['baseInfo']['账户状态']
+            if '正常' in data['baseInfo']['账户状态']:
+                self.result_identity['status'] ='缴存'
+            else:
+                self.result_identity['status'] ='封存'
             # 内容
             infourl = LOGIN_URL + '?ID=11'
-            resp = self.s.get(infourl,timeout=5)
+            resp = self.s.get(infourl,timeout=20)
             soup = BeautifulSoup(resp.content, 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
@@ -250,7 +253,10 @@ class Task(AbsFetchTask):
             infotable = soup.select('.table')[0].findAll('tr')
             years = ''
             months = ''
-
+            hjtype = 0
+            hjcs = 0
+            hjje = ''
+            hjrq = ''
             for y in range(2, len(infotable)):
                 dic = {}
                 arr = []
@@ -274,6 +280,12 @@ class Task(AbsFetchTask):
                         if len(re.findall(r"汇缴(.+?)公积金", strname))>0:
                             strtype=strname[:2]
                             strtime=strname[2:8]
+                        if strtype=='汇缴':
+                            hjcs=hjcs+1
+                            if hjtype==0:
+                                hjtype=1
+                                hjje=cell[2]
+                                hjrq=strtime
 
                         dic = {
                             '时间': cell[0].replace('年', '-').replace('月', '-').replace('日', ''),
@@ -334,13 +346,16 @@ class Task(AbsFetchTask):
                         }
             enterarr.append(enterdic)
             data['companyList'] = enterarr
+            data['baseInfo']['最近汇缴日期'] = hjrq
+            data['baseInfo']['最近汇缴金额'] = hjje
+            data['baseInfo']['累计汇缴次数'] = hjcs
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
         #vc_url = VC_URL  + str(int(time.time() * 1000))
-        resp = self.s.get(VC_URL,timeout=5)
+        resp = self.s.get(VC_URL,timeout=20)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
 
