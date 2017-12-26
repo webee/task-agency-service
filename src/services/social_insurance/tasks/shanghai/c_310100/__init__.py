@@ -379,7 +379,7 @@ if __name__ == '__main__':
     # client = TaskTestClient(Task(SessionData()))
     # client.run()
 
-    meta = {'用户名': '321322199001067241', '密码': '123456'}
+    meta = {'用户名': '320621199310153011', '密码': '821049'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
