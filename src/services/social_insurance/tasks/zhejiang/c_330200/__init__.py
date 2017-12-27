@@ -664,39 +664,42 @@ class Task(AbsFetchTask):
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('工伤', cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('工伤', cbzt)
 
             # 生育
             ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S019&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('生育', cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('生育', cbzt)
 
             #失业
             ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S020&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('失业', cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('失业', cbzt)
             # self.result_data["baseInfo"] = {
             #     '城市名称': '宁波',
             #     '城市编号': '330200',
@@ -737,7 +740,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '330227198906162713', '密码': '362415'}
+    meta = {'身份证号': '510524198211203217', '密码': '610980'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
     #'身份证号': '330282198707218248', '密码': 'sqf1769981270'
