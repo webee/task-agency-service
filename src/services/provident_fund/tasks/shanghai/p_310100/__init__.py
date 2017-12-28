@@ -136,7 +136,7 @@ class Task(AbsFetchTask):
                 resp = self.s.post(LOGIN_URL, data=data, headers={'Content-Type': 'application/x-www-form-urlencoded',
                                                                   'Cache-Control': 'max-age=0',
                                                                   'Upgrade-Insecure-Requests': '1'},timeout=20)
-                soup = BeautifulSoup(resp.content, 'html.parser')
+                soup = BeautifulSoup(resp.content.decode('gbk'), 'html.parser')
 
                 errormsg = soup.findAll('font')[0].text
                 # if errormsg and errormsg != id_num:
@@ -244,7 +244,7 @@ class Task(AbsFetchTask):
             # 内容
             infourl = LOGIN_URL + '?ID=11'
             resp = self.s.get(infourl,timeout=20)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            soup = BeautifulSoup(resp.content.decode('gbk'), 'html.parser')
             data['detail'] = {}
             data['detail']['data'] = {}
             enterarr = []
