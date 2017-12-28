@@ -496,15 +496,15 @@ class Task(AbsFetchTask):
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            Fivestatus={'养老': cbzt}
-            if cbzt == '参保缴费':
-                cbzt = '正常参保'
-            else:
-                cbzt = '停缴'
-            self.result_identity['status'] = cbzt
-            self.result_data["baseInfo"].setdefault('单位名称',ylinfos['AAB004'])
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                Fivestatus={'养老': cbzt}
+                if cbzt == '参保缴费':
+                    cbzt = '正常参保'
+                else:
+                    cbzt = '停缴'
+                self.result_data["baseInfo"].setdefault('单位名称',ylinfos['AAB004'])
 
           #养老第四次
             ylurls='https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token='+self.g.access_token+'&api=91S002&bustype=01&param={"AAB301":"330200","PAGENO":1,"PAGESIZE":10000}&client=NBHRSS_WEB'
@@ -726,7 +726,10 @@ class Task(AbsFetchTask):
             # self._shiye()
             # self._shengyu()
             self.result_data["baseInfo"].setdefault('五险状态', Fivestatus)
-
+            if '参保缴费' in Fivestatus.values():
+                self.result_identity['status'] = '正常'
+            else:
+                self.result_identity['status'] = '停缴'
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -740,7 +743,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '510524198211203217', '密码': '610980'}
+    meta = {'身份证号': '33022519870104004X', '密码': '009760'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
     #'身份证号': '330282198707218248', '密码': 'sqf1769981270'
