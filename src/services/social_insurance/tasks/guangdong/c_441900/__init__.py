@@ -187,7 +187,6 @@ class Task(AbsFetchTask):
                                     '险种名称': cell[4],
                                     '缴费基数': float(cell[5].replace(',', '')),
                                     '个人缴费': float(cell[7].replace(',', '')) / monthcount,
-                                    '单位编号': cell[4],
                                     '缴费单位': cell[1],
                                     '缴费类型': cell[3],
                                     '公司缴费': float(cell[6].replace(',', '')) / monthcount
