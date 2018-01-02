@@ -269,18 +269,19 @@ class Task(AbsFetchTask):
 
             # 个人基本信息
             status = ""
-            if soup[10].findAll('td')[1].text != '':
-                wuxiantype={
-                    '养老':EIType,
-                    '医疗':HIType,
-                    '失业':IIType,
-                    '生育':BIType
-                }
-                if(EIType=="正常参保"):
-                    status='正常'
-                else:
-                    status='停缴'
+            infoDetial=demjson.decode(totalresp.text)['body']['dataStores']['sbkxxStore']['rowSet']['primary'][0]
+            wuxiantype = {
+                '养老': EIType,
+                '医疗': HIType,
+                '失业': IIType,
+                '生育': BIType
+            }
+            if (EIType == "正常参保"):
+                status = '正常'
+            else:
+                status = '停缴'
 
+            if soup[10].findAll('td')[1].text != '':
                 self.result_data['baseInfo'] = {
                     '姓名': soup[10].findAll('td')[1].text,
                     '身份证号': soup[10].findAll('td')[5].text,
@@ -299,6 +300,22 @@ class Task(AbsFetchTask):
                     '单位编号': soup[11].findAll('td')[3].text,
                     '开户日期': soup[12].findAll('td')[1].text,
                 }
+            else:
+                self.result_data['baseInfo'] = {
+                    '姓名': infoDetial['FACTNAME'],
+                    '身份证号': infoDetial['IDCARDNO'],
+                    '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                    '城市名称': '石家庄',
+                    '城市编号': '130100',
+                    '缴费时长': EICount,
+                    '最近缴费时间': sanDetail[0]['AC43_AAE003'],
+                    '开始缴费时间': iiDetail[len(iiDetail) - 1]['AC43_AAE003'],
+                    '个人养老累计缴费': EIMoney,
+                    '个人医疗累计缴费': '',
+                    '五险状态': wuxiantype,
+                    '账户状态': status,
+                }
+
 
             # identity
             self.result['identity'] = {
