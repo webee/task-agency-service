@@ -206,9 +206,9 @@ class Task(AbsFetchTask):
                                 arrs.append(dic)
                                 data[v]['data'][years][months] = arrs
                 if v == 'old_age':
-                    data['baseInfo'].setdefault('个人养老累计缴费', ylsum)
+                    data['baseInfo'].setdefault('个人养老累计缴费', "%.2f" % ylsum)
                 if v == 'medical_care':
-                    data['baseInfo'].setdefault('个人医疗累计缴费', yilsum)
+                    data['baseInfo'].setdefault('个人医疗累计缴费',"%.2f" % yilsum)
                 arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
                 time.sleep(1)
             data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))

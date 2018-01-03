@@ -181,8 +181,8 @@ class Task(AbsFetchTask):
             data['baseInfo']['开始缴费时间'] = min(data['old_age']['data']) + min(
                 data['old_age']['data'][min(data['old_age']['data'])])
             data['baseInfo']['缴费时长'] = int(soup.findAll('table')[2].contents[1].findAll('td')[0].text.split('：')[1].replace('\r\n','').replace('\t',''))
-            data['baseInfo']['个人养老累计缴费'] = ylljjf
-            data['baseInfo']['个人医疗累计缴费'] = 0.00
+            data['baseInfo']['个人养老累计缴费'] = "%.2f" % ylljjf
+            data['baseInfo']['个人医疗累计缴费'] = '0.00'
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
