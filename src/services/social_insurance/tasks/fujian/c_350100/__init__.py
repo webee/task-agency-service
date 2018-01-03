@@ -83,8 +83,10 @@ class Task(AbsFetchTask):
                 successinfo = soup.text.split(';')
                 if successinfo[0].find('alert')==0:
                     successinfo = successinfo[0].replace('alert(','').replace(')','')
+                elif len(soup.findAll('font'))==1:
+                    successinfo =soup.findAll('font')[0].text
                 else:
-                    successinfo = ''
+                    successinfo=''
                 if successinfo:
                     return_message = successinfo
                     raise InvalidParamsError(return_message)
@@ -114,13 +116,15 @@ class Task(AbsFetchTask):
             data = self.result_data
             resp = self.s.get(INFOR_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            tables = soup.findAll('table')[0]
+            tables = soup.findAll('table')
+            if not tables:
+                return
             data['baseInfo'] = {
                 '城市名称': '福州',
                 '城市编号': '350100',
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime())
             }
-            rows = tables.find_all('tr')
+            rows = tables[0].find_all('tr')
             for row in rows:
                 cell = [i.text.replace('保险','').replace('基本','') for i in row.find_all('td')]
                 data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('公民身份号码', '身份证号'), cell[1].replace(' ', ''))
@@ -189,7 +193,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证': '350123198209016115', '密码': '15959008652'}
+    meta = {'身份证': '511323198301034510', '密码': 'ygt198313'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
