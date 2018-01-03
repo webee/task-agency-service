@@ -152,8 +152,8 @@ class Task(AbsFetchTask):
 
             # 养老保险明细
             #
-            self.result['data']["old_age"] = {"data": {}}
-            basedataE = self.result['data']["old_age"]["data"]
+            # self.result['data']["old_age"] = {"data": {}}
+            # basedataE = self.result['data']["old_age"]["data"]
             modelE = {}
             EICount= soupDetail[18].findAll('td')[0].text
             EIMoney=soupDetail[18].findAll('td')[1].text.replace(',','')
@@ -215,8 +215,8 @@ class Task(AbsFetchTask):
 
             # 工伤保险明细
             #
-            self.result['data']["injuries"] = {"data": {}}
-            basedataC = self.result['data']["injuries"]["data"]
+            # self.result['data']["injuries"] = {"data": {}}
+            # basedataC = self.result['data']["injuries"]["data"]
             modelC = {}
 
 
