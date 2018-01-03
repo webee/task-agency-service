@@ -186,18 +186,17 @@ class Task(AbsFetchTask):
                                     '缴费时间': yearkeys,
                                     '险种名称': cell[4],
                                     '缴费基数': float(cell[5].replace(',', '')),
-                                    '个人缴费': float(cell[7].replace(',', '')) / monthcount,
-                                    '单位编号': cell[4],
+                                    '个人缴费': float(cell[7].replace(',', '')) ,
                                     '缴费单位': cell[1],
                                     '缴费类型': cell[3],
-                                    '公司缴费': float(cell[6].replace(',', '')) / monthcount
+                                    '公司缴费': float(cell[6].replace(',', ''))
                                 }
                                 years = yearkeys[:4]
                                 months = yearkeys[-2:]
                                 if v == 'old_age':
-                                    ylsum = ylsum + float(cell[7]) / monthcount
+                                    ylsum = ylsum + float(cell[7])
                                 if v == 'medical_care':
-                                    yilsum = yilsum + float(cell[7]) / monthcount
+                                    yilsum = yilsum + float(cell[7])
                                 if years not in data[v]['data'].keys():
                                     data[v]['data'][years] = {}
                                 if months not in data[v]['data'][years].keys():
@@ -207,9 +206,9 @@ class Task(AbsFetchTask):
                                 arrs.append(dic)
                                 data[v]['data'][years][months] = arrs
                 if v == 'old_age':
-                    data['baseInfo'].setdefault('个人养老累计缴费', ylsum)
+                    data['baseInfo'].setdefault('个人养老累计缴费', "%.2f" % ylsum)
                 if v == 'medical_care':
-                    data['baseInfo'].setdefault('个人医疗累计缴费', yilsum)
+                    data['baseInfo'].setdefault('个人医疗累计缴费',"%.2f" % yilsum)
                 arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
                 time.sleep(1)
             data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))
