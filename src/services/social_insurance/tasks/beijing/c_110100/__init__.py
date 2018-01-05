@@ -96,13 +96,15 @@ class Task(AbsFetchTask):
         err_msg = None
         resp = self.s.get(LOGIN_PAGE_URL)
         n = datetime.datetime.now() + datetime.timedelta(days=1)
-        if 1 <= n.day <= 8 or from_error:
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            if not soup.find('form'):
-                # 可能暂停维护了
-                raise TaskNotAvailableError(soup.find('td').text)
-            if from_error:
-                return
+        # if 1 <= n.day <= 8 or from_error:
+        #     soup = BeautifulSoup(resp.content, 'html.parser')
+        #     if not soup.find('form'):
+        #         # 可能暂停维护了
+        #         raise TaskNotAvailableError(soup.find('td').text)
+        #     if from_error:
+        #         return
+        if 1 <= n.day <= 6 or from_error:
+            raise TaskNotAvailableError("社保局官网正在例行维护")
 
         if params:
             try:
