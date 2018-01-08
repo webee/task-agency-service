@@ -219,12 +219,22 @@ class Task(AbsFetchTask):
                     data['baseInfo'].setdefault('个人养老累计缴费', "%.2f" % ylsum)
                 if v == 'medical_care':
                     data['baseInfo'].setdefault('个人医疗累计缴费', "%.2f" % yilsum)
-                arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
-                arrMintime.append(min(data[v]['data']) + min(data[v]['data'][min(data[v]['data'])]))
-                arrLenMonth.append(lenmonth)
-            data['baseInfo'].setdefault('缴费时长', max(arrLenMonth))
-            data['baseInfo'].setdefault('开始缴费时间', min(arrMintime))
-            data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))
+                if len(data[v]['data'])>0:
+                    arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
+                    arrMintime.append(min(data[v]['data']) + min(data[v]['data'][min(data[v]['data'])]))
+                    arrLenMonth.append(lenmonth)
+            if len(arrLenMonth)>0:
+                data['baseInfo'].setdefault('缴费时长', max(arrLenMonth))
+            else:
+                data['baseInfo'].setdefault('缴费时长', 0)
+            if len(arrMintime) > 0:
+                data['baseInfo'].setdefault('开始缴费时间', min(arrMintime))
+            else:
+                data['baseInfo'].setdefault('开始缴费时间', '')
+            if len(arrMaxtime) > 0:
+                data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))
+            else:
+                data['baseInfo'].setdefault('最近缴费时间', '')
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -233,7 +243,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '520181199002171732'}
+    meta = {'身份证号': '520103196901181261'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
