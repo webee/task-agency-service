@@ -115,7 +115,7 @@ class Task(AbsFetchTask):
             # 基本信息
             data = self.result_data
             resp = self.s.get(INFOR_URL)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            soup = BeautifulSoup(resp.content.decode('gbk'), 'html.parser')
             tables = soup.findAll('table')
             if not tables:
                 return
@@ -126,7 +126,7 @@ class Task(AbsFetchTask):
             }
             rows = tables[0].find_all('tr')
             for row in rows:
-                cell = [i.text.replace('保险','').replace('基本','') for i in row.find_all('td')]
+                cell = [i.text.replace('保险','').replace('基本','').replace(' ','') for i in row.find_all('td')]
                 data['baseInfo'].setdefault(cell[0].replace(' ', '').replace('公民身份号码', '身份证号'), cell[1].replace(' ', ''))
                 if (len(cell) > 3):
                     data['baseInfo'].setdefault(cell[2].replace(' ', ''),cell[3].replace(' ', ''))
@@ -193,7 +193,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证': '511323198301034510', '密码': 'ygt198313'}
+    meta = {'身份证': '370725198710245527', '密码': 'wsm20130420'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
