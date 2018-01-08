@@ -209,9 +209,13 @@ class Task(AbsFetchTask):
                     data['baseInfo'].setdefault('个人养老累计缴费', "%.2f" % ylsum)
                 if v == 'medical_care':
                     data['baseInfo'].setdefault('个人医疗累计缴费',"%.2f" % yilsum)
-                arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
+                if len(data[v]['data'])>0:
+                    arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
                 time.sleep(1)
-            data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))
+            if len(arrMaxtime)>0:
+                data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))
+            else:
+                data['baseInfo'].setdefault('最近缴费时间', '')
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -225,7 +229,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '140321198209121213', '密码': '20160414'}
+    meta = {'身份证号': '441900199603233528', '密码': '199623'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
