@@ -156,7 +156,7 @@ class Task(AbsFetchTask):
                         dic={
                             '缴费时间':cell[1],
                             '缴费类型':'',
-                            '缴费基数': int(cell[6])/int(cell[5]),
+                            '缴费基数': float(cell[6])/float(cell[5]),
                             '公司缴费': float(cell[9])/float(cell[5]),
                             '个人缴费': float(cell[7])/float(cell[5]),
                             '缴费单位': cell[11]
@@ -193,7 +193,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证': '370725198710245527', '密码': 'wsm20130420'}
+    meta = {'身份证': '33252519830120033X', '密码': '172747'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

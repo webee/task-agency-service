@@ -446,18 +446,20 @@ class Task(AbsFetchTask):
             soup =BeautifulSoup(resp.content, 'html.parser')
             infor = json.loads(soup.text)
             infors=json.loads(infor['result'])
-            if infors['AAC004']=='1':
-                xb='男'
-            elif infors['AAC004']=='2':
-                xb='女'
+            if 'AAC004' in infors.keys():
+                if infors['AAC004']=='1':
+                    xb='男'
+                elif infors['AAC004']=='2':
+                    xb='女'
             else:
                 xb = '未说明性别'
-            if infors['AAZ502']=='1':
-                kt='正常有卡状态'
-            elif infors['AAZ502']=='2':
-                kt='正式挂失状态'
-            elif infors['AAZ502']=='4':
-                kt = '临时挂失状态'
+            if 'AAZ502' in infors.keys():
+                if infors['AAZ502']=='1':
+                    kt='正常有卡状态'
+                elif infors['AAZ502']=='2':
+                    kt='正式挂失状态'
+                elif infors['AAZ502']=='4':
+                    kt = '临时挂失状态'
             else:
                 kt=''
             self.result_data['baseInfo']['性别']=xb
@@ -743,7 +745,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '330522198506175712', '密码': '023243'}
+    meta = {'身份证号': '33252519830120033X', '密码': '172747'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
     #'身份证号': '330282198707218248', '密码': 'sqf1769981270'
