@@ -295,7 +295,7 @@ class Task(AbsFetchTask):
                         }
 
                         if item["jfbz"] == "已实缴":
-                            if nowTime == year and isStart:
+                            if (nowTime == year and isStart) or (self.old_age_lately_data == "199201"):
                                 self.old_age_lately_data = item["xssj"].replace("-", "")
                                 isStart = False
                             # 累计正常缴费的缴费月数
@@ -352,7 +352,7 @@ class Task(AbsFetchTask):
                         }
 
                         if item["fkkm"] == "基本医疗保险" and item["jfbz"] == "已实缴":
-                            if nowTime == year and isStart:
+                            if (nowTime == year and isStart) or (self.medical_care_lately_data == "199201"):
                                 self.medical_care_lately_data = item["xssj"].replace("-", "")
                                 isStart = False
                             # 累计正常缴费的缴费月数
@@ -405,7 +405,7 @@ class Task(AbsFetchTask):
                         }
 
                         if item["jfbj"] == "足额缴费":
-                            if nowTime == year and isStart:
+                            if (nowTime == year and isStart) or (self.injuries_lately_data == "199201"):
                                 self.injuries_lately_data = item["xssj"].replace("-", "")
                                 isStart = False
                             # 累计正常缴费的缴费月数
@@ -455,7 +455,7 @@ class Task(AbsFetchTask):
                         }
 
                         if item["jfbj"] == "已实缴":
-                            if nowTime == year and isStart:
+                            if (nowTime == year and isStart) or (self.maternity_lately_data == 199201):
                                 self.maternity_lately_data = item["xssj"].replace("-", "")
                                 isStart = False
                             # 累计正常缴费的缴费月数
@@ -505,7 +505,7 @@ class Task(AbsFetchTask):
                         }
 
                         if item["jfbj"] == "足额缴费":
-                            if nowTime == year and isStart:
+                            if (nowTime == year and isStart) or (self.unemployment_lately_data == "199201"):
                                 self.unemployment_lately_data = item["xssj"].replace("-", "")
                                 isStart = False
                             # 累计正常缴费的缴费月数
@@ -574,6 +574,9 @@ class Task(AbsFetchTask):
                            self.injuries_lately_data.strip(),
                            self.maternity_lately_data.strip(),
                            self.unemployment_lately_data.strip()]
+
+            if latest_time == "199201":
+                latest_time = time.strftime("%Y%m", time.localtime())
 
             data["baseInfo"]["缴费时长"] = str(max(social_payment_duration))
             data["baseInfo"]["最近缴费时间"] = str(max(latest_time))
