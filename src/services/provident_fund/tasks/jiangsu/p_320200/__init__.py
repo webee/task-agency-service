@@ -196,6 +196,8 @@ class Task(AbsFetchTask):
             times=datas[8].text.split(';')[0].split('=')[1]
             fomtime=times[2:6]+'-'+times[6:8]+'-'+times[8:10]
 
+            pEMoney=float(datas[2].findAll("td")[1].text.replace('\n', '').replace('元', '').replace('()',''))/2
+
             # 个人基本信息
             self.result_data['baseInfo'] = {
                 '姓名': datas[0].findAll("td")[3].text,
@@ -207,8 +209,8 @@ class Task(AbsFetchTask):
                 '缴存基数': datas[4].findAll("td")[1].text,
                 '单位缴存比例': datas[6].findAll("td")[1].text,
                 '个人缴存比例': datas[5].findAll("td")[1].text,
-                '单位月缴存额': datas[2].findAll("td")[1].text.replace('\n', '').replace('元', '').replace('()',''),
-                '个人月缴存额': datas[2].findAll("td")[1].text.replace('\n', '').replace('元', '').replace('()',''),
+                '单位月缴存额': pEMoney,
+                '个人月缴存额': pEMoney,
                 '开户日期': fomtime,
 
                 '更新时间': time.strftime("%Y-%m-%d", time.localtime()),

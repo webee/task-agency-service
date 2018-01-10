@@ -124,6 +124,16 @@ class Task(AbsFetchTask):
         ], err_msg)
 
 
+    def _converType(self,strname):
+        resstring=""
+        if '汇缴' in strname:
+            resstring='汇缴'
+        elif '还贷' in strname:
+            resstring='还贷'
+        else:
+            resstring=strname
+        return resstring
+
     def _unit_fetch(self):
         try:
             self.result_data['baseInfo'] = {}
@@ -144,38 +154,9 @@ class Task(AbsFetchTask):
                 '_PROCID':'80000003',
                 '_PAGEID': 'step1',
                 'certinum':personid,
-                #'_CHANNEL':1,
-                #'_APPLY':0,
-                #'_RW':'w',
-                #'_TYPE':'init',
-                #'_ACCNUM':uunum,
             }
             resp=self.s.post("http://www.njgjj.com/command.summer?uuid="+times,data)
             soupData=json.loads(resp.text)['data']
-
-            # 个人基本信息
-            self.result_data['baseInfo'] = {
-                '姓名': username,
-                '证件号': personid,
-                '证件类型': '身份证',
-                '个人编号': uunum,
-                '公积金帐号': soupData['cardnocsp'],
-
-                '单位缴存比例': str(int(float(soupData['unitprop'])*100))+'%',
-                '个人缴存比例': str(int(float(soupData['indiprop'])*100))+'%',
-                '开户日期': soupData['opnaccdate'],
-                '手机号': soupData['linkphone'],
-                '月应缴额':soupData['amt2'],
-
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
-                '城市名称': '南京市',
-                '城市编号': '320100',
-
-                '最近汇款日期': '',
-                '最近汇款金额': '',
-                '累计汇款次数': 0,
-            }
-
             status = ""
             if (soupData['indiaccstate'] == "0"):
                 status = '缴存'
@@ -186,30 +167,121 @@ class Task(AbsFetchTask):
             # 缴费明细
             resDetail = self.s.get("http://www.njgjj.com/init.summer?_PROCID=70000002")
             soopDetail = BeautifulSoup(resDetail.content, 'html.parser')
-            ghosts =soopDetail.find('textarea', {'name': 'DATAlISTGHOST'}).text #'rO0ABXNyABNqYXZhLnV0aWwuQXJyYXlMaXN0eIHSHZnHYZ0DAAFJAARzaXpleHAAAAABdwQAAAAKc3IAJWNvbS55ZHlkLm5icC5lbmdpbmUucHViLkRhdGFMaXN0R2hvc3RCsjhA3j2pwwIAA0wAAmRzdAASTGphdmEvbGFuZy9TdHJpbmc7TAAEbmFtZXEAfgADTAADc3FscQB+AAN4cHQAEHdvcmtmbG93LmNmZy54bWx0AAlkYXRhbGlzdDJ0AL5zZWxlY3QgaW5zdGFuY2UsIHVuaXRhY2NudW0xLCB1bml0YWNjbmFtZSwgYWNjbnVtMSwgYWNjbmFtZTEsIGNlcnRpbnVtLCB0cmFuc2RhdGUsIHJlYXNvbiAsIGRwYnVzaXR5cGUsIGJhc2VudW0sIHBheXZvdWFtdCwgc2Vxbm8gZnJvbSBkcDA3NyB3aGVyZSBpbnN0YW5jZSA9LTI2NTQ5NDM0IG9yZGVyIGJ5IHRyYW5zZGF0ZSBkZXNjeA=='#
-            pools =soopDetail.find('textarea', {'name': '_DATAPOOL_'}).text #'rO0ABXNyABZjb20ueWR5ZC5wb29sLkRhdGFQb29sp4pd0OzirDkCAAZMAAdTWVNEQVRFdAASTGphdmEvbGFuZy9TdHJpbmc7TAAGU1lTREFZcQB+AAFMAAhTWVNNT05USHEAfgABTAAHU1lTVElNRXEAfgABTAAHU1lTV0VFS3EAfgABTAAHU1lTWUVBUnEAfgABeHIAEWphdmEudXRpbC5IYXNoTWFwBQfawcMWYNEDAAJGAApsb2FkRmFjdG9ySQAJdGhyZXNob2xkeHA/QAAAAAAAGHcIAAAAIAAAABV0AAdfQUNDTlVNdAAQMzIwMTAwMDI3NTcxMTg4N3QAA19SV3QAAXd0AAtfVU5JVEFDQ05VTXB0AAdfUEFHRUlEdAAFc3RlcDF0AANfSVNzcgAOamF2YS5sYW5nLkxvbmc7i+SQzI8j3wIAAUoABXZhbHVleHIAEGphdmEubGFuZy5OdW1iZXKGrJUdC5TgiwIAAHhw//////5q40Z0AAxfVU5JVEFDQ05BTUV0ADnljZfkuqzmg6DkvJfkurrlipvotYTmupDmnI3liqHmnInpmZDlhazlj7jnrKzkuIDliIblhazlj7h0AAZfTE9HSVB0ABEyMDE3MTIyODIzNTAwNDU3N3QACF9BQ0NOQU1FdAAG6LCI56uLdAAJaXNTYW1lUGVydAAFZmFsc2V0AAdfUFJPQ0lEdAAINzAwMDAwMDJ0AAtfU0VORE9QRVJJRHQAEjMyMTEwMjE5ODYwODIwMDAzNnQAEF9ERVBVVFlJRENBUkROVU10ABIzMjExMDIxOTg2MDgyMDAwMzZ0AAlfU0VORFRJTUV0AAoyMDE3LTEyLTI4dAALX0JSQU5DSEtJTkR0AAEwdAAJX1NFTkREQVRFdAAKMjAxNy0xMi0yOHQAE0NVUlJFTlRfU1lTVEVNX0RBVEVxAH4AInQABV9UWVBFdAAEaW5pdHQAB19JU0NST1BxAH4AIHQACV9QT1JDTkFNRXQAGOS4quS6uuaYjue7huS/oeaBr+afpeivonQAB19VU0JLRVlwdAAIX1dJVEhLRVlxAH4AIHh0AAhAU3lzRGF0ZXQAB0BTeXNEYXl0AAlAU3lzTW9udGh0AAhAU3lzVGltZXQACEBTeXNXZWVrdAAIQFN5c1llYXI='#
+            #ghosts =soopDetail.find('textarea', {'name': 'DATAlISTGHOST'}).text
+            #pools =soopDetail.find('textarea', {'name': '_DATAPOOL_'}).text
+            data2={
+                'begdate':str(int(time.strftime("%Y",time.localtime()))-10)+time.strftime("-%m-%d",time.localtime()),
+                'enddate':time.strftime("%Y-%m-%d",time.localtime()),
+                '_PROCID':'70000002',
+                #'accnum': uunum,
+                '_PAGEID':'step1',
+                'accname':username,
+                '_ACCNUM': uunum,
+                '_IS':'-27157826'  # resDetail.text.split('=')[46].split(',')[4].split(':')[1].replace('"','')
+            }
+            respDetail=self.s.post("http://www.njgjj.com/command.summer?uuid="+times+"",data2)
+            ghostss='rO0ABXNyABNqYXZhLnV0aWwuQXJyYXlMaXN0eIHSHZnHYZ0DAAFJAARzaXpleHAAAAABdwQAAAAKc3IAJWNvbS55ZHlkLm5icC5lbmdpbmUucHViLkRhdGFMaXN0R2hvc3RCsjhA3j2pwwIAA0wAAmRzdAASTGphdmEvbGFuZy9TdHJpbmc7TAAEbmFtZXEAfgADTAADc3FscQB+AAN4cHQAEHdvcmtmbG93LmNmZy54bWx0AAlkYXRhbGlzdDJ0AL5zZWxlY3QgaW5zdGFuY2UsIHVuaXRhY2NudW0xLCB1bml0YWNjbmFtZSwgYWNjbnVtMSwgYWNjbmFtZTEsIGNlcnRpbnVtLCB0cmFuc2RhdGUsIHJlYXNvbiAsIGRwYnVzaXR5cGUsIGJhc2VudW0sIHBheXZvdWFtdCwgc2Vxbm8gZnJvbSBkcDA3NyB3aGVyZSBpbnN0YW5jZSA9LTI2ODM3MzY4IG9yZGVyIGJ5IHRyYW5zZGF0ZSBkZXNjeA=='
+            poolss='rO0ABXNyABZjb20ueWR5ZC5wb29sLkRhdGFQb29sp4pd0OzirDkCAAZMAAdTWVNEQVRFdAASTGphdmEvbGFuZy9TdHJpbmc7TAAGU1lTREFZcQB+AAFMAAhTWVNNT05USHEAfgABTAAHU1lTVElNRXEAfgABTAAHU1lTV0VFS3EAfgABTAAHU1lTWUVBUnEAfgABeHIAEWphdmEudXRpbC5IYXNoTWFwBQfawcMWYNEDAAJGAApsb2FkRmFjdG9ySQAJdGhyZXNob2xkeHA/QAAAAAAAGHcIAAAAIAAAABV0AAdfQUNDTlVNdAAQMzIwMTAwMDI3NTcxMTg4N3QAA19SV3QAAXd0AAtfVU5JVEFDQ05VTXB0AAdfUEFHRUlEdAAFc3RlcDF0AANfSVNzcgAOamF2YS5sYW5nLkxvbmc7i+SQzI8j3wIAAUoABXZhbHVleHIAEGphdmEubGFuZy5OdW1iZXKGrJUdC5TgiwIAAHhw//////5mfoh0AAxfVU5JVEFDQ05BTUV0ADnljZfkuqzmg6DkvJfkurrlipvotYTmupDmnI3liqHmnInpmZDlhazlj7jnrKzkuIDliIblhazlj7h0AAZfTE9HSVB0ABEyMDE4MDEwMzE1MzY1Njc5NnQACF9BQ0NOQU1FdAAG6LCI56uLdAAJaXNTYW1lUGVydAAFZmFsc2V0AAdfUFJPQ0lEdAAINzAwMDAwMDJ0AAtfU0VORE9QRVJJRHQAEjMyMTEwMjE5ODYwODIwMDAzNnQAEF9ERVBVVFlJRENBUkROVU10ABIzMjExMDIxOTg2MDgyMDAwMzZ0AAlfU0VORFRJTUV0AAoyMDE4LTAxLTAzdAALX0JSQU5DSEtJTkR0AAEwdAAJX1NFTkREQVRFdAAKMjAxOC0wMS0wM3QAE0NVUlJFTlRfU1lTVEVNX0RBVEVxAH4AInQABV9UWVBFdAAEaW5pdHQAB19JU0NST1BxAH4AIHQACV9QT1JDTkFNRXQAGOS4quS6uuaYjue7huS/oeaBr+afpeivonQAB19VU0JLRVlwdAAIX1dJVEhLRVlxAH4AIHh0AAhAU3lzRGF0ZXQAB0BTeXNEYXl0AAlAU3lzTW9udGh0AAhAU3lzVGltZXQACEBTeXNXZWVrdAAIQFN5c1llYXI='
 
             # datas={
+            #     'dynamicTable_page':'/ydpx/70000002/700002_01.ydpx',
+            #     'dynamicTable_id':'datalist2',
+            #     'dynamicTable_currentPage': 0,
+            #     'dynamicTable_nextPage': 1,
+            #     'dynamicTable_pageSize': 500,
+            #     'dynamicTable_paging': 'true',
+            #     #'DATAlISTGHOST':ghostss,
+            #     #'_DATAPOOL_':poolss,
+            #     'dynamicTable_configSqlCheck':'0',
+            #     'errorFilter':'1=1',
             #     'begdate':str(int(time.strftime("%Y",time.localtime()))-10)+time.strftime("-%m-%d",time.localtime()),
             #     'enddate':time.strftime("%Y-%m-%d",time.localtime()),
             #     '_PROCID':'70000002',
-            #     '_PAGEID':'step1',
+            #     '_CHANNEL':1,
+            #     '_APPLY':0,
             #     'accname':username,
-            #     '_ACCNUM': uunum,
-            #     '_IS':'26542830',  # resDetail.text.split('=')[46].split(',')[4].split(':')[1].replace('"','')
+            #     'accnum':uunum,
             # }
-            # respDetail=self.s.post("http://www.njgjj.com/command.summer?uuid="+times+"",datas)
-            datas={
-                'dynamicTable_page':'/ydpx/70000002/700002_01.ydpx',
-                'dynamicTable_id':'datalist2',
-                'dynamicTable_currentPage': 0,
-                'dynamicTable_nextPage': 1,
-                'dynamicTable_pageSize': 500,
-                'dynamicTable_paging': 'true',
-                'DATAlISTGHOST':ghosts,
-                '_DATAPOOL_':pools
+
+            dataq={
+                'accnum': uunum,
+                'accname':username,
+                'begdate':str(int(time.strftime("%Y",time.localtime()))-10)+time.strftime("-%m-%d",time.localtime()),
+                'enddate':time.strftime("%Y-%m-%d",time.localtime()),
+                #'data-ajax':'true',
+                #'novalidate':'novalidate'
             }
-            respDetail2=self.s.post("http://www.njgjj.com/dynamictable?uuid="+times+"",datas)
+            resss=self.s.post("http://www.njgjj.com/submit.summer",dataq)
+
+            baseDetail = self.result_data["detail"]["data"]
+            model = {}
+            lastTime = ""  # 最后一次汇补缴时间
+            lastMoney = ""  # 最后一次汇补缴金额
+            continueCount = 0  # 汇补缴累积次数
+            respDetail2=self.s.post("http://www.njgjj.com/dynamictable?uuid="+times+"",data)
+            infoDetail=json.loads(respDetail2.text)['data']['data']
+
+            for q in range(len(infoDetail)):
+                if '汇缴' in infoDetail[q]['reason']:
+                    lastTime= infoDetail[q]['transdate']
+                    lastMoney= infoDetail[q]['basenum']
+                    break
+
+            for p in range(len(infoDetail)):
+                tds=infoDetail[p]
+                years=tds['transdate'][0:4]
+                months=tds['transdate'][5:7]
+                if '还贷' not in tds['reason']:
+                    model = {
+                        '时间': tds['transdate'],
+                        '类型': self._converType(tds['reason']),
+                        '汇缴年月': '',
+                        '收入': tds['basenum'],
+                        '支出': '',
+                        '余额': tds['payvouamt'],
+                        '单位名称': tds['unitaccname']
+                    }
+                else:
+                    model = {
+                        '时间': tds['transdate'],
+                        '类型': self._converType(tds['reason']),
+                        '汇缴年月': '',
+                        '收入': '',
+                        '支出': tds['basenum'],
+                        '余额': tds['payvouamt'],
+                        '单位名称': tds['unitaccname']
+                    }
+
+                if '汇缴' in tds['reason']:
+                    continueCount=continueCount+1
+
+                baseDetail.setdefault(years, {})
+                baseDetail[years].setdefault(months, [])
+                baseDetail[years][months].append(model)
+
+
+            # 个人基本信息
+            self.result_data['baseInfo'] = {
+                '姓名': username,
+                '证件号': personid,
+                '证件类型': '身份证',
+                '个人编号': uunum,
+                '公积金帐号': soupData['cardnocsp'],
+
+                '单位缴存比例': str(int(float(soupData['unitprop']) * 100)) + '%',
+                '个人缴存比例': str(int(float(soupData['indiprop']) * 100)) + '%',
+                '开户日期': soupData['opnaccdate'],
+                '手机号': soupData['linkphone'],
+                '月应缴额': soupData['amt2'],
+
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '城市名称': '南京市',
+                '城市编号': '320100',
+
+                '最近汇款日期': lastTime,
+                '最近汇款金额': lastMoney,
+                '累计汇款次数': continueCount,
+            }
 
             # companyList
             self.result_data['companyList'].append({
@@ -225,7 +297,6 @@ class Task(AbsFetchTask):
                 "最后业务日期": soupData['lpaym'],
                 "转出金额": ""
             })
-
 
             # identity 信息
             self.result['identity'] = {
@@ -253,3 +324,4 @@ if __name__ == '__main__':
     # 321102198608200036  860820
 
     # 320112197211230410  002568
+    # 很不满意的一次购物，衣服比较薄不保暖，收到的衣服上面全是浮毛，
