@@ -257,11 +257,7 @@ class Task(AbsFetchTask):
                                 self.result_identity['target_name'] = v
                             if k == '身份证号':
                                 self.result_identity['target_id'] = v
-                            if k == '参保状态':
-                                if v == '正常':
-                                    self.result_identity['status'] = '正常'
-                                else:
-                                    self.result_identity['status'] = '停缴'
+
 
                     monthnum = 0
                     for k, v in userinfo['ncm_gt_缴纳情况']['params'].items():
@@ -277,6 +273,10 @@ class Task(AbsFetchTask):
 
                     self.result_data["baseInfo"].setdefault('缴费时长', monthnum)
                     self.result_data["baseInfo"].setdefault('五险状态', fivedic)
+                    if '参加' in fivedic.values():
+                        self.result_identity['status'] = '正常'
+                    else:
+                        self.result_identity['status'] = '停缴'
                 else:
                     raise InvalidParamsError('请您登录社保官网输入社保个人电脑号完成身份认证后，再做查询操作。')
 
@@ -540,7 +540,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'用户名': 'Liu13794488555', '密码': 'Liu13794488555'}
+    meta = {'用户名': 'qinshaohua1983', '密码': 'Qshking1234'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

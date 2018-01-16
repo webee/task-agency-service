@@ -138,7 +138,7 @@ class Task(AbsFetchTask):
                 if 'success' in soup.text:
                     print("登录成功！")
                 else:
-                    return_message = soup.text
+                    return_message = soup.text.replace("['","").replace("']","")
                     raise InvalidParamsError(return_message)
 
                 self.result_key = id_num
