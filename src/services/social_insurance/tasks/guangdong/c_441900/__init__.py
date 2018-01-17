@@ -163,7 +163,7 @@ class Task(AbsFetchTask):
                 for i in range(int(min(fristtime)[:4]), datetime.datetime.now().year + 1, 3):  # 年
                     resp = self.s.get(INFOR_URL + 'ActionType=q_grcbxzjfmxcx&xzlx=' + str(k) + '&ksjfsj=' + str(
                         i) + '01&jsjfsj=' + str(i + 2) + '12', verify=False, timeout=20)
-                    soup = BeautifulSoup(resp.content, 'html.parser')
+                    soup = BeautifulSoup(resp.content.decode('gbk'), 'html.parser')
                     tbody = soup.findAll('tbody')
                     if not tbody:
                         continue
@@ -229,7 +229,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '441900199603233528', '密码': '199623'}
+    meta = {'身份证号': '500236198512262656', '密码': '09262006'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
