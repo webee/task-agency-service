@@ -95,7 +95,7 @@ class Task(AbsFetchTask):
                                             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 if len(soup.findAll('script')) >3:
-                    successinfo = soup.findAll('script')[3].text.split('：')[1].split('！')[0]
+                    successinfo = soup.findAll('script')[3].text.split('：')[1].split("'")[0]
                 elif 'User_UpdatePW.aspx' in resp.url:
                     successinfo = '第一次登陆，请去官网修改新密码！'
                 elif resp.url == 'http://www.fzzfgjj.com:8011/User_Main.aspx':
@@ -305,7 +305,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '513029197209200490','密码': 'hxy.0922'}
+    meta = {'身份证号': '411081199206259250','密码': 'why1992525why'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
