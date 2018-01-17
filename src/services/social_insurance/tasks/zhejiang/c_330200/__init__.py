@@ -446,18 +446,20 @@ class Task(AbsFetchTask):
             soup =BeautifulSoup(resp.content, 'html.parser')
             infor = json.loads(soup.text)
             infors=json.loads(infor['result'])
-            if infors['AAC004']=='1':
-                xb='男'
-            elif infors['AAC004']=='2':
-                xb='女'
+            if 'AAC004' in infors.keys():
+                if infors['AAC004']=='1':
+                    xb='男'
+                elif infors['AAC004']=='2':
+                    xb='女'
             else:
                 xb = '未说明性别'
-            if infors['AAZ502']=='1':
-                kt='正常有卡状态'
-            elif infors['AAZ502']=='2':
-                kt='正式挂失状态'
-            elif infors['AAZ502']=='4':
-                kt = '临时挂失状态'
+            if 'AAZ502' in infors.keys():
+                if infors['AAZ502']=='1':
+                    kt='正常有卡状态'
+                elif infors['AAZ502']=='2':
+                    kt='正式挂失状态'
+                elif infors['AAZ502']=='4':
+                    kt = '临时挂失状态'
             else:
                 kt=''
             self.result_data['baseInfo']['性别']=xb
@@ -496,15 +498,15 @@ class Task(AbsFetchTask):
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            Fivestatus={'养老': cbzt}
-            if cbzt == '参保缴费':
-                cbzt = '正常参保'
-            else:
-                cbzt = '停缴'
-            self.result_identity['status'] = cbzt
-            self.result_data["baseInfo"].setdefault('单位名称',ylinfos['AAB004'])
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                Fivestatus={'养老': cbzt}
+                if cbzt == '参保缴费':
+                    cbzt = '正常参保'
+                else:
+                    cbzt = '停缴'
+                self.result_data["baseInfo"].setdefault('单位名称',ylinfos['AAB004'])
 
           #养老第四次
             ylurls='https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token='+self.g.access_token+'&api=91S002&bustype=01&param={"AAB301":"330200","PAGENO":1,"PAGESIZE":10000}&client=NBHRSS_WEB'
@@ -664,39 +666,42 @@ class Task(AbsFetchTask):
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('工伤', cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('工伤', cbzt)
 
             # 生育
             ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S019&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('生育', cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('生育', cbzt)
 
             #失业
             ylurl = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S020&bustype=01&refresh=true&param={"AAB301":"330200"}&client=NBHRSS_WEB'
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('失业', cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('失业', cbzt)
             # self.result_data["baseInfo"] = {
             #     '城市名称': '宁波',
             #     '城市编号': '330200',
@@ -723,7 +728,10 @@ class Task(AbsFetchTask):
             # self._shiye()
             # self._shengyu()
             self.result_data["baseInfo"].setdefault('五险状态', Fivestatus)
-
+            if '参保缴费' in Fivestatus.values():
+                self.result_identity['status'] = '正常'
+            else:
+                self.result_identity['status'] = '停缴'
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -737,7 +745,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '330227198906162713', '密码': '362415'}
+    meta = {'身份证号': '33252519830120033X', '密码': '172747'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
     #'身份证号': '330282198707218248', '密码': 'sqf1769981270'

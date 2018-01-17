@@ -148,8 +148,20 @@ class Task(AbsFetchTask):
                 username = params['用户名']
                 password = params['密码']
                 vc = params['vc']
-                resp=self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/index.html',timeout=20)
-                skeys=resp.cookies._cookies['seyb.szsi.gov.cn']['/web/ggfw/app']['skey'].value
+
+                #skeys=resp.cookies._cookies['seyb.szsi.gov.cn']['/web/ggfw/app']['skey'].value
+                i=0
+                while(True):
+                    resp = self.s.get('https://seyb.szsi.gov.cn/web/ggfw/app/index.html', timeout=30)
+                    skeys = resp.cookies._cookies.get("seyb.szsi.gov.cn")
+                    if skeys:
+                        skeys = skeys['/web/ggfw/app']['skey'].value
+                        break
+                    else:
+                        i=i+1
+                        time.sleep(1)
+                        if i>3:
+                            raise InvalidParamsError('网络异常，请重新刷新！')
 
                 jsstrs = self.s.get("https://seyb.szsi.gov.cn/web/js/comm/fw/encrypt.js",timeout=20)
                 ctx = execjs.compile(jsstrs.content.decode("utf-8"))
@@ -528,7 +540,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'用户名': 'lmc13828893775', '密码': 'Luo123465'}
+    meta = {'用户名': 'Liu13794488555', '密码': 'Liu13794488555'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 

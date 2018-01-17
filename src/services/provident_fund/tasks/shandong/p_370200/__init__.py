@@ -38,7 +38,7 @@ class Task(AbsFetchTask):
         assert params is not None, '缺少参数'
         assert '身份证号' in params, '缺少身份证号'
         assert '密码' in params, '缺少密码'
-
+        assert 'vc' in params, '缺少验证码'
         # other check
         身份证号 = params['身份证号']
         密码 = params['密码']

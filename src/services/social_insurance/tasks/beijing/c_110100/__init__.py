@@ -96,13 +96,15 @@ class Task(AbsFetchTask):
         err_msg = None
         resp = self.s.get(LOGIN_PAGE_URL)
         n = datetime.datetime.now() + datetime.timedelta(days=1)
-        if 1 <= n.day <= 8 or from_error:
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            if not soup.find('form'):
-                # 可能暂停维护了
-                raise TaskNotAvailableError(soup.find('td').text)
-            if from_error:
-                return
+        # if 1 <= n.day <= 8 or from_error:
+        #     soup = BeautifulSoup(resp.content, 'html.parser')
+        #     if not soup.find('form'):
+        #         # 可能暂停维护了
+        #         raise TaskNotAvailableError(soup.find('td').text)
+        #     if from_error:
+        #         return
+        if 1 <= n.day <= 6 or from_error:
+            raise TaskNotAvailableError("社保局官网正在例行维护")
 
         if params:
             try:
@@ -331,16 +333,23 @@ class Task(AbsFetchTask):
 
             for year in range(nowTime, int(start_job) - 1, -1):
                 data["old_age"]["data"][str(year)] = {}
-                # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED('oldage', year)
+                try:
+                    # 根据类型获取解析后的页面
+                    soup = self._unit_fetch_user_DETAILED('oldage', year)
+                except:
+                    continue
 
                 table = soup.findAll("table")[0]
+                hasErrorMessage = table.find("ul", {"class": "errorMessage"})
+                if hasErrorMessage:
+                    nowTime = nowTime - 1
+                    continue
                 # 数据行
                 trs = table.findAll("tr")
                 # 缴费时间
                 date = time.strftime('%Y-%m', time.localtime(time.time()))
                 for tr in trs:
-                    if tr != trs[0] and tr != trs[1]:
+                    if tr.text != trs[0].text and tr.text != trs[1].text:
                         td = tr.findAll("td")
 
                         if td[1].text == "-":
@@ -402,17 +411,24 @@ class Task(AbsFetchTask):
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
                 data["medical_care"]["data"][str(year)] = {}
-                # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED('medicalcare', year)
+                try:
+                    # 根据类型获取解析后的页面
+                    soup = self._unit_fetch_user_DETAILED('medicalcare', year)
+                except:
+                    continue
 
                 table = soup.findAll("table")[0]
+                hasErrorMessage = table.find("ul", {"class": "errorMessage"})
+                if hasErrorMessage:
+                    nowTime = nowTime - 1
+                    continue
                 # 数据行
                 trs = table.findAll("tr")
                 # 缴费时间
                 date = time.strftime('%Y-%m', time.localtime(time.time()))
 
                 for tr in trs:
-                    if tr != trs[0] and tr != trs[1]:
+                    if tr.text != trs[0].text and tr.text != trs[1].text:
                         td = tr.findAll("td")
 
                         if td[1].text == "-":
@@ -473,17 +489,24 @@ class Task(AbsFetchTask):
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
                 data["injuries"]["data"][str(year)] = {}
-                # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED('injuries', year)
+                try:
+                    # 根据类型获取解析后的页面
+                    soup = self._unit_fetch_user_DETAILED('injuries', year)
+                except:
+                    continue
 
                 table = soup.findAll("table")[0]
+                hasErrorMessage = table.find("ul", {"class": "errorMessage"})
+                if hasErrorMessage:
+                    nowTime = nowTime - 1
+                    continue
                 # 数据行
                 trs = table.findAll("tr")
                 # 缴费时间
                 date = time.strftime('%Y-%m', time.localtime(time.time()))
 
                 for tr in trs:
-                    if tr != trs[0] and tr != trs[1]:
+                    if tr.text != trs[0].text and tr.text != trs[1].text:
 
                         td = tr.findAll("td")
                         if td[1].text == "-":
@@ -533,17 +556,24 @@ class Task(AbsFetchTask):
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
                 data["maternity"]["data"][str(year)] = {}
-                # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED('maternity', year)
+                try:
+                    # 根据类型获取解析后的页面
+                    soup = self._unit_fetch_user_DETAILED('maternity', year)
+                except:
+                    continue
 
                 table = soup.findAll("table")[0]
+                hasErrorMessage = table.find("ul", {"class": "errorMessage"})
+                if hasErrorMessage:
+                    nowTime = nowTime - 1
+                    continue
                 # 数据行
                 trs = table.findAll("tr")
                 # 缴费时间
                 date = time.strftime('%Y-%m', time.localtime(time.time()))
 
                 for tr in trs:
-                    if tr != trs[0] and tr != trs[1]:
+                    if tr.text != trs[0].text and tr.text != trs[1].text:
                         td = tr.findAll("td")
 
                         if td[1].text == "-":
@@ -594,17 +624,24 @@ class Task(AbsFetchTask):
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
             for year in range(nowTime, int(start_job) - 1, -1):
                 data["unemployment"]["data"][str(year)] = {}
-                # 根据类型获取解析后的页面
-                soup = self._unit_fetch_user_DETAILED('unemployment', year)
+                try:
+                    # 根据类型获取解析后的页面
+                    soup = self._unit_fetch_user_DETAILED('unemployment', year)
+                except:
+                    continue
 
                 table = soup.findAll("table")[0]
+                hasErrorMessage = table.find("ul", {"class": "errorMessage"})
+                if hasErrorMessage:
+                    nowTime = nowTime - 1
+                    continue
                 # 数据行
                 trs = table.findAll("tr")
                 # 缴费时间
                 date = time.strftime('%Y-%m', time.localtime(time.time()))
 
                 for tr in trs:
-                    if tr != trs[0] and tr != trs[1]:
+                    if tr.text != trs[0].text and tr.text != trs[1].text:
                         td = tr.findAll("td")
 
                         if td[1].text == "-":
