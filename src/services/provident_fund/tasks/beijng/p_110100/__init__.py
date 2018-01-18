@@ -107,7 +107,7 @@ class Task(AbsFetchTask):
                     continue
                 res.append(pr)
             # 联名卡
-            elif meta['类型Code'] == '5':
+            elif meta['类型Code'] == '1':
                 if pr['key'] == 'bh1':
                     continue
                 if pr['key'] == 'mm1':

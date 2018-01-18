@@ -80,11 +80,11 @@ class Task(AbsFetchTask):
                 password = params['密码']
                 vc = params['vc']
                 data = {
-                    '__EVENTTARGET': self.g.soup.select('#__EVENTTARGET')[0].attrs['value'],
-                    '__EVENTARGUMENT': self.g.soup.select('#__EVENTARGUMENT')[0].attrs['value'],
-                    '__LASTFOCUS': self.g.soup.select('#__LASTFOCUS')[0].attrs['value'],
-                    '__VIEWSTATE': self.g.soup.select('#__VIEWSTATE')[0].attrs['value'],
-                    '__EVENTVALIDATION': self.g.soup.select('#__EVENTVALIDATION')[0].attrs['value'],
+                    '__EVENTTARGET': self.state["inputdic"]['__EVENTTARGET'],
+                    '__EVENTARGUMENT': self.state["inputdic"]['__EVENTARGUMENT'],
+                    '__LASTFOCUS': self.state["inputdic"]['__LASTFOCUS'],
+                    '__VIEWSTATE': self.state["inputdic"]['__VIEWSTATE'],
+                    '__EVENTVALIDATION': self.state["inputdic"]['__EVENTVALIDATION'],
                     'ddlUserType': '03',
                     'txtName': id_num,
                     'txtPass': password,
@@ -340,7 +340,16 @@ class Task(AbsFetchTask):
             raise PreconditionNotSatisfiedError(e)
 
     def _new_vc(self):
-
+        resp = self.s.get(LOGIN_URL)
+        soup = BeautifulSoup(resp.content, 'html.parser')
+        inputdic={
+            '__EVENTTARGET': soup.select('#__EVENTTARGET')[0].attrs['value'],
+            '__EVENTARGUMENT': soup.select('#__EVENTARGUMENT')[0].attrs['value'],
+            '__LASTFOCUS': soup.select('#__LASTFOCUS')[0].attrs['value'],
+            '__VIEWSTATE': soup.select('#__VIEWSTATE')[0].attrs['value'],
+            '__EVENTVALIDATION': soup.select('#__EVENTVALIDATION')[0].attrs['value']
+        }
+        self.state["inputdic"]=inputdic
         resp = self.s.get(VC_URL, timeout=25)
         return dict(content=resp.content, content_type=resp.headers['Content-Type'])
 
