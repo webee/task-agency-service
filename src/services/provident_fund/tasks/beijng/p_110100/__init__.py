@@ -18,6 +18,7 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko
 LOGIN_PAGE_URL = 'https://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-login.jsp'
 VC_IMAGE_URL = 'https://www.bjgjj.gov.cn/wsyw/servlet/PicCheckCode1?v='
 LOGINED_URL = "https://www.bjgjj.gov.cn/wsyw/wscx/gjjcx-choice.jsp"
+RESULT_URL = "https://www.bjgjj.gov.cn/wsyw/wscx/gjj_cx.jsp"
 
 
 class value_is_number(object):
@@ -216,22 +217,39 @@ class Task(AbsFetchTask):
             # for test
             # img = Image.open(io.BytesIO(driver.get_screenshot_as_png()))
             # img.show()
-            if not driver.current_url == LOGINED_URL:
-                raise InvalidParamsError('登录失败，请检查输入')
-
-            # 登录成功
-
             # 保存登录后的页面内容供抓取单元解析使用
             self.g.login_page_html = driver.find_element_by_tag_name('html').get_attribute('innerHTML')
             self.g.current_url = driver.current_url
-
-            # 部分登录页面可登录进去但是密码不安全提示
-            soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
-            companyList = soup.findAll("table", {"id": "new-mytable"})
-            error = soup.find("span", {"class": "tittle1"})
-            if companyList.__len__() <= 0 and error:
-                errorInfo = error.text.replace("\n", "")
-                raise InvalidParamsError(errorInfo)
+            if not driver.current_url == LOGINED_URL:
+                # 有一种情况可能不跳转到公司的列表页
+                if RESULT_URL in driver.current_url:
+                    self.g.login_page_html = '''
+                    <table id="new-mytable">
+                        <tbody><tr style="background-color: rgb(241, 241, 241);">
+                        <th class="style21"><div align="center">开户登记号</div></th>
+                        <th class="style21"><div align="center">单位名称</div></th>
+                        <th class="style21"><div align="center">缴存状态</div></th>
+                        </tr>
+                        <script>mnbbc='3';</script>
+                        <tr style="background-color: rgb(241, 241, 241);">
+                        <td class="style21"><div align="center">000000</div></td>
+                        <td class="style21"><div><a href="#" onclick='javascript:window.open("''' + driver.current_url + '''","","top=0,left=0,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=550,height=500");'></a></div></td>
+                        <td class="style21"><div align="center">缴存</div></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    '''
+                    pass
+                else:
+                    raise InvalidParamsError('登录失败，请检查输入')
+            else:
+                # 部分登录页面可登录进去但是密码不安全提示
+                soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
+                companyList = soup.findAll("table", {"id": "new-mytable"})
+                error = soup.find("span", {"class": "tittle1"})
+                if companyList.__len__() <= 0 and error:
+                    errorInfo = error.text.replace("\n", "")
+                    raise InvalidParamsError(errorInfo)
 
     def _unit_fetch(self):
         try:
@@ -239,6 +257,7 @@ class Task(AbsFetchTask):
             self.result_data["baseInfo"] = {}
             self.result_data["companyList"] = []
             self.result_data["detail"] = {"data": {}}
+
             # 渲染登录后页面
             soup = bs4.BeautifulSoup(self.g.login_page_html, 'html.parser')
             companyList = soup.findAll("table", {"id": "new-mytable"})

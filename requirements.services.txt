@@ -5,3 +5,6 @@ selenium
 dill
 Pillow
 lxml
+
+pycryptodome
+
