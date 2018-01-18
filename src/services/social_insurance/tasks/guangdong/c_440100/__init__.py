@@ -261,6 +261,10 @@ class Task(AbsFetchTask):
             a = yiliao.find('table', {'id': 'tableDataList'}).find('script').text
             if "请明天再查" in a:
                 raise TaskNotAvailableError("您今天的缴费历史查询已经达到5次，请明天再查。")
+            elif "找不到相关数据" in a:
+                raise TaskNotAvailableError("抱歉，找不到相关数据。")
+            elif "非法操作" in a:
+                raise TaskNotAvailableError("非法操作，无法查询。")
 
             self.result_data['medical_care'] = {"data": {}}
             dataBaseH = self.result_data['medical_care']["data"]
@@ -504,7 +508,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '441481198701204831', '密码': 'taifaikcoi168'}
+    meta = {'账号': '441823199310252724', '密码': 'e6815a77'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
