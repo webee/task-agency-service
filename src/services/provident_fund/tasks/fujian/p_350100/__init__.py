@@ -155,12 +155,11 @@ class Task(AbsFetchTask):
                 '姓名':soup.select('#ctl00_ContentPlace_txtXm')[0].attrs['value'],
                 '证件类型': '身份证',
                 '证件号': soup.select('#ctl00_ContentPlace_txtGrZjh')[0].attrs['value'],
-                '移动电话':Yddh,
+                '手机号':Yddh,
                 '家庭电话': Jtdh,
                 '单位电话': Dwdh,
                 '家庭地址': Jtdz,
-                '邮政编码': Yzbm,
-                '最近汇款日期': soup.select('#ctl00_ContentPlace_txtSjgxsj')[0].attrs['value']
+                '邮政编码': Yzbm
             }
             resp = self.s.get(MXLIST_URL, timeout=20)
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -207,55 +206,62 @@ class Task(AbsFetchTask):
                     soup = BeautifulSoup(resp.content, 'html.parser')
                     tables = soup.findAll('table')
                     rows = tables[2].find_all('tr')
+                    qcxtsj=[]
                     for row in rows:
                         if len(row.attrs)==0:
                             cell = [i.text.replace(' ', '').replace('\xa0', '') for i in row.find_all('td')]
-                            sr=0
-                            zc=0
-                            hvny=''
-                            arr = []
-                            if '-' in cell[6]:
-                                zc=cell[6]
-                            else:
-                                sr=cell[6]
-                            if '汇缴' in cell[4]:
-                                hjcs = hjcs + 1
-                                hjsjpd=cell[4].replace('汇缴','')   #截取的时间有的是四位有的是六位
-                                if len(hjsjpd)==4:
-                                    hvny=cell[3][:2]+hjsjpd
-                                elif len(hjsjpd)==6:
-                                    hvny =hjsjpd
-                                lx = '汇缴'
-                                if hjrq=='':
-                                    hjrq=hvny
-                                if int(hvny)>int(hjrq):
-                                    hjrq = hvny
-                                    hjje=sr
-                            else:
-                                lx =cell[4]
-                            dic = {
-                                '时间': cell[3].replace('/', '-'),
-                                '单位名称': '',
-                                '支出': zc,
-                                '收入':sr,
-                                '汇缴年月': hvny,
-                                '余额': '',
-                                '类型': lx,
-                                '个人账号': cell[2]
-                            }
-                            times = cell[3][:7].replace('/', '')
-                            if years != times[:4]:
-                                years = times[:4]
-                                data['detail']['data'][years] = {}
-                                if months != times[-2:]:
-                                    months = times[-2:]
-                            else:
-                                if months != times[-2:]:
-                                    months = times[-2:]
+                            if qcxtsj!=cell:
+                                qcxtsj=cell
+                                sr=0
+                                zc=0
+                                hvny=''
+                                arr = []
+                                if '-' in cell[6]:
+                                    zc=cell[6]
                                 else:
-                                    arr = data['detail']['data'][years][months]
-                            arr.append(dic)
-                            data['detail']['data'][years][months] = arr
+                                    sr=cell[6]
+                                if '汇缴' in cell[4]:
+                                    hjcs = hjcs + 1
+                                    hjsjpd=cell[4].replace('汇缴','')   #截取的时间有的是四位有的是六位
+                                    if len(hjsjpd)==4:
+                                        hvny=cell[3][:2]+hjsjpd
+                                    elif len(hjsjpd)==6:
+                                        hvny =hjsjpd
+                                    lx = '汇缴'
+                                    if hjrq=='':
+                                        hjrq=hvny
+                                    if int(hvny)>int(hjrq):
+                                        hjrq = hvny
+                                        hjje=sr
+                                elif '利息' in cell[4]:
+                                    lx='结息'
+                                else:
+                                    lx =cell[4]
+                                    if zc!=0:
+                                        lx='提取'
+                                dic = {
+                                    '时间': cell[3].replace('/', '-'),
+                                    '单位名称': '',
+                                    '支出': zc,
+                                    '收入':sr,
+                                    '汇缴年月': hvny,
+                                    '余额': '',
+                                    '类型': lx,
+                                    '个人账号': cell[2]
+                                }
+                                times = cell[3][:7].replace('/', '')
+                                if years != times[:4]:
+                                    years = times[:4]
+                                    data['detail']['data'][years] = {}
+                                    if months != times[-2:]:
+                                        months = times[-2:]
+                                else:
+                                    if months != times[-2:]:
+                                        months = times[-2:]
+                                    else:
+                                        arr = data['detail']['data'][years][months]
+                                arr.append(dic)
+                                data['detail']['data'][years][months] = arr
                 if len(ahrefs)>0:
                     ahref = ahrefs[3].attrs['href']
                     resp = self.s.get(MX_URL+ahref, timeout=20)
@@ -263,16 +269,16 @@ class Task(AbsFetchTask):
 
                     enterdic = {"单位名称": '',
                                 '个人公积金账号':soup.select('#ctl00_ContentPlace_txtgrgjjzh')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgrgjjzh')[0].attrs.keys() else '',
-                                '个人补贴账号':soup.select('#ctl00_ContentPlace_txtgrbtzh')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgrbtzh')[0].attrs.keys() else '',
+                                #'个人补贴账号':soup.select('#ctl00_ContentPlace_txtgrbtzh')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgrbtzh')[0].attrs.keys() else '',
                                 '单位公积金账号': soup.select('#ctl00_ContentPlace_txtdwgjjzh')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtdwgjjzh')[0].attrs.keys() else '',
                                 '开户日期': soup.select('#ctl00_ContentPlace_txtkhrq')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtkhrq')[0].attrs.keys() else '',
                                 '最后业务日期': soup.select('#ctl00_ContentPlace_txtsjgxrq')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtsjgxrq')[0].attrs.keys() else '',
                                 '当前余额': soup.select('#ctl00_ContentPlace_txtgjjzhye')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgjjzhye')[0].attrs.keys() else '',
-                                '补贴账户余额': soup.select('#ctl00_ContentPlace_txtbtzhye')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtbtzhye')[0].attrs.keys() else '',
-                                '公积金核定月工资额': soup.select('#ctl00_ContentPlace_txtgjjhdygze')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgjjhdygze')[0].attrs.keys() else '',
-                                '补贴核定月工资额': soup.select('#ctl00_ContentPlace_txtbthdygze')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtbthdygze')[0].attrs.keys() else '',
-                                '公积金核定月缴交额': soup.select('#ctl00_ContentPlace_txtgjjhdyjje')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgjjhdyjje')[0].attrs.keys() else '',
-                                '补贴核定月缴交额': soup.select('#ctl00_ContentPlace_txtbthdyjje')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtbthdyjje')[0].attrs.keys() else '',
+                                #'补贴账户余额': soup.select('#ctl00_ContentPlace_txtbtzhye')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtbtzhye')[0].attrs.keys() else '',
+                                '缴存基数': soup.select('#ctl00_ContentPlace_txtgjjhdygze')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgjjhdygze')[0].attrs.keys() else '',
+                                #'补贴核定月工资额': soup.select('#ctl00_ContentPlace_txtbthdygze')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtbthdygze')[0].attrs.keys() else '',
+                                '月应缴额': soup.select('#ctl00_ContentPlace_txtgjjhdyjje')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtgjjhdyjje')[0].attrs.keys() else '',
+                               # '补贴核定月缴交额': soup.select('#ctl00_ContentPlace_txtbthdyjje')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtbthdyjje')[0].attrs.keys() else '',
                                 '联名卡卡号': soup.select('#ctl00_ContentPlace_txtlmkkh')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtlmkkh')[0].attrs.keys() else '',
                                 '联名卡发放日期': soup.select('#ctl00_ContentPlace_txtlmkffrq')[0].attrs['value'] if 'value' in soup.select('#ctl00_ContentPlace_txtlmkffrq')[0].attrs.keys() else ''
                                 }
@@ -280,17 +286,21 @@ class Task(AbsFetchTask):
                     for i in range(0,len(gjjzhzt)):
                         if len(gjjzhzt[i].attrs)>1:
                             enterdic.setdefault('帐户状态',gjjzhzt[i].attrs['value'])
-                    btgjjzhzt = soup.select('#ctl00_ContentPlace_ddlbtzhzt')[0].findAll('option')
-                    for i in range(0, len(btgjjzhzt)):
-                        if len(btgjjzhzt[i].attrs) > 1:
-                            enterdic.setdefault('补贴账户状态', btgjjzhzt[i].attrs['value'])
+                    # btgjjzhzt = soup.select('#ctl00_ContentPlace_ddlbtzhzt')[0].findAll('option')
+                    # for i in range(0, len(btgjjzhzt)):
+                    #     if len(btgjjzhzt[i].attrs) > 1:
+                    #         enterdic.setdefault('补贴账户状态', btgjjzhzt[i].attrs['value'])
                     enterarr.append(enterdic)
-            data['companyList'] = sorted(enterarr, key=lambda x: x['开户日期'], reverse=True)
+            data['companyList'] = sorted(enterarr, key=lambda x: x['最后业务日期'], reverse=True)
             self.result_identity['target_name'] = data['baseInfo']['姓名']
-            self.result_identity['status'] = ''
+            if data['companyList'][0]['帐户状态']=='正常':
+                self.result_identity['status'] = '缴存'
+            else:
+                self.result_identity['status'] = '封存'
             data['baseInfo']['最近汇缴日期'] = hjrq
             data['baseInfo']['最近汇缴金额'] = hjje
             data['baseInfo']['累计汇缴次数'] = hjcs
+            data['baseInfo']['公积金账号'] = data['companyList'][0]['个人公积金账号']
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)

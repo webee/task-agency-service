@@ -180,6 +180,8 @@ class Task(AbsFetchTask):
             data['baseInfo']['最近汇缴金额'] = infos[0]['PAY']
             #data['baseInfo']['累计汇缴次数'] = hjcs
             #明细信息
+            if not infos[0]['BLD_ACC_TIME']:
+                return
 
             data = {
                 'header': '{"code":0,"message":{"title":"","detail":""}}',
