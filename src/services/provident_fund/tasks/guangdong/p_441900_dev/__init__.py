@@ -111,6 +111,47 @@ class Task(AbsFetchTask):
             # 基本信息
             data = {
                 'header': '{"code":0,"message":{"title":"","detail":""}}',
+                'body': '{dataStores:{},parameters:{}}'
+            }
+            resp = self.s.post(LOGIN_URL + 'method=Biz1001', data=json.dumps(data),
+                               headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                        }, timeout=20)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            dicinfo = execjs.eval(soup.text)
+            infos = dicinfo['body']['dataStores']['psnZSInfoDs']['rowSet']['primary']
+            data = self.result_data
+            data['baseInfo'] = {
+                '城市名称': '东莞',
+                '城市编号': '441900',
+                '证件类型': '身份证' if infos[0]['CERT_TYPE'] == '0' else '',
+                '证件号': infos[0]['CERT_NO'],
+                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+                '个人账号': infos[0]['PSN_ACC'],
+                '姓名': infos[0]['PSN_NAME'],
+                '账户状态': '正常' if infos[0]['PSN_ACC_ST'] == '1' else '停缴',
+                '性别': infos[0]['SEX'],
+                '出生日期': infos[0]['BIRTHDAY'],
+                '单位名称': infos[0]['ORG_NAME'],
+                '单位地址': infos[0]['ORG_ADD'],
+                '手机号': infos[0]['MOBILE_TEL'],
+                '邮箱': infos[0]['MAIL'],
+                '办公电话': infos[0]['OFFICE_PHONE'],
+                '户籍地': infos[0]['REG_RESI_ADD'],
+                '现住址': infos[0]['NOW_ADD'],
+                '学历': infos[0]['DEGREE'],
+                '工资基数': infos[0]['ORIGINAL_BASE'],
+                '婚姻情况': infos[0]['MARRY'],
+                '配偶姓名': infos[0]['SPOUSE'],
+                '配偶身份证号': infos[0]['SPOUSE_CERT_NO'],
+                '民族': infos[0]['NATION']
+            }
+            self.result_identity['target_id'] = data['baseInfo']['证件号']
+            self.result_identity['target_name'] = data['baseInfo']['姓名']
+            self.result_identity['status'] = data['baseInfo']['账户状态']
+            #账户信息
+            data = {
+                'header': '{"code":0,"message":{"title":"","detail":""}}',
                 'body': '{dataStores:{},parameters:{"certType":"","psnName":"","psnAccSt":"","orgAcc":"","certNo":""}}'
             }
             resp = self.s.post(LOGIN_URL + 'method=Biz1003', data=json.dumps(data),
@@ -120,13 +161,7 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             dicinfo=execjs.eval(soup.text)
             infos=dicinfo['body']['dataStores']['psnZSInfoDs']['rowSet']['primary']
-            data = self.result_data
-            data['baseInfo'] = {
-                '城市名称': '东莞',
-                '城市编号': '441900',
-                '证件类型': '身份证' if infos[0]['CERT_TYPE']=='0' else '',
-                '证件号': infos[0]['CERT_NO'],
-                '更新时间': time.strftime("%Y-%m-%d", time.localtime()),
+            data['companyList'] = {
                 '个人账号': infos[0]['PSN_ACC'],
                 '姓名': infos[0]['PSN_NAME'],
                 '账户状态': '正常' if infos[0]['PSN_ACC_ST']=='1' else '停缴',
@@ -141,9 +176,22 @@ class Task(AbsFetchTask):
                 '最近汇缴金额': infos[0]['PAY'],
                 '当前余额': infos[0]['BAL']
             }
-            self.result_identity['target_id'] =data['baseInfo']['证件号']
-            self.result_identity['target_name'] = data['baseInfo']['姓名']
-            self.result_identity['status'] = data['baseInfo']['账户状态']
+            data['baseInfo']['最近汇缴日期'] = infos[0]['PSN_END_PAY_TIME']
+            data['baseInfo']['最近汇缴金额'] = infos[0]['PAY']
+            #data['baseInfo']['累计汇缴次数'] = hjcs
+            #明细信息
+
+            data = {
+                'header': '{"code":0,"message":{"title":"","detail":""}}',
+                'body': '{dataStores:{"psnFormDataStore":{rowSet:{"primary":[{"staTime":"2010-01-18","endTime":"2010-12-18","_t":""}],"filter":[],"delete":[]},name:"psnFormDataStore",pageNumber:1,pageSize:100,recordCount:0}},parameters:{}}'
+            }
+            resp = self.s.post(LOGIN_URL + 'method=Biz1002', data=json.dumps(data),
+                               headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                        }, timeout=20)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            dicinfo = execjs.eval(soup.text)
+
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
