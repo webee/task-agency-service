@@ -238,9 +238,13 @@ class Task(AbsFetchTask):
 
             perTotalold = 0.00;
             perTotalMedical = 0.00;
-            beginTime = rs['workDate'][0:6]  # 查询开始时间
+            if rs['workDate']!=None:
+                beginTime = rs['workDate'][0:6]  # 查询开始时间
+            else:
+                beginTime=time.strftime("%Y%m", time.localtime())
             endTime = time.strftime("%Y%m", time.localtime())  # 查询结束时间
             paymentFlag = "1"
+
 
             # 社保明细-----养老
             rpEI = self.s.get(Detail_URL + str(
@@ -398,8 +402,17 @@ class Task(AbsFetchTask):
 
             if (social_Type['养老'] == "正常参保"):
                 statuss = "正常"
+            elif(social_Type['养老'] == ""):
+                statuss=""
             else:
                 statuss = "停缴"
+
+            if len(detailEI)>0:
+                recentTime=str(detailEI[len(detailEI) - 1]['payDate'])
+                startTime=str(detailEI[0]['payDate'])
+            else:
+                recentTime = ''
+                startTime = ''
 
             self.result['data']['baseInfo'] = {
                 '姓名': rs['name'],
@@ -408,8 +421,8 @@ class Task(AbsFetchTask):
                 '城市名称': '天津市',
                 '城市编号': '120100',
                 '缴费时长': counts,
-                '最近缴费时间': str(detailEI[len(detailEI) - 1]['payDate']),
-                '开始缴费时间': str(detailEI[0]['payDate']),
+                '最近缴费时间': recentTime,
+                '开始缴费时间': startTime,
                 '个人养老累计缴费': perTotalold,
                 '个人医疗累计缴费': perTotalMedical,
                 '五险状态': social_Type,
