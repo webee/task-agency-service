@@ -109,17 +109,17 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             # 基本信息
-            data = {
+            datas = {
                 'header': '{"code":0,"message":{"title":"","detail":""}}',
                 'body': '{dataStores:{},parameters:{}}'
             }
-            resp = self.s.post(LOGIN_URL + 'method=Biz1001', data=json.dumps(data),
+            resp = self.s.post(LOGIN_URL + 'method=Biz1001', data=json.dumps(datas),
                                headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
                                         'X-Requested-With': 'XMLHttpRequest'
                                         }, timeout=20)
             soup = BeautifulSoup(resp.content, 'html.parser')
             dicinfo = execjs.eval(soup.text)
-            infos = dicinfo['body']['dataStores']['psnZSInfoDs']['rowSet']['primary']
+            infos = dicinfo['body']['dataStores']['psnBasicInfoDs']['rowSet']['primary']
             data = self.result_data
             data['baseInfo'] = {
                 '城市名称': '东莞',
@@ -130,13 +130,13 @@ class Task(AbsFetchTask):
                 '个人账号': infos[0]['PSN_ACC'],
                 '姓名': infos[0]['PSN_NAME'],
                 '账户状态': '正常' if infos[0]['PSN_ACC_ST'] == '1' else '停缴',
-                '性别': infos[0]['SEX'],
+                '性别': '男' if infos[0]['SEX']=='1' else '女',
                 '出生日期': infos[0]['BIRTHDAY'],
                 '单位名称': infos[0]['ORG_NAME'],
                 '单位地址': infos[0]['ORG_ADD'],
                 '手机号': infos[0]['MOBILE_TEL'],
                 '邮箱': infos[0]['MAIL'],
-                '办公电话': infos[0]['OFFICE_PHONE'],
+                '单位电话': infos[0]['OFFICE_PHONE'],
                 '户籍地': infos[0]['REG_RESI_ADD'],
                 '现住址': infos[0]['NOW_ADD'],
                 '学历': infos[0]['DEGREE'],
@@ -148,13 +148,17 @@ class Task(AbsFetchTask):
             }
             self.result_identity['target_id'] = data['baseInfo']['证件号']
             self.result_identity['target_name'] = data['baseInfo']['姓名']
-            self.result_identity['status'] = data['baseInfo']['账户状态']
+            if data['baseInfo']['账户状态']=='正常':
+                self.result_identity['status'] = '缴存'
+            else:
+                self.result_identity['status'] = '封存'
+
             #账户信息
-            data = {
+            datas = {
                 'header': '{"code":0,"message":{"title":"","detail":""}}',
                 'body': '{dataStores:{},parameters:{"certType":"","psnName":"","psnAccSt":"","orgAcc":"","certNo":""}}'
             }
-            resp = self.s.post(LOGIN_URL + 'method=Biz1003', data=json.dumps(data),
+            resp = self.s.post(LOGIN_URL + 'method=Biz1003', data=json.dumps(datas),
                                headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
                                         'X-Requested-With': 'XMLHttpRequest'
                                         }, timeout=20)
@@ -182,18 +186,65 @@ class Task(AbsFetchTask):
             #明细信息
             if not infos[0]['BLD_ACC_TIME']:
                 return
-
-            data = {
-                'header': '{"code":0,"message":{"title":"","detail":""}}',
-                'body': '{dataStores:{"psnFormDataStore":{rowSet:{"primary":[{"staTime":"2010-01-18","endTime":"2010-12-18","_t":""}],"filter":[],"delete":[]},name:"psnFormDataStore",pageNumber:1,pageSize:100,recordCount:0}},parameters:{}}'
-            }
-            resp = self.s.post(LOGIN_URL + 'method=Biz1002', data=json.dumps(data),
-                               headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
-                                        'X-Requested-With': 'XMLHttpRequest'
-                                        }, timeout=20)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            dicinfo = execjs.eval(soup.text)
-
+            statimeyear=int(infos[0]['BLD_ACC_TIME'][:4])
+            endtimeyear=int(time.strftime("%Y-%m-%d", time.localtime())[:4])
+            data['detail'] = {}
+            data['detail']['data'] = {}
+            years = ''
+            months = ''
+            hjcs = 0
+            for i in range(statimeyear,endtimeyear):
+                statime=str(i)+'-01-01'
+                endtime=str(i)+'-12-31'
+                datas = {
+                    'header': '{"code":0,"message":{"title":"","detail":""}}',
+                    'body': '{dataStores:{"psnFormDataStore":{rowSet:{"primary":[{"staTime":"'+statime+'","endTime":"'+endtime+'","_t":""}],"filter":[],"delete":[]},name:"psnFormDataStore",pageNumber:1,pageSize:100,recordCount:0}},parameters:{}}'
+                }
+                resp = self.s.post(LOGIN_URL + 'method=Biz1002', data=json.dumps(datas),
+                                   headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                            }, timeout=20)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                dicinfo = execjs.eval(soup.text)
+                infos = dicinfo['body']['dataStores']['psnGridDataStore']['rowSet']['primary']
+                for y in range(0,len(infos)):
+                    cell=infos[y]
+                    sr = 0
+                    zc = 0
+                    arr = []
+                    dqye=float(cell['ATTR_BAL'])
+                    if '汇缴' in cell['ATTR_SUMMARY']:
+                        sr = cell['ATTR_PAY']
+                        hjcs = hjcs + 1
+                    elif '提取' in cell['ATTR_SUMMARY']:
+                        zc = cell['ATTR_PAY']
+                    else:
+                        sr = cell['ATTR_PAY']
+                    dic = {
+                        '时间': cell['ATTR_TIME'],
+                        '单位名称': data['baseInfo']['单位名称'],
+                        '支出': zc,
+                        '收入': sr,
+                        '汇缴年月': cell['CTB_YM'],
+                        '余额': cell['ATTR_BAL'],
+                        '类型': cell['ATTR_SUMMARY'],
+                        '个人账号': cell['PSN_ACC'],
+                        '单位账号': cell['ATTR_ORG_ACC']
+                    }
+                    times = cell['ATTR_TIME'][:7]
+                    if years != times[:4]:
+                        years = times[:4]
+                        data['detail']['data'][years] = {}
+                        if months != times[-2:]:
+                            months = times[-2:]
+                    else:
+                        if months != times[-2:]:
+                            months = times[-2:]
+                        else:
+                            arr = data['detail']['data'][years][months]
+                    arr.append(dic)
+                    data['detail']['data'][years][months] = arr
+            data['baseInfo']['累计汇缴次数'] = hjcs
             return
         except PermissionError as e:
             raise PreconditionNotSatisfiedError(e)
