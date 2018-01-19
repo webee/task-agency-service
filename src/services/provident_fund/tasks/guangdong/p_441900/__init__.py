@@ -169,7 +169,7 @@ class Task(AbsFetchTask):
             enterdic={
                 '个人账号': infos[0]['PSN_ACC'],
                 '姓名': infos[0]['PSN_NAME'],
-                '账户状态': '正常' if infos[0]['PSN_ACC_ST']=='1' else '停缴',
+                '帐户状态': '正常' if infos[0]['PSN_ACC_ST']=='1' else '停缴',
                 '开户网点': infos[0]['COLL_BANK_ID'],
                 '开户日期': infos[0]['BLD_ACC_TIME'],
                 '单位名称': infos[0]['ORG_NAME'],
