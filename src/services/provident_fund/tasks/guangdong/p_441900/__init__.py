@@ -165,7 +165,8 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             dicinfo=execjs.eval(soup.text)
             infos=dicinfo['body']['dataStores']['psnZSInfoDs']['rowSet']['primary']
-            data['companyList'] = {
+            enterarr = []
+            enterdic={
                 '个人账号': infos[0]['PSN_ACC'],
                 '姓名': infos[0]['PSN_NAME'],
                 '账户状态': '正常' if infos[0]['PSN_ACC_ST']=='1' else '停缴',
@@ -180,6 +181,8 @@ class Task(AbsFetchTask):
                 '最近汇缴金额': infos[0]['PAY'],
                 '当前余额': infos[0]['BAL']
             }
+            enterarr.append(enterdic)
+            data['companyList']=enterarr
             data['baseInfo']['最近汇缴日期'] = infos[0]['PSN_END_PAY_TIME']
             data['baseInfo']['最近汇缴金额'] = infos[0]['PAY']
             #data['baseInfo']['累计汇缴次数'] = hjcs
