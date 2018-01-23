@@ -179,14 +179,18 @@ class Task(AbsFetchTask):
             yllen = 0
             ylsum = 0.00
             yilsum = 0.00
+            statime=[]
+            endtime=[]
+            jftime=[]
             for k, v in arrtype.items():  # 类型
+                ks=0
+                js=0
+                jf=0
                 data[v] = {}
                 data[v]['data'] = {}
                 resp = self.s.post(MX_URL,data=dict(xz=k,hide='',Submit='查询'))
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 tablelist = soup.select('.table1')[1]
-                arrtitle = []
-                cell = []
                 for row in tablelist.find_all('tr'):
                     if len(row.attrs) > 0:
                         arrtitle = [ii.text for ii in row.find_all('td')]
@@ -194,15 +198,20 @@ class Task(AbsFetchTask):
                         arrs = []
                         cell = [ii.text for ii in row.find_all('td')]
                         if len(cell[0]) > 0:
+                            if ks==0:
+                                statime.append(cell[3][:7])
+                            if js==0:
+                                endtime.append(cell[3][:7])
+                            if jf==0:
+                                jftime.append(cell[3][:7])
                             dic = {
-                                '缴费时间': cell[0],
-                                '险种类型': cell[1],
-                                '缴费基数': cell[2],
-                                '个人缴费': cell[3],
-                                '单位编号': cell[4],
-                                '缴费单位': cell[5],
-                                '缴费类型': cell[6],
-                                '公司缴费': ''
+                                '缴费时间': cell[3][:7],
+                                '险种类型': cell[0],
+                                '缴费基数': cell[1],
+                                '个人缴费': cell[5],
+                                '缴费单位': '',
+                                '缴费类型': '',
+                                '公司缴费': cell[4]
                             }
                             yearkeys = cell[0]
                             years = yearkeys[:4]
@@ -222,8 +231,8 @@ class Task(AbsFetchTask):
                             arrs.append(dic)
                             data[v]['data'][years][months] = arrs
 
-            data['baseInfo']['最近缴费时间'] = max(data['old_age']['data']) + max(
-                data['old_age']['data'][max(data['old_age']['data'])])
+            data['baseInfo']['最近缴费时间'] = max(endtime)
+            data['baseInfo']['开始缴费时间']= min(statime)
             data['baseInfo']['缴费时长'] = yllen
             data['baseInfo']['个人养老累计缴费'] = ylsum
             data['baseInfo']['个人医疗累计缴费'] = yilsum
