@@ -34,29 +34,6 @@ class Task(AbsFetchTask):
     def _check_login_params(self, params):
         assert params is not None, '缺少参数'
         assert 'other' in params, '请选择登录方式'
-        if params["other"] == "1":
-            assert 'bh1' in params, '缺少社会卡号'
-            assert 'mm1' in params, '缺少密码'
-        elif params["other"] == "3":
-            assert 'bh3' in params, '缺少身份证号'
-            assert 'mm3' in params, '缺少密码'
-        # other check
-        if params["other"] == "1":
-            用户名 = params['bh1']
-        elif params["other"] == "3":
-            用户名 = params['bh3']
-        if params["other"] == "1":
-            密码 = params['mm1']
-        elif params["other"] == "3":
-            密码 = params['mm3']
-        if len(密码) < 4:
-            raise InvalidParamsError('密码错误')
-
-        if len(用户名) <8:
-            raise InvalidParamsError('用户名错误！')
-    def _check_login_params(self, params):
-        assert params is not None, '缺少参数'
-        assert 'other' in params, '请选择登录方式'
         if params["other"] == "3":
             assert 'bh3' in params, '缺少身份证号'
             assert 'mm3' in params, '缺少密码'
@@ -78,6 +55,52 @@ class Task(AbsFetchTask):
             raise InvalidParamsError('用户名或密码错误')
         if len(用户名) < 5:
             raise InvalidParamsError('登陆名错误')
+    def _params_handler(self, params: dict):
+        if not (self.is_start and not params):
+            meta = self.prepared_meta
+            if 'bh3' not in params:
+                params['bh3'] = meta.get('身份证号')
+            if 'mm3' not in params:
+                params['mm3'] = meta.get('密码')
+            if 'bh1' not in params:
+                params['bh1'] = meta.get('社会卡号')
+            if 'mm1' not in params:
+                params['mm1'] = meta.get('密码')
+            if 'other' not in params:
+                params['other'] = meta.get('类型Code')
+        return params
+
+    def _param_requirements_handler(self, param_requirements, details):
+        meta = self.prepared_meta
+        res = []
+        for pr in param_requirements:
+            # TODO: 进一步检查details
+            # 用户名
+            if meta['类型Code'] == '3':
+                if pr['key'] == 'bh3':
+                    continue
+                if pr['key'] == 'mm3':
+                    continue
+                if pr['key'] == 'bh1' and '社会卡号' in meta:
+                    continue
+                elif pr['key'] == 'mm1' and '密码' in meta:
+                    continue
+                res.append(pr)
+            # 邮箱
+            elif meta['类型Code'] == '1':
+                if pr['key'] == 'bh1':
+                    continue
+                if pr['key'] == 'mm1':
+                    continue
+                if pr['key'] == 'bh3' and '身份证号' in meta:
+                    continue
+                elif pr['key'] == 'mm3' and '密码' in meta:
+                    continue
+                res.append(pr)
+            else:
+                res.append(pr)
+            res.append(pr)
+        return res
 
     def _unit_login(self, params: dict):
         self.s.get("http://wsbs.njhrss.gov.cn/NJLD/")
