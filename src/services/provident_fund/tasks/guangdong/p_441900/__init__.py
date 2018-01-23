@@ -277,7 +277,7 @@ class Task(AbsFetchTask):
                             '单位名称': data['baseInfo']['单位名称'],
                             '支出': zc,
                             '收入': sr,
-                            '汇缴年月': cell['CTB_YM'],
+                            '汇缴年月': cell['CTB_YM'].replace('--','-'),
                             '余额': cell['ATTR_BAL'],
                             '类型': cell['ATTR_SUMMARY'],
                             '个人账号': cell['PSN_ACC'],
