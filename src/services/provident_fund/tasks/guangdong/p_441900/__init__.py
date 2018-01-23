@@ -185,7 +185,7 @@ class Task(AbsFetchTask):
             data['companyList']=enterarr
             data['baseInfo']['最近汇缴日期'] = infos[0]['PSN_END_PAY_TIME']
             data['baseInfo']['最近汇缴金额'] = infos[0]['PAY']
-            #data['baseInfo']['累计汇缴次数'] = hjcs
+
             #明细信息
             if not infos[0]['BLD_ACC_TIME']:
                 return
@@ -196,12 +196,12 @@ class Task(AbsFetchTask):
             years = ''
             months = ''
             hjcs = 0
-            for i in range(statimeyear,endtimeyear):
+            for i in range(statimeyear,endtimeyear+1):
                 statime=str(i)+'-01-01'
                 endtime=str(i)+'-12-31'
                 datas = {
                     'header': '{"code":0,"message":{"title":"","detail":""}}',
-                    'body': '{dataStores:{"psnFormDataStore":{rowSet:{"primary":[{"staTime":"'+statime+'","endTime":"'+endtime+'","_t":""}],"filter":[],"delete":[]},name:"psnFormDataStore",pageNumber:1,pageSize:100,recordCount:0}},parameters:{}}'
+                    'body': '{dataStores:{"psnFormDataStore":{rowSet:{"primary":[{"staTime":"'+statime+'","endTime":"'+endtime+'","_t":""}],"filter":[],"delete":[]},name:"psnFormDataStore",pageNumber:1,pageSize:0,recordCount:0}},parameters:{}}'
                 }
                 resp = self.s.post(LOGIN_URL + 'method=Biz1002', data=json.dumps(datas),
                                    headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data',
@@ -209,6 +209,7 @@ class Task(AbsFetchTask):
                                             }, timeout=20)
                 soup = BeautifulSoup(resp.content, 'html.parser')
                 dicinfo = execjs.eval(soup.text)
+                pagesize= dicinfo['body']['dataStores']['psnGridDataStore']['recordCount']
                 infos = dicinfo['body']['dataStores']['psnGridDataStore']['rowSet']['primary']
                 for y in range(0,len(infos)):
                     cell=infos[y]
@@ -247,6 +248,54 @@ class Task(AbsFetchTask):
                             arr = data['detail']['data'][years][months]
                     arr.append(dic)
                     data['detail']['data'][years][months] = arr
+                if pagesize>10:
+                    # datass = {
+                    #     'header': '{"code":0,"message":{"title":"","detail":""}}',
+                    #     'body': r"{dataStores:{\"psnGridDataStore\":{rowSet:{\"primary\":[],\"filter\":[],\"delete\":[]},name:\"psnGridDataStore\",pageNumber:2,pageSize:10,recordCount:"+str(pagesize)+",conditionValues:[[\""+statime+"\",\"12\"],[\""+endtime+"\",\"12\"]],parameters:{},statementName:\"websys.statistics.psnBizQry\",attributes:{\"staTime\":[\" T.ATTR_TIME \",\"12\"],\"psnAcc\":[\"T.PSN_ACC = '"+data["baseInfo"]["个人账号"]+"'\",\"12\"],\"endTime\":[\" T.ATTR_TIME \",\"12\"]},pool:\"hafmis\"}},parameters:{\"synCount\":\"true\"}}"
+                    # }
+                    datass="""{header:{"code":0,"message":{"title":"","detail":""}},body:{dataStores:{"psnGridDataStore":{rowSet:{"primary":[],"filter":[],"delete":[]},name:"psnGridDataStore",pageNumber:2,pageSize:10,recordCount:%d,conditionValues:[["%s","12"],["%s","12"]],parameters:{},statementName:"websys.statistics.psnBizQry",attributes:{"staTime":[" T.ATTR_TIME ","12"],"psnAcc":["T.PSN_ACC = '%s'","12"],"endTime":[" T.ATTR_TIME ","12"]},pool:"hafmis"}},parameters:{"synCount":"true"}}}"""%(pagesize,statime,endtime,data["baseInfo"]["个人账号"])
+                    resps = self.s.post('http://wsbs.dggjj.gov.cn/web_housing/CommonTransferServlet?method=Com0001', data=datass,
+                                       headers={'ajaxRequest': 'true', 'Content-Type': 'multipart/form-data','X-Requested-With': 'XMLHttpRequest','Host':'wsbs.dggjj.gov.cn','Origin':'http://wsbs.dggjj.gov.cn','Referer':'http://wsbs.dggjj.gov.cn/web_housing/orgsys/pages/psnAccsQry/psnQry.jsp','User-Agent':'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Mobile Safari/537.36'})
+                    soups = BeautifulSoup(resps.content.decode('utf8'), 'html.parser')
+                    dicinfos = execjs.eval(soups.text)
+                    infos = dicinfos['body']['dataStores']['psnGridDataStore']['rowSet']['primary']
+                    for y in range(0, len(infos)):
+                        cell = infos[y]
+                        sr = 0
+                        zc = 0
+                        arr = []
+                        dqye = float(cell['ATTR_BAL'])
+                        if '汇缴' in cell['ATTR_SUMMARY']:
+                            sr = cell['ATTR_PAY']
+                            hjcs = hjcs + 1
+                        elif '提取' in cell['ATTR_SUMMARY']:
+                            zc = cell['ATTR_PAY']
+                        else:
+                            sr = cell['ATTR_PAY']
+                        dic = {
+                            '时间': cell['ATTR_TIME'],
+                            '单位名称': data['baseInfo']['单位名称'],
+                            '支出': zc,
+                            '收入': sr,
+                            '汇缴年月': cell['CTB_YM'],
+                            '余额': cell['ATTR_BAL'],
+                            '类型': cell['ATTR_SUMMARY'],
+                            '个人账号': cell['PSN_ACC'],
+                            '单位账号': cell['ATTR_ORG_ACC']
+                        }
+                        times = cell['ATTR_TIME'][:7]
+                        if years != times[:4]:
+                            years = times[:4]
+                            data['detail']['data'][years] = {}
+                            if months != times[-2:]:
+                                months = times[-2:]
+                        else:
+                            if months != times[-2:]:
+                                months = times[-2:]
+                            else:
+                                arr = data['detail']['data'][years][months]
+                        arr.append(dic)
+                        data['detail']['data'][years][months] = arr
             data['baseInfo']['累计汇缴次数'] = hjcs
             return
         except PermissionError as e:
