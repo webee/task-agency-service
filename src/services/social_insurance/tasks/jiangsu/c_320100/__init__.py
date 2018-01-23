@@ -160,9 +160,9 @@ class Task(AbsFetchTask):
                 '城市名称': '南京',
                 '城市编号': '320100',
                 '姓名':alltable[3].text,
-                '劳动保障卡号':alltable[1].text,
+                '社会保障卡卡号':alltable[1].text,
                 '身份证号': alltable[5].text,
-                '工作单位': alltable[7].text,
+                '单位名称': alltable[7].text,
                 '人员状态': alltable[9].text
             }
             self.result_identity['target_name'] = data['baseInfo']['姓名']
@@ -176,16 +176,14 @@ class Task(AbsFetchTask):
             # 五险明细
             # 五险arrtype={'11':'基本养老保险','21':'失业保险','31':'基本医疗保险','41':'工伤保险','51':'生育保险'}
             arrtype = {'1': 'old_age', '4': 'unemployment', '5': 'medical_care', '2': 'injuries', '3': 'maternity'}
-            yllen = 0
             ylsum = 0.00
             yilsum = 0.00
             statime=[]
             endtime=[]
             jftime=[]
             for k, v in arrtype.items():  # 类型
-                ks=0
                 js=0
-                jf=0
+                yllen = 0
                 data[v] = {}
                 data[v]['data'] = {}
                 resp = self.s.post(MX_URL,data=dict(xz=k,hide='',Submit='查询'))
@@ -198,42 +196,39 @@ class Task(AbsFetchTask):
                         arrs = []
                         cell = [ii.text for ii in row.find_all('td')]
                         if len(cell[0]) > 0:
-                            if ks==0:
-                                statime.append(cell[3][:7])
                             if js==0:
-                                endtime.append(cell[3][:7])
-                            if jf==0:
-                                jftime.append(cell[3][:7])
+                                endtime.append(cell[3][:7].replace('-',''))
+                                js=1
                             dic = {
-                                '缴费时间': cell[3][:7],
+                                '缴费时间': cell[2][:7],
                                 '险种类型': cell[0],
                                 '缴费基数': cell[1],
                                 '个人缴费': cell[5],
                                 '缴费单位': '',
                                 '缴费类型': '',
-                                '公司缴费': cell[4]
+                                '公司缴费':cell[4]
                             }
-                            yearkeys = cell[0]
+                            yearkeys = cell[3][:7]
                             years = yearkeys[:4]
                             months = yearkeys[-2:]
                             if v == 'old_age':
-                                ylsum = ylsum + float(cell[3])
+                                ylsum = ylsum + float(cell[5])
                             if v == 'medical_care':
-                                yilsum = yilsum + float(cell[3])
+                                yilsum = yilsum + float(cell[5])
                             if years not in data[v]['data'].keys():
                                 data[v]['data'][years] = {}
                             if months not in data[v]['data'][years].keys():
-                                if v == 'old_age':
-                                    yllen = yllen + 1
+                                yllen = yllen + 1
                                 data[v]['data'][years][months] = {}
                             else:
                                 arrs = data[v]['data'][years][months]
                             arrs.append(dic)
                             data[v]['data'][years][months] = arrs
-
+                jftime.append(yllen)
+                statime.append(min(data[v]['data'])+min(data[v]['data'][min(data[v]['data'])]))
             data['baseInfo']['最近缴费时间'] = max(endtime)
             data['baseInfo']['开始缴费时间']= min(statime)
-            data['baseInfo']['缴费时长'] = yllen
+            data['baseInfo']['缴费时长'] = max(jftime)
             data['baseInfo']['个人养老累计缴费'] = ylsum
             data['baseInfo']['个人医疗累计缴费'] = yilsum
 
