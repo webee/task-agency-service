@@ -223,7 +223,7 @@ class Task(AbsFetchTask):
                                 endtime.append(cell[3][:7].replace('-',''))
                                 js=1
                             dic = {
-                                '缴费时间': cell[2][:7],
+                                '缴费时间': cell[3][:7],
                                 '险种类型': cell[0],
                                 '缴费基数': cell[1],
                                 '个人缴费': cell[5],
