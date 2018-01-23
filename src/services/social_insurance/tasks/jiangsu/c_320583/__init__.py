@@ -408,7 +408,10 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        if data["medical_care"]["data"][str(year)] == {}:
+                        if data["medical_care"]["data"].get(str(year)):
+                            if data["medical_care"]["data"][str(year)] == {}:
+                                data["medical_care"]["data"][str(year)] = {}
+                        else:
                             data["medical_care"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
@@ -521,7 +524,10 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        if data["injuries"]["data"][str(year)] == {}:
+                        if data["injuries"]["data"].get(str(year)):
+                            if data["injuries"]["data"][str(year)] == {}:
+                                data["injuries"]["data"][str(year)] = {}
+                        else:
                             data["injuries"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
@@ -633,7 +639,10 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        if data["maternity"]["data"][str(year)] == {}:
+                        if data["maternity"]["data"].get(str(year)):
+                            if data["maternity"]["data"][str(year)] == {}:
+                                data["maternity"]["data"][str(year)] = {}
+                        else:
                             data["maternity"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
@@ -744,7 +753,10 @@ class Task(AbsFetchTask):
                             continue
                     if tempDoubt.__len__() > 0:
                         tempDoubt.reverse()
-                        if data["unemployment"]["data"][str(year)] == {}:
+                        if data["unemployment"]["data"].get(str(year)):
+                            if data["unemployment"]["data"][str(year)] == {}:
+                                data["unemployment"]["data"][str(year)] = {}
+                        else:
                             data["unemployment"]["data"][str(year)] = {}
                         for month in tempNormal:
                             try:
