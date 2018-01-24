@@ -148,6 +148,7 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['账号'] = username
                 self.result_meta['密码'] = password
+                self.result_meta['类型Code'] = params["other"]
 
                 raise TaskNotImplementedError('查询服务维护中')
             except (AssertionError, InvalidParamsError) as e:

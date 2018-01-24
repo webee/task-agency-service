@@ -152,6 +152,7 @@ class Task(AbsFetchTask):
                     print("登录成功！")
                 self.result_key = id_num
                 # 保存到meta
+                self.result_meta['类型Code'] = params["other"]
                 self.result_meta['用户名'] = id_num
                 self.result_meta['密码'] = password
                 self.result_identity['task_name'] = '南京'
@@ -190,11 +191,23 @@ class Task(AbsFetchTask):
             }
             self.result_identity['target_name'] = data['baseInfo']['姓名']
             self.result_identity['target_id'] = data['baseInfo']['身份证号']
-            self.result_identity['status'] =''
-            # if '参保缴费' in infodic.values():
-            #     self.result_identity['status'] = '正常'
-            # else:
-            #     self.result_identity['status'] = '停缴'
+            #获取修改注册信息id
+            resp=self.s.get('http://wsbs.njhrss.gov.cn/NJLD/company/frames/top.jsp')
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            alltable = soup.findAll('a')
+            xgid=alltable[4].attrs['href']
+            #账户状态
+            resp = self.s.get('http://wsbs.njhrss.gov.cn'+xgid)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            alltable = soup.select('.table1')
+            for row in alltable[0].find_all('tr'):
+                cell = [i.text for i in row.find_all('td')]
+                if cell[0]=='用户状态：':
+                    data['baseInfo'].setdefault('账户状态',cell[1])
+                    if '正常' in cell[1]:
+                        self.result_identity['status'] = '正常'
+                    else:
+                        self.result_identity['status'] = '停缴'
 
             # 五险明细
             # 五险arrtype={'11':'基本养老保险','21':'失业保险','31':'基本医疗保险','41':'工伤保险','51':'生育保险'}
