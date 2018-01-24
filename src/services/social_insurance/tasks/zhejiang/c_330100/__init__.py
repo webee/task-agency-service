@@ -145,7 +145,7 @@ class Task(AbsFetchTask):
                 # 保存到meta
                 self.result_meta['账号'] = id_num
                 self.result_meta['密码'] = password
-
+                self.result_meta['类型Code'] = params["other"]
                 self.result_identity['task_name'] = '杭州'
 
                 return
