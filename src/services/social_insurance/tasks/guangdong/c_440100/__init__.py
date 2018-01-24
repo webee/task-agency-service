@@ -508,7 +508,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '441823199310252724', '密码': 'e6815a77'}
+    meta = {'账号': '440781198809190545', '密码': 'd0431774'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
