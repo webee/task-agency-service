@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from services.errors import InvalidParamsError
 from services.service import AskForParamsError, PreconditionNotSatisfiedError
 from services.commons import AbsFetchTask
-
+#http://61.158.43.114:47598/hrbwsyyt/  新网址
 MAIN_URL = 'https://fund.hrbgjj.org.cn:8443/fund/webSearchInfoAction.do?method=process'
 LOGIN_URL = 'https://fund.hrbgjj.org.cn:8443/fund/webSearchInfoAction.do?method=process'
 VC_URL = 'https://fund.hrbgjj.org.cn:8443/fund/webSearchInfoAction.do?method=process&dispatch=genetateValidatecode'

@@ -213,7 +213,7 @@ class Task(AbsFetchTask):
                     arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
                 time.sleep(1)
             if len(arrMaxtime)>0:
-                data['baseInfo'].setdefault('最近缴费时间', min(arrMaxtime))
+                data['baseInfo'].setdefault('最近缴费时间', max(arrMaxtime))
             else:
                 data['baseInfo'].setdefault('最近缴费时间', '')
             return
