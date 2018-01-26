@@ -198,9 +198,9 @@ class Task(AbsFetchTask):
                     years = yearkeys[:4]
                     months = yearkeys[-2:]
                     if v == 'medical_care':
-                        yilsum = yilsum + float(olddic['personPay'])
+                        yilsum = float(yilsum) + float(olddic['personPay'])
                     if v == 'old_age':
-                        ylsum = ylsum + float(olddic['personPay'])
+                        ylsum = float(ylsum) + float(olddic['personPay'])
                     if years not in data[v]['data'].keys():
                         data[v]['data'][years] = {}
                     if months not in data[v]['data'][years].keys():
@@ -211,9 +211,9 @@ class Task(AbsFetchTask):
                     arrs.append(newdic)
                     data[v]['data'][years][months] = arrs
                 if v == 'old_age':
-                    data['baseInfo'].setdefault('个人养老累计缴费', "%.2f" % ylsum)
+                    data['baseInfo']['个人养老累计缴费']= "%.2f" % ylsum
                 if v == 'medical_care':
-                    data['baseInfo'].setdefault('个人医疗累计缴费',"%.2f" % yilsum)
+                    data['baseInfo']['个人医疗累计缴费']="%.2f" % yilsum
                 if len(data[v]['data'])>0:
                     arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
                     arrlong.append(longmonth)
@@ -237,7 +237,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'用户名': '230803196905110064','密码':'Zls13936311366'}
+    meta = {'用户名': '230105197210311926','密码':'mh15245014501'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
