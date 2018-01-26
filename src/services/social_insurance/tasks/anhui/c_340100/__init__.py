@@ -6,6 +6,8 @@ from services.commons import AbsFetchTask
 
 
 LOGIN_URL='http://60.173.202.220/wssb/grlogo.jsp'
+VC_URL='http://60.173.202.220/wssb/servlet/VaildCode'
+LogPost_URL='http://60.173.202.220/wssb/admin/grpass.jsp'
 
 class Task(AbsFetchTask):
     task_info = dict(

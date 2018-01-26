@@ -18,7 +18,7 @@ import os
 
 
 LOGIN_URL = r"http://60.216.99.138/hsp/logonDialog.jsp"
-VC_URL = r"http://60.216.99.138/hsp/genAuthCode"
+VC_URL = "http://60.216.99.138/hsp/authcode" #r"http://60.216.99.138/hsp/genAuthCode"
 
 
 class Task(AbsFetchTask):
@@ -27,6 +27,7 @@ class Task(AbsFetchTask):
         help="""
         <li>如您未在社保网站查询过您的社保信息，请到济南社保网上服务平台完成“注册”并获取密码</li>
         <li>如您还未获取社保卡，可向公司经办人索取，或者凭身份证到当地社保网点查询</li>
+        <li>本系统目前只支持参加城镇职工保险的人员</li>
         """,
 
         developers=[{'name': '程菲菲', 'email': 'feifei_cheng@chinahrs.net'}]
@@ -49,26 +50,27 @@ class Task(AbsFetchTask):
             # pass
 
     def _new_vc(self):
-        resps = json.loads(self.s.get(VC_URL).text)
-        firstNum = resps['numLeftBase64']
-        oprate = resps['operatorBase64']
-        lastNum = resps['numRightBase64']
-        equla = resps['equalsBase64']
-
-        arr = [firstNum, oprate, lastNum, equla]
-        toImage = Image.new('RGB', (110, 50), (255, 255, 255))
-        for i in range(4):
-            fromImge = Image.open(io.BytesIO(base64.b64decode(arr[i])))
-            if (fromImge.mode == "P"):
-                fromImge.convert("RGB")
-            loc = (i * 22 + 15, 10)
-            toImage.paste(fromImge, loc)
-
-        savefile=io.BytesIO()
-        toImage.save(savefile,"PNG")
-        savefile.seek(0)
-        res=savefile.read()
-        return dict(cls='data:image', content=res, contents_type='image/png')
+        # resps = json.loads(self.s.get(VC_URL).text)
+        # firstNum = resps['numLeftBase64']
+        # oprate = resps['operatorBase64']
+        # lastNum = resps['numRightBase64']
+        # equla = resps['equalsBase64']
+        #
+        # arr = [firstNum, oprate, lastNum, equla]
+        # toImage = Image.new('RGB', (110, 50), (255, 255, 255))
+        # for i in range(4):
+        #     fromImge = Image.open(io.BytesIO(base64.b64decode(arr[i])))
+        #     if (fromImge.mode == "P"):
+        #         fromImge.convert("RGB")
+        #     loc = (i * 22 + 15, 10)
+        #     toImage.paste(fromImge, loc)
+        #
+        # savefile=io.BytesIO()
+        # toImage.save(savefile,"PNG")
+        # savefile.seek(0)
+        # res=savefile.read()
+        resp = self.s.get(VC_URL)
+        return dict(cls='data:image', content=resp.content, content_type=resp.headers['Content-Type'])
 
 
     def _setup_task_units(self):
@@ -128,13 +130,21 @@ class Task(AbsFetchTask):
                 pw = m.hexdigest()
                 vc = params.get("验证码")
 
-                _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='1.0.60'/><s dlfs='undefined'/></p>"
+                self.s.get(LOGIN_URL)
+
+                appversion=''
+                if len(id_num)==18:
+                    appversion='810' + id_num[4:6] + '19853' + id_num[0:4] + '66723' + id_num[11:15] + '3398' + id_num[11:18] + '5729'
+                elif len(id_num)==15:
+                    appversion='985339810757291166723'
+
+                _xmlString = "<?xml version='1.0' encoding='UTF-8'?><p><s userid='" + id_num + "'/><s usermm='" + pw + "'/><s authcode='" + vc + "'/><s yxzjlx='A'/><s appversion='"+appversion+"'/><s dlfs='1'/></p>"
 
                 resp = self.s.post("http://60.216.99.138/hsp/logon.do?method=doLogon&_xmlString=" + _xmlString)
-                if('true' not in resp.text):
+                if('usersession_uuid' not in resp.text):
                     raise InvalidParamsError(resp.text)
                 else:
-                    uuid = resp.text.split(',')[2].split(':')[1].replace('"', '').replace('"', '')
+                    uuid = resp.text.split(',')[2].split(':')[1].replace('"', '')
                     res = self.s.get("http://60.216.99.138/hsp/hspUser.do?method=fwdQueryPerInfo&__usersession_uuid=" + uuid)
                     soup = BeautifulSoup(res.content, 'html.parser').findAll("tr")
 
@@ -388,6 +398,5 @@ if __name__ == '__main__':
     client.run()
 
     # 371402199708176125  1314.bing
-
 
 

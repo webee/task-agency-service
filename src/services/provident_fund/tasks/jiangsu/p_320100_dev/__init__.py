@@ -167,61 +167,50 @@ class Task(AbsFetchTask):
             # 缴费明细
             resDetail = self.s.get("http://www.njgjj.com/init.summer?_PROCID=70000002")
             soopDetail = BeautifulSoup(resDetail.content, 'html.parser')
-            #ghosts =soopDetail.find('textarea', {'name': 'DATAlISTGHOST'}).text
-            #pools =soopDetail.find('textarea', {'name': '_DATAPOOL_'}).text
-            data2={
-                'begdate':str(int(time.strftime("%Y",time.localtime()))-10)+time.strftime("-%m-%d",time.localtime()),
-                'enddate':time.strftime("%Y-%m-%d",time.localtime()),
-                '_PROCID':'70000002',
-                #'accnum': uunum,
-                '_PAGEID':'step1',
-                'accname':username,
-                '_ACCNUM': uunum,
-                '_IS':'-27157826'  # resDetail.text.split('=')[46].split(',')[4].split(':')[1].replace('"','')
-            }
-            #respDetail=self.s.post("http://www.njgjj.com/command.summer?uuid="+times+"",data2)
-            ghostss='rO0ABXNyABNqYXZhLnV0aWwuQXJyYXlMaXN0eIHSHZnHYZ0DAAFJAARzaXpleHAAAAABdwQAAAAKc3IAJWNvbS55ZHlkLm5icC5lbmdpbmUucHViLkRhdGFMaXN0R2hvc3RCsjhA3j2pwwIAA0wAAmRzdAASTGphdmEvbGFuZy9TdHJpbmc7TAAEbmFtZXEAfgADTAADc3FscQB+AAN4cHQAEHdvcmtmbG93LmNmZy54bWx0AAlkYXRhbGlzdDJ0AL5zZWxlY3QgaW5zdGFuY2UsIHVuaXRhY2NudW0xLCB1bml0YWNjbmFtZSwgYWNjbnVtMSwgYWNjbmFtZTEsIGNlcnRpbnVtLCB0cmFuc2RhdGUsIHJlYXNvbiAsIGRwYnVzaXR5cGUsIGJhc2VudW0sIHBheXZvdWFtdCwgc2Vxbm8gZnJvbSBkcDA3NyB3aGVyZSBpbnN0YW5jZSA9LTI2ODM3MzY4IG9yZGVyIGJ5IHRyYW5zZGF0ZSBkZXNjeA=='
-            poolss='rO0ABXNyABZjb20ueWR5ZC5wb29sLkRhdGFQb29sp4pd0OzirDkCAAZMAAdTWVNEQVRFdAASTGphdmEvbGFuZy9TdHJpbmc7TAAGU1lTREFZcQB+AAFMAAhTWVNNT05USHEAfgABTAAHU1lTVElNRXEAfgABTAAHU1lTV0VFS3EAfgABTAAHU1lTWUVBUnEAfgABeHIAEWphdmEudXRpbC5IYXNoTWFwBQfawcMWYNEDAAJGAApsb2FkRmFjdG9ySQAJdGhyZXNob2xkeHA/QAAAAAAAGHcIAAAAIAAAABV0AAdfQUNDTlVNdAAQMzIwMTAwMDI3NTcxMTg4N3QAA19SV3QAAXd0AAtfVU5JVEFDQ05VTXB0AAdfUEFHRUlEdAAFc3RlcDF0AANfSVNzcgAOamF2YS5sYW5nLkxvbmc7i+SQzI8j3wIAAUoABXZhbHVleHIAEGphdmEubGFuZy5OdW1iZXKGrJUdC5TgiwIAAHhw//////5mfoh0AAxfVU5JVEFDQ05BTUV0ADnljZfkuqzmg6DkvJfkurrlipvotYTmupDmnI3liqHmnInpmZDlhazlj7jnrKzkuIDliIblhazlj7h0AAZfTE9HSVB0ABEyMDE4MDEwMzE1MzY1Njc5NnQACF9BQ0NOQU1FdAAG6LCI56uLdAAJaXNTYW1lUGVydAAFZmFsc2V0AAdfUFJPQ0lEdAAINzAwMDAwMDJ0AAtfU0VORE9QRVJJRHQAEjMyMTEwMjE5ODYwODIwMDAzNnQAEF9ERVBVVFlJRENBUkROVU10ABIzMjExMDIxOTg2MDgyMDAwMzZ0AAlfU0VORFRJTUV0AAoyMDE4LTAxLTAzdAALX0JSQU5DSEtJTkR0AAEwdAAJX1NFTkREQVRFdAAKMjAxOC0wMS0wM3QAE0NVUlJFTlRfU1lTVEVNX0RBVEVxAH4AInQABV9UWVBFdAAEaW5pdHQAB19JU0NST1BxAH4AIHQACV9QT1JDTkFNRXQAGOS4quS6uuaYjue7huS/oeaBr+afpeivonQAB19VU0JLRVlwdAAIX1dJVEhLRVlxAH4AIHh0AAhAU3lzRGF0ZXQAB0BTeXNEYXl0AAlAU3lzTW9udGh0AAhAU3lzVGltZXQACEBTeXNXZWVrdAAIQFN5c1llYXI='
+            ghosts =soopDetail.find('textarea', {'name': 'DATAlISTGHOST'}).text
+            pools =soopDetail.find('textarea', {'name': '_DATAPOOL_'}).text
 
-            # datas={
-            #     'dynamicTable_page':'/ydpx/70000002/700002_01.ydpx',
-            #     'dynamicTable_id':'datalist2',
-            #     'dynamicTable_currentPage': 0,
-            #     'dynamicTable_nextPage': 1,
-            #     'dynamicTable_pageSize': 500,
-            #     'dynamicTable_paging': 'true',
-            #     #'DATAlISTGHOST':ghostss,
-            #     #'_DATAPOOL_':poolss,
-            #     'dynamicTable_configSqlCheck':'0',
-            #     'errorFilter':'1=1',
+            # data2={
             #     'begdate':str(int(time.strftime("%Y",time.localtime()))-10)+time.strftime("-%m-%d",time.localtime()),
             #     'enddate':time.strftime("%Y-%m-%d",time.localtime()),
             #     '_PROCID':'70000002',
-            #     '_CHANNEL':1,
-            #     '_APPLY':0,
+            #     #'accnum': uunum,
+            #     '_PAGEID':'step1',
             #     'accname':username,
-            #     'accnum':uunum,
+            #     '_ACCNUM': uunum,
+            #     '_IS':'-27157826'  # resDetail.text.split('=')[46].split(',')[4].split(':')[1].replace('"','')
             # }
+            #respDetail=self.s.post("http://www.njgjj.com/command.summer?uuid="+times+"",data2)
 
-            dataq={
-                'accnum': uunum,
-                'accname':username,
+            #ghostss='rO0ABXNyABNqYXZhLnV0aWwuQXJyYXlMaXN0eIHSHZnHYZ0DAAFJAARzaXpleHAAAAABdwQAAAAKc3IAJWNvbS55ZHlkLm5icC5lbmdpbmUucHViLkRhdGFMaXN0R2hvc3RCsjhA3j2pwwIAA0wAAmRzdAASTGphdmEvbGFuZy9TdHJpbmc7TAAEbmFtZXEAfgADTAADc3FscQB+AAN4cHQAEHdvcmtmbG93LmNmZy54bWx0AAlkYXRhbGlzdDJ0AL5zZWxlY3QgaW5zdGFuY2UsIHVuaXRhY2NudW0xLCB1bml0YWNjbmFtZSwgYWNjbnVtMSwgYWNjbmFtZTEsIGNlcnRpbnVtLCB0cmFuc2RhdGUsIHJlYXNvbiAsIGRwYnVzaXR5cGUsIGJhc2VudW0sIHBheXZvdWFtdCwgc2Vxbm8gZnJvbSBkcDA3NyB3aGVyZSBpbnN0YW5jZSA9LTI2ODM3MzY4IG9yZGVyIGJ5IHRyYW5zZGF0ZSBkZXNjeA=='
+            #poolss='rO0ABXNyABZjb20ueWR5ZC5wb29sLkRhdGFQb29sp4pd0OzirDkCAAZMAAdTWVNEQVRFdAASTGphdmEvbGFuZy9TdHJpbmc7TAAGU1lTREFZcQB+AAFMAAhTWVNNT05USHEAfgABTAAHU1lTVElNRXEAfgABTAAHU1lTV0VFS3EAfgABTAAHU1lTWUVBUnEAfgABeHIAEWphdmEudXRpbC5IYXNoTWFwBQfawcMWYNEDAAJGAApsb2FkRmFjdG9ySQAJdGhyZXNob2xkeHA/QAAAAAAAGHcIAAAAIAAAABV0AAdfQUNDTlVNdAAQMzIwMTAwMDI3NTcxMTg4N3QAA19SV3QAAXd0AAtfVU5JVEFDQ05VTXB0AAdfUEFHRUlEdAAFc3RlcDF0AANfSVNzcgAOamF2YS5sYW5nLkxvbmc7i+SQzI8j3wIAAUoABXZhbHVleHIAEGphdmEubGFuZy5OdW1iZXKGrJUdC5TgiwIAAHhw//////5mfoh0AAxfVU5JVEFDQ05BTUV0ADnljZfkuqzmg6DkvJfkurrlipvotYTmupDmnI3liqHmnInpmZDlhazlj7jnrKzkuIDliIblhazlj7h0AAZfTE9HSVB0ABEyMDE4MDEwMzE1MzY1Njc5NnQACF9BQ0NOQU1FdAAG6LCI56uLdAAJaXNTYW1lUGVydAAFZmFsc2V0AAdfUFJPQ0lEdAAINzAwMDAwMDJ0AAtfU0VORE9QRVJJRHQAEjMyMTEwMjE5ODYwODIwMDAzNnQAEF9ERVBVVFlJRENBUkROVU10ABIzMjExMDIxOTg2MDgyMDAwMzZ0AAlfU0VORFRJTUV0AAoyMDE4LTAxLTAzdAALX0JSQU5DSEtJTkR0AAEwdAAJX1NFTkREQVRFdAAKMjAxOC0wMS0wM3QAE0NVUlJFTlRfU1lTVEVNX0RBVEVxAH4AInQABV9UWVBFdAAEaW5pdHQAB19JU0NST1BxAH4AIHQACV9QT1JDTkFNRXQAGOS4quS6uuaYjue7huS/oeaBr+afpeivonQAB19VU0JLRVlwdAAIX1dJVEhLRVlxAH4AIHh0AAhAU3lzRGF0ZXQAB0BTeXNEYXl0AAlAU3lzTW9udGh0AAhAU3lzVGltZXQACEBTeXNXZWVrdAAIQFN5c1llYXI='
+
+            datas={
+                'dynamicTable_page':'/ydpx/70000002/700002_01.ydpx',
+                'dynamicTable_id':'datalist2',
+                'dynamicTable_currentPage': 0,
+                'dynamicTable_nextPage': 1,
+                'dynamicTable_pageSize': 10,
+                'dynamicTable_paging': 'true',
+                'DATAlISTGHOST':ghosts,
+                '_DATAPOOL_':pools,
+                'dynamicTable_configSqlCheck':'0',
+                'errorFilter':'1=1',
                 'begdate':str(int(time.strftime("%Y",time.localtime()))-10)+time.strftime("-%m-%d",time.localtime()),
                 'enddate':time.strftime("%Y-%m-%d",time.localtime()),
-                'data-ajax':'true',
-                'novalidate':'novalidate',
-                '_PROCID': '70000002',
+                '_PROCID':'70000002',
                 '_CHANNEL':1,
                 '_APPLY':0,
+                'accname':username,
+                'accnum':uunum,
             }
-            resss=self.s.post("http://www.njgjj.com/submit.summer",dataq)
+            respDetail2 = self.s.post("http://www.njgjj.com/dynamictable?uuid=" + times + "", datas)
 
             baseDetail = self.result_data["detail"]["data"]
             model = {}
             lastTime = ""  # 最后一次汇补缴时间
             lastMoney = ""  # 最后一次汇补缴金额
             continueCount = 0  # 汇补缴累积次数
-            respDetail2=self.s.post("http://www.njgjj.com/dynamictable?uuid="+times+"",data)
             infoDetail=json.loads(respDetail2.text)['data']['data']
 
             for q in range(len(infoDetail)):

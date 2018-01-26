@@ -21,7 +21,7 @@ class Task(AbsFetchTask):
         <li>如果你的个人查询密码忘记，请到社保卡业务经办机构进行密码重置</li>
         <li>数据解析需要较长的时间，请耐心等待</li>
         """,
-        developers=[{'name':'赵伟', 'email':'zw1@qinqinxiaobao.com'}]
+        developers=[{'name': '赵伟', 'email': 'zw1@qinqinxiaobao.com'}]
     )
 
     @classmethod
@@ -116,7 +116,6 @@ class Task(AbsFetchTask):
             return data_soucse.findAll(lable, {sign: sign_value})[0].text.strip()
         except:
             return ""
-
 
     # 获取用户基本信息
     def _unit_fetch_user_info(self):
@@ -270,7 +269,7 @@ class Task(AbsFetchTask):
         isStart = True
         try:
             nowTime = int(time.strftime('%Y', time.localtime(time.time())))
-            for year in range(nowTime, int(start_job)-1, -1):
+            for year in range(nowTime, int(start_job) - 1, -1):
                 time.sleep(0.8)
                 # 根据类型获取解析后的页面
                 content = self._unit_fetch_user_DETAILED("015", year)
@@ -306,9 +305,9 @@ class Task(AbsFetchTask):
                                 data["old_age"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
                             except:
                                 data["old_age"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
-                        # else:
-                        #     doubt.append(obj)
-                        #     data["old_age"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
+                                # else:
+                                #     doubt.append(obj)
+                                #     data["old_age"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -343,12 +342,12 @@ class Task(AbsFetchTask):
                         self.my_self_medical_care = self.my_self_medical_care + float(grjfje)
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item.get("xssj", ''),
-                           "缴费类型": item.get("jflx", ''),
-                           "缴费基数": item.get("jfjs", ''),
-                           "公司缴费": '',
-                           "个人缴费": item.get('grjfje', ''),
-                           "缴费单位": item.get("dwmc", ''),
+                            "缴费时间": item.get("xssj", ''),
+                            "缴费类型": item.get("jflx", ''),
+                            "缴费基数": item.get("jfjs", ''),
+                            "公司缴费": '',
+                            "个人缴费": item.get('grjfje', ''),
+                            "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["fkkm"] == "基本医疗保险" and item["jfbz"] == "已实缴":
@@ -396,12 +395,12 @@ class Task(AbsFetchTask):
                     for item in result["result"]:
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item.get("xssj", ''),
-                           "缴费类型": item.get("jflx", ''),
-                           "缴费基数": item.get("jfjs", ''),
-                           "公司缴费": '',
-                           "个人缴费": item.get('grjfje', ''),
-                           "缴费单位": item.get("dwmc", ''),
+                            "缴费时间": item.get("xssj", ''),
+                            "缴费类型": item.get("jflx", ''),
+                            "缴费基数": item.get("jfjs", ''),
+                            "公司缴费": '',
+                            "个人缴费": item.get('grjfje', ''),
+                            "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "足额缴费":
@@ -416,9 +415,9 @@ class Task(AbsFetchTask):
                                 data["injuries"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
                             except:
                                 data["injuries"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
-                            # else:
-                            #     doubt.append(obj)
-                            #     data["injuries"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
+                                # else:
+                                #     doubt.append(obj)
+                                #     data["injuries"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -446,12 +445,12 @@ class Task(AbsFetchTask):
                     for item in result["result"]:
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item.get("xssj", ''),
-                           "缴费类型": item.get("jflx", ''),
-                           "缴费基数": item.get("jfjs", ''),
-                           "公司缴费": '',
-                           "个人缴费": item.get('grjfje', ''),
-                           "缴费单位": item.get("dwmc", ''),
+                            "缴费时间": item.get("xssj", ''),
+                            "缴费类型": item.get("jflx", ''),
+                            "缴费基数": item.get("jfjs", ''),
+                            "公司缴费": '',
+                            "个人缴费": item.get('grjfje', ''),
+                            "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "已实缴":
@@ -466,9 +465,9 @@ class Task(AbsFetchTask):
                                 data["maternity"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
                             except:
                                 data["maternity"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
-                            # else:
-                            #     doubt.append(obj)
-                            #     data["maternity"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
+                                # else:
+                                #     doubt.append(obj)
+                                #     data["maternity"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -496,12 +495,12 @@ class Task(AbsFetchTask):
                     for item in result["result"]:
                         # 定义数据结构
                         obj = {
-                           "缴费时间": item.get("xssj", ''),
-                           "缴费类型": item.get("jflx", ''),
-                           "缴费基数": item.get("jfjs", ''),
-                           "公司缴费": '',
-                           "个人缴费": item.get('grjfje', ''),
-                           "缴费单位": item.get("dwmc", ''),
+                            "缴费时间": item.get("xssj", ''),
+                            "缴费类型": item.get("jflx", ''),
+                            "缴费基数": item.get("jfjs", ''),
+                            "公司缴费": '',
+                            "个人缴费": item.get('grjfje', ''),
+                            "缴费单位": item.get("dwmc", ''),
                         }
 
                         if item["jfbj"] == "足额缴费":
@@ -516,9 +515,9 @@ class Task(AbsFetchTask):
                                 data["unemployment"]["data"][str(year)][str(item["xssj"][5:])].append(obj)
                             except:
                                 data["unemployment"]["data"][str(year)][str(item["xssj"][5:])] = [obj]
-                            # else:
-                            #     doubt.append(obj)
-                            #     data["unemployment"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
+                                # else:
+                                #     doubt.append(obj)
+                                #     data["unemployment"]["bizDoubtData"][str(year)][str(item["xssj"][5:])] = obj
 
         except InvalidConditionError as e:
             raise PreconditionNotSatisfiedError(e)
@@ -580,7 +579,7 @@ class Task(AbsFetchTask):
 
             data["baseInfo"]["缴费时长"] = str(max(social_payment_duration))
             data["baseInfo"]["最近缴费时间"] = str(max(latest_time))
-            data["baseInfo"]["开始缴费时间"] = str(min(temp_latest_start_time))
+            data["baseInfo"]["开始缴费时间"] = str(time.strftime("%Y%m", time.localtime()) if not len(temp_latest_start_time) else min(temp_latest_start_time))
             data["baseInfo"]["个人养老累计缴费"] = str(self.my_self_old_age)
             data["baseInfo"]["个人医疗累计缴费"] = str(self.my_self_medical_care)
 

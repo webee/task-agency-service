@@ -153,6 +153,11 @@ class Task(AbsFetchTask):
         try:
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             # 个人信息
+            yanglao = ""
+            yiliao = ""
+            shiye = ""
+            gongshang = ""
+            shengyu = ""
             self.result_data['baseInfo'] = {}
             resp = self.s.get(MAIN_URL)
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -185,14 +190,14 @@ class Task(AbsFetchTask):
                         '缴费时间': re.sub('\s', '', dateE[14].text),
                         '缴费类型': re.sub('\s', '', dateE[10].text),
                         '缴费基数': re.sub('\s', '', dateE[34].text),
-                        '公司缴费': float(dateE[28].text.replace('\t','').replace('\r','').replace('\n','')),
-                        '个人缴费': float(re.sub('\s', '', dateE[32].text)),
+                        '公司缴费': dateE[28].text.replace('\t','').replace('\r','').replace('\n',''),
+                        '个人缴费': re.sub('\s', '', dateE[32].text),
                         '缴费单位': re.sub('\s', '', dateE[4].text),
                         '单位划入帐户': float(re.sub('\s', '', dateE[38].text)),
                         '个人划入帐户': float(re.sub('\s', '', dateE[40].text))
                     }
 
-                    if ("已缴费" in re.sub('\s', '', dateE[0].text)):
+                    if ("已缴费" in re.sub('\s', '', dateE[0].text) and re.sub('\s', '', dateE[32].text)!=''):
                         peroldTotal += float(re.sub('\s', '', dateE[32].text))
                     basedataE[years][months].append(modelE)
                 else:
@@ -240,29 +245,30 @@ class Task(AbsFetchTask):
             # 社保明细-----失业
             detailII = self.s.get(Detail_URL + "?xzdm00=4&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sII = BeautifulSoup(detailII.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
-            shiye = sII[len(sII) - 1].findAll('td')[2].text
+            if '无查询数据' not in sII[0].text:
+                shiye = sII[len(sII) - 1].findAll('td')[2].text
 
-            for c in range(len(sII)):
-                td3 = sII[c].findAll('td')
-                urlI = "https://app.xmhrss.gov.cn/UCenter/" + sII[c].find('a')['href']
-                dateI = BeautifulSoup(self.s.get(urlI).content, 'html.parser').findAll("td")
-                yearI = re.sub('\s', '', dateI[14].text)[0:4]
-                monthI = re.sub('\s', '', dateI[14].text)[4:6]
-                basedataI.setdefault(yearI, {})
-                basedataI[yearI].setdefault(monthI, [])
+                for c in range(len(sII)):
+                    td3 = sII[c].findAll('td')
+                    urlI = "https://app.xmhrss.gov.cn/UCenter/" + sII[c].find('a')['href']
+                    dateI = BeautifulSoup(self.s.get(urlI).content, 'html.parser').findAll("td")
+                    yearI = re.sub('\s', '', dateI[14].text)[0:4]
+                    monthI = re.sub('\s', '', dateI[14].text)[4:6]
+                    basedataI.setdefault(yearI, {})
+                    basedataI[yearI].setdefault(monthI, [])
 
-                modelI = {
-                    '缴费时间': re.sub('\s', '', dateI[14].text),
-                    '缴费类型': re.sub('\s', '', dateI[10].text),
-                    '缴费基数': re.sub('\s', '', dateI[34].text),
-                    '公司缴费': float(re.sub('\s', '', dateI[28].text)),
-                    '个人缴费': float(re.sub('\s', '', dateI[32].text)),
-                    '缴费单位': re.sub('\s', '', dateI[4].text),
-                    '单位划入帐户': float(re.sub('\s', '', dateI[38].text)),
-                    '个人划入帐户': float(re.sub('\s', '', dateI[40].text))
-                }
+                    modelI = {
+                        '缴费时间': re.sub('\s', '', dateI[14].text),
+                        '缴费类型': re.sub('\s', '', dateI[10].text),
+                        '缴费基数': re.sub('\s', '', dateI[34].text),
+                        '公司缴费': float(re.sub('\s', '', dateI[28].text)),
+                        '个人缴费': float(re.sub('\s', '', dateI[32].text)),
+                        '缴费单位': re.sub('\s', '', dateI[4].text),
+                        '单位划入帐户': float(re.sub('\s', '', dateI[38].text)),
+                        '个人划入帐户': float(re.sub('\s', '', dateI[40].text))
+                    }
 
-                basedataI[yearI][monthI].append(modelI)
+                    basedataI[yearI][monthI].append(modelI)
 
             self.result['data']["injuries"] = {"data": {}}
             basedataC = self.result['data']["injuries"]["data"]
@@ -270,29 +276,30 @@ class Task(AbsFetchTask):
             # 社保明细-----工伤
             detailCI = self.s.get(Detail_URL + "?xzdm00=3&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sCI = BeautifulSoup(detailCI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
-            gongshang = sCI[len(sCI) - 1].findAll('td')[2].text
+            if '无查询数据' not in sCI[0].text:
+                gongshang = sCI[len(sCI) - 1].findAll('td')[2].text
 
-            for d in range(len(sCI)):
-                td4 = sCI[d].findAll('td')
-                urlC = "https://app.xmhrss.gov.cn/UCenter/" + sCI[d].find('a')['href']
-                dateC = BeautifulSoup(self.s.get(urlC).content, 'html.parser').findAll("td")
-                yearC = re.sub('\s', '', dateC[14].text)[0:4]
-                monthC = re.sub('\s', '', dateC[14].text)[4:6]
-                basedataC.setdefault(yearC, {})
-                basedataC[yearC].setdefault(monthC, [])
+                for d in range(len(sCI)):
+                    td4 = sCI[d].findAll('td')
+                    urlC = "https://app.xmhrss.gov.cn/UCenter/" + sCI[d].find('a')['href']
+                    dateC = BeautifulSoup(self.s.get(urlC).content, 'html.parser').findAll("td")
+                    yearC = re.sub('\s', '', dateC[14].text)[0:4]
+                    monthC = re.sub('\s', '', dateC[14].text)[4:6]
+                    basedataC.setdefault(yearC, {})
+                    basedataC[yearC].setdefault(monthC, [])
 
-                modelC = {
-                    '缴费时间': re.sub('\s', '', dateC[14].text),
-                    '缴费类型': re.sub('\s', '', dateC[10].text),
-                    '缴费基数': re.sub('\s', '', dateC[34].text),
-                    '公司缴费': float(re.sub('\s', '', dateC[28].text)),
-                    '个人缴费': "",
-                    '缴费单位': re.sub('\s', '', dateC[4].text),
-                    '单位划入帐户': float(re.sub('\s', '', dateC[38].text)),
-                    '个人划入帐户': float(re.sub('\s', '', dateC[40].text))
-                }
+                    modelC = {
+                        '缴费时间': re.sub('\s', '', dateC[14].text),
+                        '缴费类型': re.sub('\s', '', dateC[10].text),
+                        '缴费基数': re.sub('\s', '', dateC[34].text),
+                        '公司缴费': float(re.sub('\s', '', dateC[28].text)),
+                        '个人缴费': "",
+                        '缴费单位': re.sub('\s', '', dateC[4].text),
+                        '单位划入帐户': float(re.sub('\s', '', dateC[38].text)),
+                        '个人划入帐户': float(re.sub('\s', '', dateC[40].text))
+                    }
 
-                basedataC[yearC][monthC].append(modelC)
+                    basedataC[yearC][monthC].append(modelC)
 
             self.result['data']["maternity"] = {"data": {}}
             basedataB = self.result['data']["maternity"]["data"]
@@ -300,29 +307,30 @@ class Task(AbsFetchTask):
             # 社保明细-----生育
             detailBI = self.s.get(Detail_URL + "?xzdm00=5&zmlx00=&qsnyue=" + startTime + "&jznyue=" + endTime + "")
             sBI = BeautifulSoup(detailBI.content, 'html.parser').find('table', {'class': 'tab5'}).findAll("tr")
-            shengyu = sBI[len(sBI) - 1].findAll('td')[2].text
+            if '无查询数据' not in sBI[0].text:
+                shengyu = sBI[len(sBI) - 1].findAll('td')[2].text
 
-            for f in range(len(sBI)):
-                td5 = sBI[f].findAll('td')
-                urlB = "https://app.xmhrss.gov.cn/UCenter/" + sBI[f].find('a')['href']
-                dateB = BeautifulSoup(self.s.get(urlB).content, 'html.parser').findAll("td")
-                yearB = re.sub('\s', '', dateB[14].text)[0:4]
-                monthB = re.sub('\s', '', dateB[14].text)[4:6]
-                basedataB.setdefault(yearB, {})
-                basedataB[yearB].setdefault(monthB, [])
+                for f in range(len(sBI)):
+                    td5 = sBI[f].findAll('td')
+                    urlB = "https://app.xmhrss.gov.cn/UCenter/" + sBI[f].find('a')['href']
+                    dateB = BeautifulSoup(self.s.get(urlB).content, 'html.parser').findAll("td")
+                    yearB = re.sub('\s', '', dateB[14].text)[0:4]
+                    monthB = re.sub('\s', '', dateB[14].text)[4:6]
+                    basedataB.setdefault(yearB, {})
+                    basedataB[yearB].setdefault(monthB, [])
 
-                modelB = {
-                    '缴费时间': re.sub('\s', '', dateB[14].text),
-                    '缴费类型': re.sub('\s', '', dateB[10].text),
-                    '缴费基数': re.sub('\s', '', dateB[34].text),
-                    '公司缴费': float(dateB[28].text.replace('\t','').replace('\r','').replace('\n','')),
-                    '个人缴费': "",
-                    '缴费单位': re.sub('\s', '', dateB[4].text),
-                    '单位划入帐户': float(re.sub('\s', '', dateB[38].text)),
-                    '个人划入帐户': float(re.sub('\s', '', dateB[40].text))
-                }
+                    modelB = {
+                        '缴费时间': re.sub('\s', '', dateB[14].text),
+                        '缴费类型': re.sub('\s', '', dateB[10].text),
+                        '缴费基数': re.sub('\s', '', dateB[34].text),
+                        '公司缴费': float(dateB[28].text.replace('\t','').replace('\r','').replace('\n','')),
+                        '个人缴费': "",
+                        '缴费单位': re.sub('\s', '', dateB[4].text),
+                        '单位划入帐户': float(re.sub('\s', '', dateB[38].text)),
+                        '个人划入帐户': float(re.sub('\s', '', dateB[40].text))
+                    }
 
-                basedataB[yearB][monthB].append(modelB)
+                    basedataB[yearB][monthB].append(modelB)
 
             # 大病明细
             self.result['data']["serious_illness"] = {"data": {}}
