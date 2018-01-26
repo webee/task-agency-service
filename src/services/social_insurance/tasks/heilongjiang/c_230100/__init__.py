@@ -108,6 +108,10 @@ class Task(AbsFetchTask):
             soup = BeautifulSoup(resp.content, 'html.parser')
             useriddic=json.loads(soup.text)
             userid=str(useriddic['associatedPersons'][0]['id'])
+            #医疗账号余额
+            resp=self.s.get('http://221.207.175.178:7989/ehrss-si-person/api/rights/persons/overview/'+userid)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            ylzhye = json.loads(soup.text)['medicalBalance']
             # 基本信息
             data = self.result_data
             resp = self.s.get(INFOR_URL+userid)
@@ -165,12 +169,12 @@ class Task(AbsFetchTask):
                 self.result_identity['status'] = '停缴'
             data['baseInfo'].setdefault('五险状态',paymentState)
             data['baseInfo'].setdefault('开始缴费时间', min(firstJoinDate)[:7].replace('-',''))
-
+            data['baseInfo']['个人医疗累计缴费'] =ylzhye
             #明细
             statime=min(firstJoinDate)[:7].replace('-','')
             endtime=time.strftime("%Y-%m-%d", time.localtime())[:7].replace('-','')
             ylsum = 0.00
-            yilsum = 0.00
+            # yilsum = 0.00
             arrMaxtime = []
             arrlong=[]
             for k,v in insuranceCode.items():  # 类型
@@ -197,8 +201,8 @@ class Task(AbsFetchTask):
                     yearkeys = olddic['issue']
                     years = yearkeys[:4]
                     months = yearkeys[-2:]
-                    if v == 'medical_care':
-                        yilsum = float(yilsum) + float(olddic['personPay'])
+                    # if v == 'medical_care':
+                    #     yilsum = float(yilsum) + float(olddic['personPay'])
                     if v == 'old_age':
                         ylsum = float(ylsum) + float(olddic['personPay'])
                     if years not in data[v]['data'].keys():
@@ -212,8 +216,8 @@ class Task(AbsFetchTask):
                     data[v]['data'][years][months] = arrs
                 if v == 'old_age':
                     data['baseInfo']['个人养老累计缴费']= "%.2f" % ylsum
-                if v == 'medical_care':
-                    data['baseInfo']['个人医疗累计缴费']="%.2f" % yilsum
+                # if v == 'medical_care':
+                #     data['baseInfo']['个人医疗累计缴费']="%.2f" % yilsum
                 if len(data[v]['data'])>0:
                     arrMaxtime.append(max(data[v]['data']) + max(data[v]['data'][max(data[v]['data'])]))
                     arrlong.append(longmonth)
