@@ -128,7 +128,7 @@ class Task(AbsFetchTask):
                 m = hashlib.md5()
                 m.update(str(account_pass).encode(encoding="utf-8"))
                 pw = m.hexdigest()
-                vc = params.get("验证码")
+                vc = params.get("vc")
 
                 self.s.get(LOGIN_URL)
 
@@ -155,6 +155,7 @@ class Task(AbsFetchTask):
 
 
                     # 养老保险缴费明细
+                    #
                     self.result['data']["old_age"] = {"data": {}}
                     basedataE = self.result['data']["old_age"]["data"]
                     modelE = {}
@@ -374,8 +375,9 @@ class Task(AbsFetchTask):
         raise AskForParamsError([
             dict(key='身份证号', name='身份证号', cls='input', placeholder='身份证号', value=params.get('身份证号', '')),
             dict(key='密码', name='密码', cls='input:password', value=params.get('密码', '')),
-            dict(key='验证码', name='验证码', cls='data:image', query={'t': 'vc'}),
+            dict(key='vc', name='验证码', cls='data:image', query={'t': 'vc'})
         ], err_msg)
+
 
     def _convert_type(self,num):
         resinfo=""
@@ -384,6 +386,7 @@ class Task(AbsFetchTask):
         else:
             resinfo="异常"
         return resinfo
+
 
     def _unit_fetch(self):
         True
