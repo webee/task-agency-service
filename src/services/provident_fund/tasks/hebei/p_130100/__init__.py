@@ -3,7 +3,7 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-LOGIN_URL='http://www.sjzgjj.cn/wsyyt/'
+LOGIN_URL='http://www.sjzgjj.cn/wt-web-gr/grlogin'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="石家庄",
@@ -91,3 +91,4 @@ if __name__ == '__main__':
     client.run()
 
 
+# 身份证号：132335198107180026  密码：cc060608  身份证号：130682199402241999  密码：wd19930214  登陆成功后页面无法显示

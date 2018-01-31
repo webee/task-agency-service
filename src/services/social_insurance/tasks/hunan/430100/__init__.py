@@ -2,7 +2,7 @@ from services.service import SessionData
 from services.service import AskForParamsError, PreconditionNotSatisfiedError, TaskNotAvailableError
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
-
+# http://www.csldbz.gov.cn/
 
 class Task(AbsFetchTask):
     task_info = dict(
