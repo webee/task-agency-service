@@ -114,7 +114,6 @@ class Task(AbsFetchTask):
         if params:
             try:
                 self._check_login_params(params)
-                self.result_key = params.get('用户名')
 
                 id_num = params.get("用户名")
                 account_pass = params.get("密码")
@@ -145,6 +144,7 @@ class Task(AbsFetchTask):
                     raise InvalidParamsError("登录失败，用户名或密码错误！")
                 else:
                     # 保存到meta
+                    self.result_key = params.get('用户名')
                     self.result_meta['用户名'] = params.get('用户名')
                     self.result_meta['密码'] = params.get('密码')
                     return
@@ -173,7 +173,7 @@ class Task(AbsFetchTask):
             # TODO: 执行任务，如果没有登录，则raise PermissionError
             self.result['data']['baseInfo']={}
             rest = self.s.get("http://public.hrss.tj.gov.cn/api/security/user")
-            if rest.status_code!=200:
+            if rest.status_code!=200 and rest.text=='':
                 raise InvalidConditionError("未找到对应的信息！")
 
             s = json.loads(rest.text)["associatedPersons"][0]["id"]
