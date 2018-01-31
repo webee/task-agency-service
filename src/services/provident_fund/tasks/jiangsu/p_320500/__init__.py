@@ -3,7 +3,7 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-#https://gr.szgjj.gov.cn/retail/
+#https://gr.szgjj.gov.cn/retail/  2018-1-29 之前的数据都不能登陆
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="苏州",
