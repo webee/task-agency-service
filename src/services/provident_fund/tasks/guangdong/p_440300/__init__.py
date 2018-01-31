@@ -104,7 +104,7 @@ class Task(AbsFetchTask):
                 vc = params['vc']
                 #self._do_login(id_num, password, vc)
                 m = hashlib.md5()
-                m.update(password.encode(encoding='utf-8'))
+                m.update(str(password).encode(encoding="gbk"))
                 hashpsw = m.hexdigest()
                 data = {
                     'task': 'pri',
@@ -206,7 +206,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'公积金账号': '21273561766', '密码': '140010'}
+    meta = {'公积金账号': '20435172286', '密码': '123654'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 #公积金账号" : "21273561766", "密码" : "140010"    "21259724046", "密码" : "244515" 20435172286", "密码" : "123654"
