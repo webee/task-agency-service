@@ -477,7 +477,9 @@ if __name__ == '__main__':
     # client.run()
 
     meta = {'用户名': '510403199511131021', '密码': 'ld1254732520!'}
-    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
+    client = TaskTestClient(Task())  # prepare_data=dict(meta=meta)
     client.run()
 
     # 028732390  /  510403199511131021    ld1254732520!
+
+    # ? 610528199503246319  133991as

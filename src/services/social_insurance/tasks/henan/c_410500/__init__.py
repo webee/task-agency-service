@@ -3,7 +3,7 @@ from services.service import AskForParamsError, PreconditionNotSatisfiedError, T
 from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 
-LOGIN_URL='http://member.aysmzj.gov.cn/login.html/'
+LOGIN_URL='http://member.aysmzj.gov.cn/login.html/' # 账号登陆后没有内容  确认登陆网址。
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="安阳",
@@ -90,5 +90,5 @@ if __name__ == '__main__':
     client = TaskTestClient(Task(SessionData()))
     client.run()
 
-#用户名：13837278534  密码：laosi001110  用户名：18937209980    密码：zx7310157318zx
+#用户名：13837278534  密码：laosi001110  用户名：18937209980    密码：zx7310157318zx 用户名：18790810391 密码：zhoushuai8246
 

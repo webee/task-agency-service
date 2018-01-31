@@ -420,9 +420,9 @@ class Task(AbsFetchTask):
                 for q in range(len(dabingData)):
                     td6 = dabingData[q].findAll("td")
                     if (td6[0].text.strip() != ""):
-                        yearQ = self._to_replace(td[1].text)[0:4]
-                        monthQ = self._to_replace(td[1].text)[4:6]
-                        rangNumQ = int(self._to_replace(td[3].text))
+                        yearQ = self._to_replace(td6[1].text)[0:4]
+                        monthQ = self._to_replace(td6[1].text)[4:6]
+                        rangNumQ = int(self._to_replace(td6[3].text))
 
                         for a1 in range(-1, rangNumQ - 1):
                             nowtime6 = datetime.date(int(yearQ) + (int(monthQ) + a1) // 12, (int(monthQ) + a1) % 12 + 1,
@@ -508,8 +508,8 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'账号': '440781198809190545', '密码': 'd0431774'}
-    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
+    #meta = {'账号': '429005199509011810', '密码': '3000628302'}
+    client = TaskTestClient(Task())  # prepare_data=dict(meta=meta)
     client.run()
 
     # file=open("D:/789654321.html",'r')
