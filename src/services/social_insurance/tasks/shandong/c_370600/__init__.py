@@ -390,6 +390,8 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}
+    meta = {'身份证号': '370602197709293420', '密码': 'wkh131421'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
+
+#'身份证号': '370302197811184822', '密码': 'qq781017'

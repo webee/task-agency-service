@@ -18,7 +18,7 @@ class Task(AbsFetchTask):
         <li>由定点医院或药店出具发票上的8位数字的“社会保障号码”、“保险号”。</li>
         <li>“职工社会保险个人权益记录单”及“社会保险参保证明”上的社保编号。</li>
         <li>职工养老保险手册首页的“编号”（不足8位的在前面补“0”至8位）。</li>""",
-        developers=[{'name': '赵伟', 'email': 'zw@qinqinxiaobao.com'}]
+        developers=[{'name': '卜圆圆', 'email': 'by@qinqinxiaobao.com'}]
     )
 
     def _get_common_headers(self):
@@ -129,7 +129,7 @@ class Task(AbsFetchTask):
                 "单位名称": tds[6].text,
                 "出生日期": tds[8].text,
                 "开始缴费时间": tds[10].text,
-                "当前账户状态": tds[12].text,
+                "人员状态": tds[12].text,
                 "身份证号": self.result['key'],
                 "更新时间": datetime.datetime.now().strftime('%Y-%m-%d'),
                 "城市名称": '昆山',
@@ -168,7 +168,7 @@ class Task(AbsFetchTask):
                 'task_name': '昆山',
                 'target_name': tds[2].text,
                 'target_id': self.result['meta']["身份证号"],
-                'status': tds[12].text,
+                'status': '',
             })
 
             return
