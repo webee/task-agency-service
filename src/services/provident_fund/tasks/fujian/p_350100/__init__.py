@@ -94,12 +94,12 @@ class Task(AbsFetchTask):
                                             'Referer': 'http://www.fzzfgjj.com:8011/Admin_Login.aspx',
                                             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
-                if len(soup.findAll('script')) >3:
-                    successinfo = soup.findAll('script')[3].text.split('：')[1].split("'")[0]
+                if resp.url == 'http://www.fzzfgjj.com:8011/User_Main.aspx':
+                    successinfo = ''
                 elif 'User_UpdatePW.aspx' in resp.url:
                     successinfo = '第一次登陆，请去官网修改新密码！'
-                elif resp.url == 'http://www.fzzfgjj.com:8011/User_Main.aspx':
-                    successinfo = ''
+                elif len(soup.findAll('script')) >3:
+                    successinfo = soup.findAll('script')[3].text.split('：')[1].split("'")[0]
                 if successinfo:
                     return_message = successinfo
                     raise InvalidParamsError(return_message)
@@ -322,7 +322,7 @@ class Task(AbsFetchTask):
 if __name__ == '__main__':
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '513029197209200490','密码': 'hxy.0922'}
+    meta = {'身份证号': '362423199009133020','密码': '133020'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
