@@ -6,6 +6,7 @@ from services.errors import InvalidParamsError, TaskNotImplementedError
 from services.commons import AbsFetchTask
 # https://www.sipspf.org.cn/SZGJJ_ORG/corp/login.jsp
 VC_URL='https://www.sipspf.org.cn/person_online/service/identify.do?sessionid='
+LOGIN_URL='https://www.sipspf.org.cn/person_online/service/EMPLogin/login'
 class Task(AbsFetchTask):
     task_info = dict(
         city_name="苏州园区",
@@ -69,6 +70,7 @@ class Task(AbsFetchTask):
                 self._check_login_params(params)
                 id_num = params['编号']
                 password = params['密码']
+                vc=params['vc']
                 resp = self.s.get(
                     'https://www.sipspf.org.cn/person_online/service/problem.do?sessionid=' + self.state['sessionid'])
                 soup = BeautifulSoup(resp.content, 'html.parser')
@@ -84,11 +86,21 @@ class Task(AbsFetchTask):
                 elif '除' in soup.text:
                     jia=soup.text.split('除')
                     daan=int(jia[0])
-                resp=self.s.post('https://www.sipspf.org.cn/sipspf/web/pub/activate/checkPwd',data=dict(membid=id_num))
+                resp=self.s.post('https://www.sipspf.org.cn/sipspf/web/pub/activate/checkPwd',data=dict(membid=id_num),headers={'X-Requested-With':'XMLHttpRequest'})
                 soup = BeautifulSoup(resp.content, 'html.parser')
+
                 m = hashlib.md5()
                 m.update(str(password).encode(encoding="utf-8"))
                 hashpsw = m.hexdigest()
+                datas = {
+                    'uname': id_num,
+                    'upass':hashpsw,
+                        'identify': vc,
+                'answer': daan,
+                'param3': ''
+                }
+                resp = self.s.post(LOGIN_URL, data=datas,headers={'X-Requested-With':'XMLHttpRequest'})
+                soup = BeautifulSoup(resp.content, 'html.parser')
 
                 self.result_key = id_num
                 # 保存到meta
@@ -121,5 +133,7 @@ class Task(AbsFetchTask):
 
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    client = TaskTestClient(Task(SessionData()))
+
+    meta = {'编号': '03670368', '密码': '011982'}
+    client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()

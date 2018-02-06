@@ -148,7 +148,17 @@ class Task(AbsFetchTask):
                     if '__usersession_uuid' in soup.text:
                         msg=json.loads(soup.text)
                         self.g.usersession_uuid=msg['__usersession_uuid']
-                        print('登陆成功')
+                        if msg['sjhm_zx']!=msg['sjhm_user']:
+                            # xmlstrs = '<?xml version="1.0" encoding="UTF-8"?><p> <s yxzjhm ="' + id_num + '"/><s yxzjlx="A"/><s sjhm_user="' + msg['sjhm_user'] + '"/><s sjhm_zx="' + msg['sjhm_zx'] + '"/><s sjhm_zxjm="' + msg['sjhm_zxjm'] + '"/></p>'
+                            # resp = self.s.post(LOGIN_URL, data=dict(
+                            #     method='fwdModifyPhoneBeforeLogon',
+                            #     _xmlString=xmlstrs,
+                            #     _random=random.random()
+                            # ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            #             'X-Requested-With': 'XMLHttpRequest'})
+                            raise InvalidParamsError('登记手机号不一致,请去官网确认是否为您本人手机号！')
+                        else:
+                            print('登陆成功')
                     else:
                         raise InvalidParamsError(soup.text)
 
@@ -390,8 +400,8 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '370602197709293420', '密码': 'wkh131421'}
+    meta = {'身份证号': '370685198810125523', '密码': '320gdg0g'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
-#'身份证号': '370302197811184822', '密码': 'qq781017'
+#'身份证号': '370302197811184822', '密码': 'qq781017'  '身份证号': '370602197709293420', '密码': 'wkh131421' '身份证号': '370685198810125523', '密码': '320gdg0g'
