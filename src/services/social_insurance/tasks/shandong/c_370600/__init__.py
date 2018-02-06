@@ -148,17 +148,17 @@ class Task(AbsFetchTask):
                     if '__usersession_uuid' in soup.text:
                         msg=json.loads(soup.text)
                         self.g.usersession_uuid=msg['__usersession_uuid']
-                        if msg['sjhm_zx']!=msg['sjhm_user']:
-                            # xmlstrs = '<?xml version="1.0" encoding="UTF-8"?><p> <s yxzjhm ="' + id_num + '"/><s yxzjlx="A"/><s sjhm_user="' + msg['sjhm_user'] + '"/><s sjhm_zx="' + msg['sjhm_zx'] + '"/><s sjhm_zxjm="' + msg['sjhm_zxjm'] + '"/></p>'
-                            # resp = self.s.post(LOGIN_URL, data=dict(
-                            #     method='fwdModifyPhoneBeforeLogon',
-                            #     _xmlString=xmlstrs,
-                            #     _random=random.random()
-                            # ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                            #             'X-Requested-With': 'XMLHttpRequest'})
-                            raise InvalidParamsError('登记手机号不一致,请去官网确认是否为您本人手机号！')
-                        else:
-                            print('登陆成功')
+                        # if msg['sjhm_zx']!=msg['sjhm_user']:
+                        #     # xmlstrs = '<?xml version="1.0" encoding="UTF-8"?><p> <s yxzjhm ="' + id_num + '"/><s yxzjlx="A"/><s sjhm_user="' + msg['sjhm_user'] + '"/><s sjhm_zx="' + msg['sjhm_zx'] + '"/><s sjhm_zxjm="' + msg['sjhm_zxjm'] + '"/></p>'
+                        #     # resp = self.s.post(LOGIN_URL, data=dict(
+                        #     #     method='fwdModifyPhoneBeforeLogon',
+                        #     #     _xmlString=xmlstrs,
+                        #     #     _random=random.random()
+                        #     # ), headers={'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        #     #             'X-Requested-With': 'XMLHttpRequest'})
+                        #     raise InvalidParamsError('登记手机号不一致,请去官网确认是否为您本人手机号！')
+                        # else:
+                        #     print('登陆成功')
                     else:
                         raise InvalidParamsError(soup.text)
 
@@ -324,7 +324,13 @@ class Task(AbsFetchTask):
 
                     if k!='serious_illness' and longtype==1:
                         longtype=2
-                        yllong=yllong+int(spantext[0].replace('共缴费','').replace('个月',''))
+                        strs=spantext[0].replace('共缴费','').replace('个月','')
+                        if '年' in strs:
+                            nian=strs.split('年')
+                            yue=int(nian[0])*12+int(nian[1])
+                        else:
+                            yue=int(strs)
+                        yllong=yllong+yue
                         zjjftime.append(spantext[3].replace('缴费年月为','').replace('。',''))
                     trinfo=soup.findAll('table')[1]
                     for tr in trinfo.findAll('tr'):
@@ -333,10 +339,10 @@ class Task(AbsFetchTask):
                         if cell[0]=='':
                             cell=[i.attrs['value'] for i in tr.find_all('input')]
                             yearmonth = cell[1]
-                            if k=='old_age':
-                                ylsum=ylsum+float(cell[4])
                             if k=='medical_care':
                                 yilsum=yilsum+float(cell[4])
+                            elif k=='old_age':
+                                ylsum=ylsum+float(cell[4])
                             if years == '' or years != yearmonth[:4]:
                                 years = yearmonth[:4]
                                 self.result_data[k]['data'][years] = {}
@@ -400,7 +406,7 @@ class Task(AbsFetchTask):
         return dict(cls='data:image', content=resp)
 if __name__ == '__main__':
     from services.client import TaskTestClient
-    meta = {'身份证号': '370685198810125523', '密码': '320gdg0g'}
+    meta = {'身份证号': '370302197811184822', '密码': 'qq781017'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
 
