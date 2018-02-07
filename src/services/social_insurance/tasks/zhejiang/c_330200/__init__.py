@@ -598,13 +598,14 @@ class Task(AbsFetchTask):
             resp = self.s.get(ylurl)
             soupyl = BeautifulSoup(resp.content, 'html.parser')
             ylinfo = json.loads(soupyl.text)
-            ylinfos = json.loads(ylinfo['result'])
-            cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
-            # if cbzt == '参保缴费':
-            #     cbzt = '正常参保'
-            # else:
-            #     cbzt = '停缴'
-            Fivestatus.setdefault('医疗',cbzt)
+            if ylinfo['ret'] == '1':
+                ylinfos = json.loads(ylinfo['result'])
+                cbzt = ylinfos['AAC008']  # arrstr[3].replace('参保状态：', '')
+                # if cbzt == '参保缴费':
+                #     cbzt = '正常参保'
+                # else:
+                #     cbzt = '停缴'
+                Fivestatus.setdefault('医疗',cbzt)
 
             # 第四次
             ylurls = 'https://app.nbhrss.gov.cn/nbykt/rest/commapi?access_token=' + self.g.access_token + '&api=91S012&bustype=01&param={"AAB301":"330200","PAGENO":1,"PAGESIZE":10000}&client=NBHRSS_WEB'
@@ -727,7 +728,8 @@ class Task(AbsFetchTask):
             # self._gongshang()
             # self._shiye()
             # self._shengyu()
-            self.result_data["baseInfo"].setdefault('五险状态', Fivestatus)
+            if len(Fivestatus)>1:
+                self.result_data["baseInfo"].setdefault('五险状态', Fivestatus)
             if '参保缴费' in Fivestatus.values():
                 self.result_identity['status'] = '正常'
             else:
@@ -745,7 +747,7 @@ class Task(AbsFetchTask):
 if __name__ == "__main__":
     from services.client import TaskTestClient
 
-    meta = {'身份证号': '33252519830120033X', '密码': '172747'}
+    meta = {'身份证号': '522422197308106828', '密码': '522824'}
     client = TaskTestClient(Task(prepare_data=dict(meta=meta)))
     client.run()
     #'身份证号': '330282198707218248', '密码': 'sqf1769981270'
